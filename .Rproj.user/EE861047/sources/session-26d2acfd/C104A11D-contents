@@ -1,0 +1,196 @@
+## =============================================================
+## spconform - Full Reproducible Script
+## From data loading to all illustrative plots
+## =============================================================
+
+library(sp)
+library(spconform)
+
+## -------------------------------------------------------------
+## 1. Load real data: Meuse river dataset
+## -------------------------------------------------------------
+data(meuse)
+
+s <- as.matrix(meuse[, c("x", "y")])
+y <- log(meuse$zinc)
+
+## -------------------------------------------------------------
+## 2. Define point predictor (quadratic trend surface)
+## -------------------------------------------------------------
+pred_fun <- function(s_train, y_train, s_new) {
+  fit <- lm(y_train ~ s_train[, 1] + s_train[, 2] +
+              I(s_train[, 1]^2) + I(s_train[, 2]^2))
+  cbind(1, s_new[, 1], s_new[, 2], s_new[, 1]^2, s_new[, 2]^2) %*% coef(fit)
+}
+
+## -------------------------------------------------------------
+## 3. Figure 1: Spatial layout of sampling locations
+## -------------------------------------------------------------
+plot(meuse$x, meuse$y,
+     col = rgb(0.2, 0.4, 0.8, 0.5), pch = 19,
+     xlab = "X coordinate", ylab = "Y coordinate",
+     main = "Meuse River Sampling Locations")
+
+## -------------------------------------------------------------
+## 4. Single 70/30 split: geostatistical conformal prediction
+## -------------------------------------------------------------
+set.seed(1)
+n <- nrow(s)
+idx <- sample(n, floor(0.7 * n))
+
+s_train <- s[idx, ]; y_train <- y[idx]
+s_test  <- s[-idx, ]; y_test  <- y[-idx]
+
+out <- scp_geostatistical(s_train, y_train, s_test, pred_fun,
+                          alpha = 0.1, seed = 1)
+
+print(out)
+coverage_report(out, y_test)
+
+## Figure 2: geostatistical prediction intervals
+plot(out, y_true = y_test)
+
+## -------------------------------------------------------------
+## 5. Monte Carlo assessment: 50 random splits
+## -------------------------------------------------------------
+set.seed(123)
+coverages <- numeric(50)
+widths    <- numeric(50)
+
+for (i in 1:50) {
+  idx_i <- sample(n, floor(0.7 * n))
+  s_tr <- s[idx_i, ]; y_tr <- y[idx_i]
+  s_te <- s[-idx_i, ]; y_te <- y[-idx_i]
+  
+  out_i <- scp_geostatistical(s_tr, y_tr, s_te, pred_fun,
+                              alpha = 0.1, seed = i)
+  
+  rep_i <- coverage_report(out_i, y_te)
+  coverages[i] <- rep_i$coverage
+  widths[i]    <- rep_i$mean_width
+}
+
+mean(coverages)
+sd(coverages)
+mean(widths)
+
+## Figure 3: histogram of empirical coverage across 50 splits
+hist(coverages, breaks = 15, col = "lightblue", border = "white",
+     main = "Empirical Coverage Across 50 Random Splits",
+     xlab = "Empirical Coverage", xlim = c(0.7, 1))
+abline(v = 0.90, col = "red", lwd = 2, lty = 2)
+legend("topleft", legend = "Nominal target (0.90)",
+       col = "red", lty = 2, bty = "n")
+
+## -------------------------------------------------------------
+## 6. Figure 4: spatial distribution of interval width
+## -------------------------------------------------------------
+plot_df <- data.frame(
+  x = s_test[, 1],
+  y = s_test[, 2],
+  width = out$upper - out$lower
+)
+
+plot(plot_df$x, plot_df$y,
+     cex = plot_df$width, pch = 19,
+     col = rgb(0.2, 0.4, 0.8, 0.5),
+     xlab = "X coordinate", ylab = "Y coordinate",
+     main = "Spatial Distribution of Interval Width\n(Meuse zinc, geostatistical)")
+
+## -------------------------------------------------------------
+## 7. Areal (lattice) illustration: aggregate Meuse to a 6x6 grid
+## -------------------------------------------------------------
+xbreaks <- seq(min(meuse$x), max(meuse$x), length.out = 7)
+ybreaks <- seq(min(meuse$y), max(meuse$y), length.out = 7)
+
+meuse$cell_x  <- cut(meuse$x, xbreaks, include.lowest = TRUE, labels = FALSE)
+meuse$cell_y  <- cut(meuse$y, ybreaks, include.lowest = TRUE, labels = FALSE)
+meuse$cell_id <- (meuse$cell_y - 1) * 6 + meuse$cell_x
+
+agg <- aggregate(log(zinc) ~ cell_id, data = meuse, FUN = mean)
+names(agg) <- c("cell_id", "y")
+
+cell_coords <- unique(meuse[, c("cell_id", "cell_x", "cell_y")])
+agg <- merge(agg, cell_coords, by = "cell_id")
+agg <- agg[order(agg$cell_id), ]
+
+n_cells <- nrow(agg)
+adj <- matrix(0, n_cells, n_cells)
+for (i in 1:n_cells) {
+  for (j in 1:n_cells) {
+    if (i != j) {
+      dx <- abs(agg$cell_x[i] - agg$cell_x[j])
+      dy <- abs(agg$cell_y[i] - agg$cell_y[j])
+      if (dx <= 1 && dy <= 1) adj[i, j] <- 1
+    }
+  }
+}
+
+# Use the corrected function (after fixing the bug in scp_areal)
+out2 <- scp_areal(agg$y, adjacency = adj, alpha = 0.2, decay = 0.5)
+
+print(out2)
+summary(out2)
+coverage_report(out2, agg$y)
+
+## Figure 5: areal predictions with intervals vs. true values
+plot(out2, y_true = agg$y)
+
+## -------------------------------------------------------------
+## 8. Figure 6: interval width comparison, geostatistical vs. areal
+## -------------------------------------------------------------
+boxplot(list(Geostatistical = out$upper - out$lower,
+             Areal          = out2$upper - out2$lower),
+        main = "Interval Width Comparison",
+        ylab = "Interval Width",
+        col  = c("lightblue", "lightgreen"))
+
+## -------------------------------------------------------------
+## 9. Summary table (printed to console)
+## -------------------------------------------------------------
+summary_table <- data.frame(
+  Dataset  = c("Meuse (zinc, point-referenced)", "Meuse (aggregated, 6x6 grid)"),
+  Type     = c("Geostatistical", "Areal"),
+  n        = c(length(y_test), n_cells),
+  Target_Coverage    = c(0.90, 0.80),
+  Empirical_Coverage = c(coverage_report(out, y_test)$coverage,
+                         coverage_report(out2, agg$y)$coverage),
+  Mean_Width         = c(coverage_report(out, y_test)$mean_width,
+                         coverage_report(out2, agg$y)$mean_width)
+)
+
+print(summary_table)
+
+## -------------------------------------------------------------
+## 10. Spatio-temporal toy example
+## -------------------------------------------------------------
+cat("\n===== Spatio-temporal example =====\n")
+set.seed(42)
+
+# Generate 100 unique spatial locations
+s_unique <- matrix(runif(100 * 2), ncol = 2)
+# Repeat each location 3 times (for time points 1, 2, 3)
+s_st <- s_unique[rep(1:100, each = 3), ]  # now 300 rows
+
+t_st <- rep(1:3, each = 100)  # time indices: 1 (100 times), 2 (100 times), 3 (100 times)
+
+# Generate response: spatial effect + linear time trend + noise
+y_st <- sin(s_st[,1]*4) + cos(s_st[,2]*3) + 0.2 * t_st + rnorm(300, sd = 0.2)
+
+# Train on first two time points (1 & 2), test on the third (3)
+train_idx <- which(t_st <= 2)  # 200 observations
+test_idx  <- which(t_st == 3)  # 100 observations
+
+out_st <- scp_geostatistical(
+  s_train = s_st[train_idx, ],
+  y_train = y_st[train_idx],
+  s0 = s_st[test_idx, ],
+  pred_fun = pred_fun,          # Any model can be used here
+  t_train = t_st[train_idx],
+  t0 = t_st[test_idx],
+  temporal_bandwidth = 1,
+  alpha = 0.1,
+  seed = 1
+)
+
+print(coverage_report(out_st, y_st[test_idx]))

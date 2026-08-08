@@ -1,0 +1,31 @@
+Package: spconform
+Type: Package
+Title: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data
+Version: 0.1.0
+Authors@R: person(given = "Ahmed Sattar", family = "Jabbar",
+                   email = "ahmed.state.me@gmail.com", 
+                   role = c("aut", "cre"))
+Description: Provides distribution-free, finite-sample valid prediction
+    intervals for spatially and spatio-temporally dependent data using
+    conformal prediction. Implements locally weighted split conformal
+    prediction for geostatistical (point-referenced) data based on
+    spatial-distance kernels, and a neighbourhood-weighted conformal
+    procedure for areal (lattice) data based on an adjacency structure.
+    Unlike existing R packages, which target either purely temporal
+    dependence (conformal forecasting) or assume exchangeability,
+    'spconform' explicitly relaxes exchangeability using spatial and
+    spatio-temporal proximity, following the localized conformal
+    framework of Mao, Martin and Reich (2020) and its extensions.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 3.6.0)
+Imports:
+    stats
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0
