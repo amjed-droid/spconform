@@ -25,7 +25,11 @@ Imports:
 Suggests:
     testthat (>= 3.0.0),
     knitr,
-    rmarkdown
+    rmarkdown,
+    sp,
+    mgcv,
+    ranger,
+    bmstdr
 VignetteBuilder: knitr
 Config/testthat/edition: 3
-Config/roxygen2/version: 8.1.0
+RoxygenNote: 7.3.2
