@@ -126,7 +126,7 @@ for (i in 1:n_cells) {
   }
 }
 
-# Use the corrected function (after fixing the bug in scp_areal)
+# Use the corrected function
 out2 <- scp_areal(agg$y, adjacency = adj, alpha = 0.2, decay = 0.5)
 
 print(out2)
