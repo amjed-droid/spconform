@@ -1,5 +1,9 @@
 # spconform
 
+[![R-CMD-check](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml)
+[![CRAN status](https://www.r-pkg.org/badges/version/spconform)](https://CRAN.R-project.org/package=spconform)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 **Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R**
 
 `spconform` provides distribution-free, finite-sample prediction intervals
@@ -7,7 +11,9 @@ for spatial and spatio-temporal data by relaxing the exchangeability
 assumption of standard conformal prediction using spatial-distance /
 graph-neighbourhood kernel weights.
 
-## Why this package
+---
+
+## Why `spconform`?
 
 Existing R conformal-prediction packages target either:
 
@@ -32,47 +38,13 @@ method without areal-data support, testing, or a CRAN release.
 3. `coverage_report()`, `print()`, `summary()`, `plot()` methods for
    diagnostics.
 
-## Installation (development version)
+---
+
+## Installation
 
 ```r
-# install.packages("remotes")
-remotes::install_github("yourusername/spconform")
-```
+# Install from GitHub (development version)
+remotes::install_github("amjed-droid/spconform")
 
-## Quick example
-
-```r
-library(spconform)
-
-set.seed(42)
-n <- 400
-s <- matrix(runif(2 * n), ncol = 2)
-f <- function(s) sin(4 * s[, 1]) + cos(3 * s[, 2])
-y <- f(s) + rnorm(n, sd = 0.3)
-
-idx <- sample(n, 300)
-s_train <- s[idx, ]; y_train <- y[idx]
-s_test  <- s[-idx, ]; y_test  <- y[-idx]
-
-pred_fun <- function(s_train, y_train, s_new) {
-  fit <- lm(y_train ~ s_train[, 1] + s_train[, 2] +
-              I(s_train[, 1]^2) + I(s_train[, 2]^2))
-  cbind(1, s_new[, 1], s_new[, 2], s_new[, 1]^2, s_new[, 2]^2) %*% coef(fit)
-}
-
-out <- scp_geostatistical(s_train, y_train, s_test, pred_fun, alpha = 0.1)
-coverage_report(out, y_test)
-plot(out, y_true = y_test)
-```
-
-## Methodological basis
-
-The geostatistical procedure follows the localized split-conformal idea of
-Mao, Martin and Reich (2020, *"Valid model-free spatial prediction"*),
-extended here to optionally include a temporal kernel for spatio-temporal
-data. The areal procedure applies an analogous graph-distance weighting
-scheme over a user-supplied adjacency/contiguity matrix.
-
-## License
-
-GPL-3
+# Alternatively, once on CRAN:
+# install.packages("spconform")
