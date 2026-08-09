@@ -2,6 +2,7 @@
 
 [![R-CMD-check](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862025.svg)](https://doi.org/10.5281/zenodo.21862025)
 
 **Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R**
 
@@ -22,7 +23,14 @@ Standard conformal prediction assumes exchangeable data — an assumption routin
 | Model-agnostic | ✓ | ✓ | ✓ | ✓ | **✓** |
 | Unit-tested / CRAN-ready | ✓ | ✓ | — | — | **✓** |
 
-`spconform` is the first R package, to our knowledge, to offer conformal prediction spanning both major spatial data structures with optional spatio-temporal extension.
+`spconform` is, to our knowledge, the first R package to offer conformal prediction spanning both major spatial data structures with optional spatio-temporal extension.
+
+> **Status:** `spconform` has passed `R CMD check --as-cran` with 0 errors,
+> 0 warnings, 0 notes (tested locally and via win-builder on R-release and
+> R-devel) and has been submitted to CRAN. A permanent, citable snapshot of
+> version 0.1.0 is archived on Zenodo (DOI above). The accompanying
+> manuscript is currently in preparation for submission to the *Journal of
+> Statistical Software*.
 
 ---
 
@@ -34,11 +42,21 @@ remotes::install_github("amjed-droid/spconform")
 
 # Once accepted on CRAN:
 # install.packages("spconform")
+```
 
-Dependencies: The package imports only stats (base R). Suggested packages (mgcv, ranger, sp, bmstdr) are required for running the vignettes and examples.
+**Dependencies:** The package imports only `stats` (base R). Suggested
+packages (`sp`, `knitr`, `rmarkdown`) are used to build and run the
+vignette; `mgcv`, `ranger`, and `bmstdr` are only needed to reproduce the
+extended examples shown in the accompanying paper and are not required
+for core package functionality.
 
-Quick start
-1. Geostatistical data (point-referenced)
+---
+
+## Quick start
+
+### 1. Geostatistical data (point-referenced)
+
+```r
 library(spconform)
 library(sp)
 
@@ -69,15 +87,20 @@ coverage_report(out, y[-idx])
 #> [1] 0.957
 #> $mean_width
 #> [1] 2.21
-2. Areal / lattice data
+```
+
+### 2. Areal / lattice data
+
+```r
 # Aggregate Meuse to a 6x6 grid (21 occupied cells)
 xbreaks <- seq(min(meuse$x), max(meuse$x), length.out = 7)
 ybreaks <- seq(min(meuse$y), max(meuse$y), length.out = 7)
-meuse$cell_x  <- cut(meuse$x, xbreaks, labels = FALSE)
-meuse$cell_y  <- cut(meuse$y, ybreaks, labels = FALSE)
+meuse$cell_x  <- cut(meuse$x, xbreaks, include.lowest = TRUE, labels = FALSE)
+meuse$cell_y  <- cut(meuse$y, ybreaks, include.lowest = TRUE, labels = FALSE)
 meuse$cell_id <- (meuse$cell_y - 1) * 6 + meuse$cell_x
 
 agg <- aggregate(log(zinc) ~ cell_id, data = meuse, FUN = mean)
+names(agg) <- c("cell_id", "y")
 cell_coords <- unique(meuse[, c("cell_id", "cell_x", "cell_y")])
 agg <- merge(agg, cell_coords, by = "cell_id")
 agg <- agg[order(agg$cell_id), ]
@@ -96,13 +119,17 @@ for (i in 1:n_cells) {
 }
 
 # 80% neighbourhood-weighted conformal intervals
-out_areal <- scp_areal(agg$log.zinc., adjacency = adj, alpha = 0.2, decay = 0.5)
-coverage_report(out_areal, agg$log.zinc.)
+out_areal <- scp_areal(agg$y, adjacency = adj, alpha = 0.2, decay = 0.5)
+coverage_report(out_areal, agg$y)
 #> $coverage
 #> [1] 0.81
 #> $mean_width
 #> [1] 1.79
-3. Spatio-temporal data
+```
+
+### 3. Spatio-temporal data
+
+```r
 library(mgcv)
 library(bmstdr)
 
@@ -144,21 +171,45 @@ coverage_report(out_st, y[-train_idx])
 #> [1] 0.909
 #> $mean_width
 #> [1] 41.7
-Key features
-Model-agnostic: Works with any user-supplied point predictor (kriging, GAM, random forest, linear model, ...).
-Finite-sample coverage: Maintains coverage close to nominal level regardless of predictor misspecification (under local exchangeability).
-Lightweight: Imports only stats; no heavy spatial-modelling dependencies.
-Fully documented: S3 methods (print, summary, plot, coverage_report) included.
-Citation
-If you use spconform in your research, please cite:
-Jabbar, A. S. (####). spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R. Journal of Statistical Software.
+```
+
+---
+
+## Key features
+
+- **Model-agnostic**: Works with any user-supplied point predictor (kriging, GAM, random forest, linear model, ...).
+- **Finite-sample coverage**: Maintains coverage close to nominal level regardless of predictor misspecification (under local exchangeability).
+- **Lightweight**: Imports only `stats`; no heavy spatial-modelling dependencies.
+- **Fully documented**: S3 methods (`print`, `summary`, `plot`, `coverage_report`) included, plus a full introductory vignette.
+
+---
+
+## Citation
+
+If you use `spconform` in your research, please cite:
+
+> Jabbar, A. S. (2026). *spconform: Conformal Prediction for Spatially and
+> Spatio-Temporally Dependent Data in R* (Version 0.1.0) [Computer software].
+> Zenodo. https://doi.org/10.5281/zenodo.21862025
+>
+> *A companion manuscript describing the package methodology is currently
+> submitted to the Journal of Statistical Software and will be cited here
+> upon acceptance.*
+
+```r
 citation("spconform")
+```
 
-Getting help
-Bug reports & feature requests: GitHub Issues
-Documentation: ?scp_geostatistical, ?scp_areal, vignette("spconform")
-Reproducible scripts: See inst/scripts/ in the package source.
+---
 
-License
+## Getting help
+
+- **Bug reports & feature requests**: [GitHub Issues](https://github.com/amjed-droid/spconform/issues)
+- **Documentation**: `?scp_geostatistical`, `?scp_areal`, `vignette("spconform-intro", package = "spconform")`
+- **Reproducible scripts**: See `inst/scripts/` in the package source.
+
+---
+
+## License
+
 This package is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
-
