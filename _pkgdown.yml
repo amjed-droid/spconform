@@ -8,15 +8,15 @@ template:
     base_font: {google: "Inter"}
     heading_font: {google: "Inter"}
     code_font: {google: "Fira Code"}
-    
+
 home:
   sidebar:
     structure: [links, license, community, citation, authors, dev]
   links:
-  - text: Report a bug
-    href: https://github.com/amjed-droid/spconform/issues
-  - text: CRAN (coming soon)
-    href: https://cran.r-project.org/package=spconform
+    - text: Report a bug
+      href: https://github.com/amjed-droid/spconform/issues
+    - text: CRAN (coming soon)
+      href: https://cran.r-project.org/package=spconform
 
 navbar:
   structure:
@@ -29,8 +29,8 @@ navbar:
     articles:
       text: Articles
       menu:
-      - text: Introduction to spconform
-        href: articles/spconform-intro.html
+        - text: Introduction to spconform
+          href: articles/spconform-intro.html
     help:
       text: Help
       href: articles/getting-help.html
@@ -40,24 +40,28 @@ navbar:
       aria-label: GitHub
 
 reference:
-- title: "Core functions"
-  desc: "Main conformal prediction procedures"
-  contents:
-  - scp_geostatistical
-  - scp_areal
-- title: "Helper functions"
-  desc: "Kernel and weight utilities"
-  contents:
-  - spatial_kernel_weights
-  - areal_neighbor_weights
-- title: "Diagnostics"
-  desc: "Coverage assessment and reporting"
-  contents:
-  - coverage_report
-- title: "S3 methods"
-  desc: "Methods for spconform objects"
-  contents:
-  - matches("print\\.scp|summary\\.scp|plot\\.scp")
+  - title: "Core functions"
+    desc: "Main spatial and spatio-temporal conformal prediction procedures"
+    contents:
+      - scp_geostatistical
+      - scp_areal
+
+  - title: "Spatial Diagnostics"
+    desc: "Multi-panel diagnostic tools, spatial strata auditing, and coverage evaluation"
+    contents:
+      - diagnose
+      - coverage_report
+
+  - title: "Helper functions"
+    desc: "Kernel weights and graph-distance utilities"
+    contents:
+      - spatial_kernel_weights
+      - areal_neighbor_weights
+
+  - title: "S3 methods"
+    desc: "Print, summary, and plot methods for spconform and diagnose objects"
+    contents:
+      - matches("print\\.|summary\\.|plot\\.")
 
 footer:
   structure: 
@@ -68,4 +72,7 @@ footer:
       Developed by **Ahmed Sattar Jabbar** · 
       <a href="https://doi.org/10.5281/zenodo.21862025">Zenodo</a>
       
+      
+      
+
       

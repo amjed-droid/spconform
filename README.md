@@ -91,7 +91,30 @@ coverage_report(out, y[-idx])
 #> [1] 2.21
 ```
 
-### 2. Areal / lattice data
+### 2. Comprehensive Spatial Diagnostics
+'spconform' includes a multi-panel diagnostic suite (diagnose()) to evaluate marginal coverage, conditional coverage across spatial strata, boundary effects, 
+and the distribution of nonconformity scores:
+# Run diagnostics and produce publication-quality multi-panel plot
+diag <- diagnose(out, y_true = y[-idx], s_test = s[-idx], plot = TRUE)
+
+# View textual diagnostic summary
+print(diag)
+=== spconform Diagnostic Report ===
+
+Marginal coverage:
+  Empirical: 0.9574 (nominal: 0.9)
+  Mean width: 2.2105 
+  n = 47 , covered = 45 
+
+Conditional coverage by spatial bin:
+  Q1-1: 1.0000 (n=7, width=3.529)
+  Q1-2: 1.0000 (n=6, width=2.975)
+  Q4-4: 0.8889 (n=9, width=1.930)
+
+Boundary effect:
+  Near boundary:    0.9583 (n=24)
+  Far from boundary: 0.9565 (n=23)
+### 3. Areal / lattice data
 
 ```r
 # Aggregate Meuse to a 6x6 grid (21 occupied cells)
@@ -129,7 +152,7 @@ coverage_report(out_areal, agg$y)
 #> [1] 1.79
 ```
 
-### 3. Spatio-temporal data
+### 4. Spatio-temporal data
 
 ```r
 library(mgcv)

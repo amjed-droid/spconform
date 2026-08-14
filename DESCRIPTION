@@ -2,36 +2,40 @@ Package: spconform
 Type: Package
 Title: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data
 Version: 0.1.0
-Authors@R: person(given = "Ahmed Sattar", family = "Jabbar",
-                   email = "ahmed.state.me@gmail.com", 
+Authors@R: person(given = "Ahmed Sattar",
+                   family = "Jabbar",
+                   email = "ahmed.state.me@gmail.com",
                    role = c("aut", "cre"),
                    comment = c(ORCID = "0009-0006-4614-735X"))
-Description: Provides distribution-free, finite-sample valid prediction
-    intervals for spatially and spatio-temporally dependent data using
-    conformal prediction. Implements locally weighted split conformal
+Description: Provides distribution-free, model-agnostic prediction intervals
+    for spatially and spatio-temporally dependent data using localized
+    conformal calibration. Implements locally weighted split conformal
     prediction for geostatistical (point-referenced) data based on
-    spatial-distance kernels, and a neighbourhood-weighted conformal
-    procedure for areal (lattice) data based on an adjacency structure.
-    Unlike existing R packages, which target either purely temporal
-    dependence (conformal forecasting) or assume exchangeability,
-    'spconform' explicitly relaxes exchangeability using spatial and
-    spatio-temporal proximity, following the localized conformal
-    framework of Mao, Martin and Reich (2020) and its extensions.
+    spatial-distance kernels, and a neighbourhood-weighted conformal procedure
+    for areal (lattice) data based on graph adjacency structures. Relaxes the
+    standard exchangeability assumption using spatial proximity, following
+    the localized conformal framework of Mao, Martin and Reich (2024)
+    <doi:10.1080/01621459.2022.2147531>. Includes comprehensive spatial
+    diagnostic tools to audit empirical coverage, conditional spatial
+    strata, and boundary proximity effects.
 License: GPL (>= 3)
 Encoding: UTF-8
-Depends: R (>= 3.6.0)
+Depends:
+    R (>= 3.6.0)
 Imports:
+    graphics,
+    grDevices,
     stats
 Suggests:
-    testthat (>= 3.0.0),
+    bmstdr,
     knitr,
-    rmarkdown,
-    sp,
     mgcv,
     ranger,
-    bmstdr
+    rmarkdown,
+    sp,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
-URL: https://github.com/amjed-droid/spconform, https://amjed-droid.github.io/spconform/
+URL: https://github.com/amjed-droid/spconform, https://amjed-droid.github.io/spconform/, https://doi.org/10.5281/zenodo.21862025
 BugReports: https://github.com/amjed-droid/spconform/issues
 Config/testthat/edition: 3
 Language: en-US
