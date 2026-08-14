@@ -3,7 +3,7 @@
 [![R-CMD-check](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml)
 [![License: GPL
 v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862025.svg)](https://doi.org/10.5281/zenodo.21862025)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862024.svg)](https://doi.org/10.5281/zenodo.21862024)
 
 **Conformal Prediction for Spatially and Spatio-Temporally Dependent
 Data in R**
