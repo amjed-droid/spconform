@@ -25,12 +25,13 @@ Standard conformal prediction assumes exchangeable data — an assumption routin
 
 `spconform` is, to our knowledge, the first R package to offer conformal prediction spanning both major spatial data structures with optional spatio-temporal extension.
 
-> **Status:** `spconform` has passed `R CMD check --as-cran` with 0 errors,
-> 0 warnings, 0 notes (tested locally and via win-builder on R-release and
-> R-devel) and has been submitted to CRAN. A permanent, citable snapshot of
-> version 0.1.0 is archived on Zenodo (DOI above). The accompanying
-> manuscript is currently in preparation for submission to the *Journal of
-> Statistical Software*.
+&gt; **Status:** `spconform` has passed `R CMD check --as-cran` with 0 errors,
+&gt; 0 warnings, and 0 notes on Windows 11 (R 4.6.1), win-builder (R-devel),
+&gt; and R-hub v2 (Linux, Windows, macOS, donttest). The package is CRAN-ready
+&gt; and will be submitted to CRAN as soon as the submission form re-opens.
+&gt; A permanent, citable snapshot of version 0.1.0 is archived on Zenodo
+&gt; (DOI above). The accompanying manuscript is currently in preparation
+&gt; for submission to the *Journal of Statistical Software*.
 
 ---
 
@@ -44,9 +45,9 @@ remotes::install_github("amjed-droid/spconform")
 # install.packages("spconform")
 ```
 
-**Dependencies:** The package imports only `stats` (base R). Suggested
-packages (`sp`, `knitr`, `rmarkdown`) are used to build and run the
-vignette; `mgcv`, `ranger`, and `bmstdr` are only needed to reproduce the
+**Dependencies: The package imports only stats (base R). Suggested
+packages ('sp', 'knitr', 'rmarkdown') are used to build and run the
+vignette; 'mgcv', 'ranger', and 'bmstdr' are only needed to reproduce the
 extended examples shown in the accompanying paper and are not required
 for core package functionality.
 
@@ -188,8 +189,8 @@ coverage_report(out_st, y[-train_idx])
 
 If you use `spconform` in your research, please cite:
 
-> Jabbar, A. S. (2026). *spconform: Conformal Prediction for Spatially and
-> Spatio-Temporally Dependent Data in R* (Version 0.1.0) [Computer software].
+> Jabbar, A. S. (2026). spconform: Conformal Prediction for Spatially and
+> Spatio-Temporally Dependent Data in R (Version 0.1.0) [Computer software].
 > Zenodo. https://doi.org/10.5281/zenodo.21862025
 >
 > *A companion manuscript describing the package methodology is currently
