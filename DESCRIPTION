@@ -4,7 +4,8 @@ Title: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data
 Version: 0.1.0
 Authors@R: person(given = "Ahmed Sattar", family = "Jabbar",
                    email = "ahmed.state.me@gmail.com", 
-                   role = c("aut", "cre"))
+                   role = c("aut", "cre"),
+                   comment = c(ORCID = "0009-0006-4614-735X"))
 Description: Provides distribution-free, finite-sample valid prediction
     intervals for spatially and spatio-temporally dependent data using
     conformal prediction. Implements locally weighted split conformal
@@ -16,9 +17,8 @@ Description: Provides distribution-free, finite-sample valid prediction
     'spconform' explicitly relaxes exchangeability using spatial and
     spatio-temporal proximity, following the localized conformal
     framework of Mao, Martin and Reich (2020) and its extensions.
-License: GPL-3
+License: GPL (>= 3)
 Encoding: UTF-8
-LazyData: true
 Depends: R (>= 3.6.0)
 Imports:
     stats
@@ -31,5 +31,8 @@ Suggests:
     ranger,
     bmstdr
 VignetteBuilder: knitr
+URL: https://github.com/amjed-droid/spconform
+BugReports: https://github.com/amjed-droid/spconform/issues
 Config/testthat/edition: 3
-RoxygenNote: 7.3.2
+Language: en-US
+Config/roxygen2/version: 8.1.0

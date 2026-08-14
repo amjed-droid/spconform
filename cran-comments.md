@@ -1,14 +1,16 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
-
-* This is a new release.
-
-* The words flagged as "possibly misspelled" (Spatio, spatio, geostatistical,
-  exchangeability) are standard statistical terminology and are spelled
-  correctly.
+0 errors | 0 warnings | 0 notes
 
 ## Test environments
 
-* Windows 11, R 4.6.1 (local)
-* win-builder (R-devel, Windows Server 2022 x64)
+- Local: Windows 11, R 4.6.1
+- win-builder: R-devel, Windows 11
+
+## Reverse Dependencies
+
+There are no reverse dependencies.
+
+## Additional Comments
+
+This is the first submission of spconform to CRAN.

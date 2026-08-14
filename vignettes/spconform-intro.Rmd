@@ -279,8 +279,9 @@ of the default neighbourhood-mean predictor.
 
 ## References
 
-- Mao, H., Martin, R., and Reich, B. J. (2020). Valid Model-Free
-  Spatial Prediction. *arXiv:2006.15640*.
+- Mao, H., Martin, R., and Reich, B. J. (2023). Valid Model-Free
+  Spatial Prediction. *Journal of the American Statistical Association*,
+  118(541), 496–510. doi:10.1080/01621459.2021.2016422
 - Pebesma, E. J., and Bivand, R. S. (2005). Classes and Methods for
   Spatial Data in R. *R News*, 5(2), 9-13.
 - Vovk, V., Gammerman, A., and Shafer, G. (2005). *Algorithmic Learning
