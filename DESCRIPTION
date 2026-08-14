@@ -31,7 +31,7 @@ Suggests:
     ranger,
     bmstdr
 VignetteBuilder: knitr
-URL: https://github.com/amjed-droid/spconform
+URL: https://github.com/amjed-droid/spconform, https://amjed-droid.github.io/spconform/
 BugReports: https://github.com/amjed-droid/spconform/issues
 Config/testthat/edition: 3
 Language: en-US

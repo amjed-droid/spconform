@@ -2,14 +2,29 @@
 
 S3method(plot,spconform)
 S3method(print,spconform)
+S3method(print,spconform_diagnose)
 S3method(summary,spconform)
 export(areal_neighbor_weights)
 export(coverage_report)
+export(diagnose)
 export(scp_areal)
 export(scp_geostatistical)
 export(spatial_kernel_weights)
+importFrom(grDevices,chull)
 importFrom(graphics,
+  abline,
+  barplot,
+  layout,
   legend,
+  par,
   points,
-  segments
+  segments,
+  text
+)
+importFrom(stats,
+  median,
+  qqline,
+  qqnorm,
+  quantile,
+  sd
 )

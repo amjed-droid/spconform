@@ -9,3 +9,6 @@
 ^cran-comments\.md$
 ^\.github$
 ^LICENSE\.md$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

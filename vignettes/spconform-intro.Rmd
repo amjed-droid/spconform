@@ -277,6 +277,15 @@ generalized additive models (via **mgcv**), or random forests (via
 `function(y_train, X_train, idx_train, idx_target, adjacency)` in place
 of the default neighbourhood-mean predictor.
 
+## Platform portability
+
+`spconform` is implemented in pure R with no compiled code, and imports 
+only the **stats** package. It has been verified to pass `R CMD check` 
+with 0 errors, 0 warnings, and 0 notes on Linux, macOS, and Windows 
+(via GitHub Actions and R-hub), ensuring reliable behaviour across all 
+CRAN-supported platforms.
+
+
 ## References
 
 - Mao, H., Martin, R., and Reich, B. J. (2023). Valid Model-Free

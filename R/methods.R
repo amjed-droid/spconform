@@ -33,7 +33,7 @@ summary.spconform <- function(object, ...) {
 plot.spconform <- function(x, y_true = NULL, ...) {
   n <- length(x$pred)
   ord <- seq_len(n)
-  ylim <- range(c(x$lower, x$upper, x$pred, y_true))
+  ylim <- range(c(x$lower, x$upper, x$pred, y_true), na.rm = TRUE)
   plot(ord, x$pred, ylim = ylim, pch = 19, xlab = "Index", ylab = "Predicted value",
        main = paste0("spconform (", x$type, ") - ",
                       round(100 * (1 - x$alpha)), "% intervals"), ...)

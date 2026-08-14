@@ -4,6 +4,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862025.svg)](https://doi.org/10.5281/zenodo.21862025)
 
+
 **Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R**
 
 `spconform` provides distribution-free prediction intervals with finite-sample coverage properties for spatial and spatio-temporal data. It relaxes the exchangeability assumption of standard conformal prediction by using spatial-distance and graph-neighbourhood kernel weights, offering a unified framework for both **geostatistical (point-referenced)** and **areal (lattice)** data structures.

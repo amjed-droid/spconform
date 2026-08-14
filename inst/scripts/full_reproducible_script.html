@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="ara">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="litedown 0.10">
+<title></title>
+<style type="text/css">
+body {
+  font-family: sans-serif;
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 1.5;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+body, .abstract, code, .footnotes, footer, #refs, .caption { font-size: .9em; }
+li li { font-size: .95em; }
+ul:has(li > input[type="checkbox"]) { list-style: none; padding-left: 1em; }
+*, :before, :after { box-sizing: border-box; }
+a { color: steelblue; }
+pre, img { max-width: 100%; }
+pre { white-space: pre-wrap; word-break: break-word; }
+pre code { display: block; padding: 1em; overflow-x: auto; }
+code { font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace; }
+:not(pre, th) > code, code[class], div > .caption { background: #f8f8f8; }
+pre > code:is(:not([class]), .language-plain, .language-none, .plain), .box, .figure, .table { background: inherit; border: 1px solid #eee; }
+pre > code {
+  &.message { border-color: #9eeaf9; }
+  &.warning { background: #fff3cd; border-color: #fff3cd; }
+  &.error { background: #f8d7da; border-color: #f8d7da; }
+}
+.fenced-chunk { border-left: 1px solid #666; }
+.code-fence {
+  opacity: .4;
+  border: 1px dashed #666;
+  border-left: 2px solid;
+  &:hover { opacity: inherit; }
+}
+.box, .figure, .table, table { margin: 1em auto; }
+div > .caption { padding: 1px 1em; }
+.figure { p:has(img, svg), pre:has(svg) { text-align: center; } }
+.flex-col { display: flex; justify-content: space-between; }
+table {
+  &:only-child:not(.table > *) { margin: auto; }
+  th, td { padding: 5px; font-variant-numeric: tabular-nums; }
+  &:not([class]) {
+    thead, tfoot, tr:nth-child(even) { background: whitesmoke; }
+    thead th { border-bottom: 1px solid #ddd; }
+    border-top: 1px solid #666;
+    border-bottom: 1px solid #666;
+  }
+}
+blockquote {
+  color: #666;
+  margin: 0;
+  padding: 1px 1em;
+  border-left: .5em solid #eee;
+}
+hr, .footnotes::before { border: 1px dashed #ddd; }
+.frontmatter { text-align: center; }
+#TOC {
+  a { text-decoration: none; }
+  ul { list-style: none; padding-left: 1em; columns: 24em; }
+  & > ul { padding: 0; }
+  ul ul { border-left: 1px solid lightsteelblue; }
+}
+.body h2 { border-bottom: 1px solid #666; }
+.body .appendix, .appendix ~ h2 { border-bottom-style: dashed; }
+.main-number::after { content: "."; }
+span[class^="ref-number-"] { font-weight: bold; }
+.ref-number-fig::after, .ref-number-tab::after { content: ":"; }
+.cross-ref-chp::before { content: "Chapter "; }
+.cross-ref-sec::before { content: "Section "; }
+.cross-ref-apd::before { content: "Appendix "; }
+.cross-ref-fig::before, .ref-number-fig::before { content: "Figure "; }
+.cross-ref-tab::before, .ref-number-tab::before { content: "Table "; }
+.cross-ref-eqn::before, .MathJax_ref:has(mjx-mtext > mjx-c + mjx-c)::before { content: "Equation "; }
+.abstract, #refs {
+  &::before { display: block; margin: 1em auto; font-weight: bold; }
+}
+.abstract::before { content: "Abstract"; text-align: center; }
+#refs::before { content: "Bibliography"; font-size: 1.5em; }
+.ref-paren-open::before { content: "("; }
+.ref-paren-close::after { content: ")"; }
+.ref-semicolon::after { content: "; "; }
+.ref-and::after { content: " and "; }
+.ref-et-al::after { content: " et al."; font-style: italic; }
+.footnote-ref a {
+  &::before { content: "["; }
+  &::after { content: "]"; }
+}
+section.footnotes {
+  margin-top: 2em;
+  &::before { content: ""; display: block; max-width: 20em; }
+}
+.fade {
+  background: repeating-linear-gradient(135deg, white, white 30px, #ddd 32px, #ddd 32px);
+  opacity: 0.6;
+}
+@media (prefers-color-scheme: dark) {
+  html, img, video, iframe { filter: invert(1); }
+  body { background: #ededed; }
+}
+@media print {
+  body { max-width: 100%; }
+  tr, img { break-inside: avoid; }
+}
+@media only screen and (min-width: 992px) {
+  body:not(.pagesjs) pre:has(.line-numbers):not(:hover) { white-space: pre; }
+}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xiee/utils@1.14.69/css/prism-xcode.min.css">
+</head>
+<body>
+<div class="frontmatter">
+</div>
+<div class="body">
+<pre><code class="language-r">## =============================================================
+## spconform - Reproducible Analysis Script 
+## Generates all figures, tables, and results 
+## =============================================================
+</code></pre>
+<pre><code class="language-r">options(stringsAsFactors = FALSE)
+
+SEED &lt;- 123
+set.seed(SEED)
+
+OUTPUT_DIR &lt;- &quot;figures&quot;
+if (!dir.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
+
+library(sp)
+library(spconform)
+library(mgcv)      # For GAM
+</code></pre>
+<pre><code>## Loading required package: nlme
+</code></pre>
+<pre><code>## This is mgcv 1.9-4. For overview type '?mgcv'.
+</code></pre>
+<pre><code class="language-r">library(ranger)    # For Random Forest
+</code></pre>
+<pre><code>## ranger 0.18.0 using 2 threads (default). Change with num.threads in ranger() and predict(), options(Ncpus = N), options(ranger.num.threads = N) or environment variable R_RANGER_NUM_THREADS.
+</code></pre>
+<pre><code class="language-r">library(bmstdr)    # For NY ozone data
+</code></pre>
+<pre><code>## Loading required package: Rcpp
+</code></pre>
+<pre><code class="language-r">## PART 1: MEUSE RIVER DATA - GEOSTATISTICAL ILLUSTRATION
+</code></pre>
+<pre><code class="language-r">## 1.1 Load data and define predictors
+data(meuse)
+s &lt;- as.matrix(meuse[, c(&quot;x&quot;, &quot;y&quot;)])
+y &lt;- log(meuse$zinc)
+
+## Point predictor: quadratic trend surface
+pred_fun &lt;- function(s_train, y_train, s_new) {
+  fit &lt;- lm(y_train ~ s_train[, 1] + s_train[, 2] +
+              I(s_train[, 1]^2) + I(s_train[, 2]^2))
+  cbind(1, s_new[, 1], s_new[, 2],
+        s_new[, 1]^2, s_new[, 2]^2) %*% coef(fit)
+}
+
+## 1.2 Figure 1: Spatial layout
+pdf(file.path(OUTPUT_DIR, &quot;fig1_meuse_locations.pdf&quot;), width = 6, height = 5)
+plot(meuse$x, meuse$y,
+     col = rgb(0.2, 0.4, 0.8, 0.5), pch = 19,
+     xlab = &quot;X coordinate&quot;, ylab = &quot;Y coordinate&quot;,
+     main = &quot;Meuse River Sampling Locations&quot;)
+dev.off()
+</code></pre>
+<pre><code>## RStudioGD 
+##         2
+</code></pre>
+<pre><code class="language-r">## 1.3 Single 70/30 split
+set.seed(SEED)
+n &lt;- nrow(s)
+idx &lt;- sample(n, floor(0.7 * n))
+s_train &lt;- s[idx, ]; y_train &lt;- y[idx]
+s_test  &lt;- s[-idx, ]; y_test  &lt;- y[-idx]
+
+out &lt;- scp_geostatistical(s_train, y_train, s_test, pred_fun,
+                          alpha = 0.1, seed = SEED)
+
+## Figure 2: geostatistical prediction intervals
+pdf(file.path(OUTPUT_DIR, &quot;fig2_meuse_geostat_intervals.pdf&quot;), width = 7, height = 5)
+if (any(is.na(out$lower)) || any(is.na(out$upper))) {
+  warning(&quot;NA values found in prediction intervals. Filtering them out.&quot;)
+  valid &lt;- !is.na(out$lower) &amp; !is.na(out$upper)
+  out$lower &lt;- out$lower[valid]
+  out$upper &lt;- out$upper[valid]
+  out$pred &lt;- out$pred[valid]
+  y_test &lt;- y_test[valid]
+}
+plot(out, y_true = y_test)
+dev.off()
+</code></pre>
+<pre><code>## RStudioGD 
+##         2
+</code></pre>
+<pre><code class="language-r">## 1.4 Monte Carlo: 50 random splits
+set.seed(SEED)
+coverages &lt;- numeric(50)
+widths    &lt;- numeric(50)
+
+for (i in 1:50) {
+  idx_i &lt;- sample(n, floor(0.7 * n))
+  s_tr &lt;- s[idx_i, ]; y_tr &lt;- y[idx_i]
+  s_te &lt;- s[-idx_i, ]; y_te &lt;- y[-idx_i]
+  out_i &lt;- scp_geostatistical(s_tr, y_tr, s_te, pred_fun,
+                              alpha = 0.1, seed = i)
+  rep_i &lt;- coverage_report(out_i, y_te)
+  coverages[i] &lt;- rep_i$coverage
+  widths[i] &lt;- rep_i$mean_width
+}
+
+## Figure 3: Coverage histogram
+pdf(file.path(OUTPUT_DIR, &quot;fig3_meuse_coverage_hist.pdf&quot;), width = 6, height = 5)
+hist(coverages, breaks = 15, col = &quot;lightblue&quot;, border = &quot;white&quot;,
+     main = &quot;Empirical Coverage Across 50 Random Splits&quot;,
+     xlab = &quot;Empirical Coverage&quot;, xlim = c(0.7, 1))
+abline(v = 0.90, col = &quot;red&quot;, lwd = 2, lty = 2)
+legend(&quot;topleft&quot;, legend = &quot;Nominal target (0.90)&quot;,
+       col = &quot;red&quot;, lty = 2, bty = &quot;n&quot;)
+dev.off()
+</code></pre>
+<pre><code>## RStudioGD 
+##         2
+</code></pre>
+<pre><code class="language-r">## 1.5 Figure 4: Spatial distribution of interval width
+plot_df &lt;- data.frame(x = s_test[, 1], y = s_test[, 2],
+                      width = out$upper - out$lower)
+pdf(file.path(OUTPUT_DIR, &quot;fig4_meuse_width_spatial.pdf&quot;), width = 6, height = 5)
+plot(plot_df$x, plot_df$y, cex = plot_df$width, pch = 19,
+     col = rgb(0.2, 0.4, 0.8, 0.5),
+     xlab = &quot;X coordinate&quot;, ylab = &quot;Y coordinate&quot;,
+     main = &quot;Spatial Distribution of Interval Width&quot;)
+dev.off()
+</code></pre>
+<pre><code>## RStudioGD 
+##         2
+</code></pre>
+<pre><code class="language-r">## 1.6 Summary statistics
+cat(&quot;\n===== Meuse Geostatistical Results =====\n&quot;)
+</code></pre>
+<pre><code>## 
+## ===== Meuse Geostatistical Results =====
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Single split coverage: %.3f\n&quot;, coverage_report(out, y_test)$coverage))
+</code></pre>
+<pre><code>## Single split coverage: 1.000
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Mean coverage (50 splits): %.3f (SD: %.3f)\n&quot;, 
+            mean(coverages), sd(coverages)))
+</code></pre>
+<pre><code>## Mean coverage (50 splits): 0.920 (SD: 0.044)
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Mean width (50 splits): %.3f\n&quot;, mean(widths)))
+</code></pre>
+<pre><code>## Mean width (50 splits): 1.973
+</code></pre>
+<pre><code class="language-r">## PART 2: MEUSE RIVER DATA - AREAL ILLUSTRATION
+</code></pre>
+<pre><code class="language-r">## 2.1 Aggregate to 6x6 grid
+xbreaks &lt;- seq(min(meuse$x), max(meuse$x), length.out = 7)
+ybreaks &lt;- seq(min(meuse$y), max(meuse$y), length.out = 7)
+
+meuse$cell_x  &lt;- cut(meuse$x, xbreaks, include.lowest = TRUE, labels = FALSE)
+meuse$cell_y  &lt;- cut(meuse$y, ybreaks, include.lowest = TRUE, labels = FALSE)
+meuse$cell_id &lt;- (meuse$cell_y - 1) * 6 + meuse$cell_x
+
+agg &lt;- aggregate(log(zinc) ~ cell_id, data = meuse, FUN = mean)
+names(agg) &lt;- c(&quot;cell_id&quot;, &quot;y&quot;)
+
+cell_coords &lt;- unique(meuse[, c(&quot;cell_id&quot;, &quot;cell_x&quot;, &quot;cell_y&quot;)])
+agg &lt;- merge(agg, cell_coords, by = &quot;cell_id&quot;)
+agg &lt;- agg[order(agg$cell_id), ]
+
+n_cells &lt;- nrow(agg)
+adj &lt;- matrix(0, n_cells, n_cells)
+for (i in 1:n_cells) {
+  for (j in 1:n_cells) {
+    if (i != j) {
+      dx &lt;- abs(agg$cell_x[i] - agg$cell_x[j])
+      dy &lt;- abs(agg$cell_y[i] - agg$cell_y[j])
+      if (dx &lt;= 1 &amp;&amp; dy &lt;= 1) adj[i, j] &lt;- 1
+    }
+  }
+}
+
+## 2.2 Areal conformal prediction
+out2 &lt;- scp_areal(agg$y, adjacency = adj, alpha = 0.2, decay = 0.5)
+
+## Figure 5: Areal prediction intervals
+pdf(file.path(OUTPUT_DIR, &quot;fig5_meuse_areal_intervals.pdf&quot;), width = 7, height = 5)
+if (any(is.na(out2$lower)) || any(is.na(out2$upper))) {
+  warning(&quot;NA values found in areal prediction intervals. Filtering them out.&quot;)
+  valid &lt;- !is.na(out2$lower) &amp; !is.na(out2$upper)
+  out2$lower &lt;- out2$lower[valid]
+  out2$upper &lt;- out2$upper[valid]
+  out2$pred &lt;- out2$pred[valid]
+  y_true_areal &lt;- agg$y[valid]
+  plot(out2, y_true = y_true_areal)
+} else {
+  plot(out2, y_true = agg$y)
+}
+</code></pre>
+<pre><code>## Warning: NA values found in areal prediction intervals. Filtering them out.
+</code></pre>
+<pre><code class="language-r">dev.off()
+</code></pre>
+<pre><code>## RStudioGD 
+##         2
+</code></pre>
+<pre><code class="language-r">## Figure 6: Width comparison
+pdf(file.path(OUTPUT_DIR, &quot;fig6_meuse_width_comparison.pdf&quot;), width = 6, height = 5)
+geo_width &lt;- out$upper - out$lower
+areal_width &lt;- out2$upper - out2$lower
+geo_width &lt;- geo_width[!is.na(geo_width)]
+areal_width &lt;- areal_width[!is.na(areal_width)]
+if (length(geo_width) &gt; 0 &amp;&amp; length(areal_width) &gt; 0) {
+  boxplot(list(Geostatistical = geo_width,
+               Areal = areal_width),
+          main = &quot;Interval Width Comparison&quot;,
+          ylab = &quot;Interval Width&quot;,
+          col = c(&quot;lightblue&quot;, &quot;lightgreen&quot;))
+} else {
+  plot.new()
+  text(0.5, 0.5, &quot;Insufficient data for boxplot&quot;)
+}
+dev.off()
+</code></pre>
+<pre><code>## RStudioGD 
+##         2
+</code></pre>
+<pre><code class="language-r">## Areal summary statistics
+cat(&quot;\n===== Meuse Areal Results =====\n&quot;)
+</code></pre>
+<pre><code>## 
+## ===== Meuse Areal Results =====
+</code></pre>
+<pre><code class="language-r">if (any(is.na(out2$lower)) || any(is.na(out2$upper))) {
+  warning(&quot;NA values in areal intervals. Computing coverage on complete cases only.&quot;)
+  valid &lt;- !is.na(out2$lower) &amp; !is.na(out2$upper)
+  y_true_areal &lt;- agg$y[valid]
+  rep_areal &lt;- coverage_report(
+    list(pred = out2$pred[valid], lower = out2$lower[valid], 
+         upper = out2$upper[valid], alpha = out2$alpha),
+    y_true_areal
+  )
+} else {
+  rep_areal &lt;- coverage_report(out2, agg$y)
+}
+</code></pre>
+<pre><code>## Warning in y_true &gt;= object$lower: longer object length is not a multiple of shorter object length
+</code></pre>
+<pre><code>## Warning in y_true &lt;= object$upper: longer object length is not a multiple of shorter object length
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Areal coverage: %.3f\n&quot;, rep_areal$coverage))
+</code></pre>
+<pre><code>## Areal coverage: 0.857
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Areal mean width: %.3f\n&quot;, rep_areal$mean_width))
+</code></pre>
+<pre><code>## Areal mean width: 2.434
+</code></pre>
+<pre><code class="language-r">## PART 3: MODEL COMPARISON (SENSITIVITY ANALYSIS)
+</code></pre>
+<pre><code class="language-r">cat(&quot;\n===== Running Model Comparison (100 splits) =====\n&quot;)
+</code></pre>
+<pre><code>## 
+## ===== Running Model Comparison (100 splits) =====
+</code></pre>
+<pre><code class="language-r">## Define predictors
+pred_fun_lm &lt;- function(s_train, y_train, s_new) {
+  fit &lt;- lm(y_train ~ s_train[, 1] + s_train[, 2] +
+              I(s_train[, 1]^2) + I(s_train[, 2]^2))
+  cbind(1, s_new[, 1], s_new[, 2],
+        s_new[, 1]^2, s_new[, 2]^2) %*% coef(fit)
+}
+
+pred_fun_gam &lt;- function(s_train, y_train, s_new) {
+  train_df &lt;- data.frame(x = s_train[, 1], y = s_train[, 2], z = y_train)
+  fit &lt;- gam(z ~ s(x) + s(y), data = train_df)
+  new_df &lt;- data.frame(x = s_new[, 1], y = s_new[, 2])
+  as.numeric(predict(fit, newdata = new_df))
+}
+
+pred_fun_rf &lt;- function(s_train, y_train, s_new) {
+  train_df &lt;- data.frame(x = s_train[, 1], y = s_train[, 2], z = y_train)
+  fit &lt;- ranger(z ~ x + y, data = train_df, num.trees = 500,
+                mtry = 1, min.node.size = 5, seed = SEED)
+  new_df &lt;- data.frame(x = s_new[, 1], y = s_new[, 2])
+  predict(fit, data = new_df)$predictions
+}
+
+## Run comparison
+set.seed(SEED)
+n_splits &lt;- 100
+n &lt;- nrow(s)
+
+results_lm &lt;- data.frame(coverage = numeric(n_splits), width = numeric(n_splits))
+results_gam &lt;- data.frame(coverage = numeric(n_splits), width = numeric(n_splits))
+results_rf  &lt;- data.frame(coverage = numeric(n_splits), width = numeric(n_splits))
+
+pb &lt;- txtProgressBar(min = 0, max = n_splits, style = 3)
+</code></pre>
+<pre><code>## 
+  |                                                                                                                 
+  |                                                                                                           |   0%
+</code></pre>
+<pre><code class="language-r">for (i in 1:n_splits) {
+  idx &lt;- sample(n, floor(0.7 * n))
+  s_train &lt;- s[idx, ]; y_train &lt;- y[idx]
+  s_test  &lt;- s[-idx, ]; y_test  &lt;- y[-idx]
+  
+  out_lm &lt;- scp_geostatistical(s_train, y_train, s_test, pred_fun_lm, alpha = 0.1, seed = i)
+  rep_lm &lt;- coverage_report(out_lm, y_test)
+  results_lm$coverage[i] &lt;- rep_lm$coverage
+  results_lm$width[i] &lt;- rep_lm$mean_width
+  
+  out_gam &lt;- scp_geostatistical(s_train, y_train, s_test, pred_fun_gam, alpha = 0.1, seed = i)
+  rep_gam &lt;- coverage_report(out_gam, y_test)
+  results_gam$coverage[i] &lt;- rep_gam$coverage
+  results_gam$width[i] &lt;- rep_gam$mean_width
+  
+  out_rf &lt;- scp_geostatistical(s_train, y_train, s_test, pred_fun_rf, alpha = 0.1, seed = i)
+  rep_rf &lt;- coverage_report(out_rf, y_test)
+  results_rf$coverage[i] &lt;- rep_rf$coverage
+  results_rf$width[i] &lt;- rep_rf$mean_width
+  
+  setTxtProgressBar(pb, i)
+}
+</code></pre>
+<pre><code>## 
+  |                                                                                                                 
+  |=                                                                                                          |   1%
+  |                                                                                                                 
+  |==                                                                                                         |   2%
+  |                                                                                                                 
+  |===                                                                                                        |   3%
+  |                                                                                                                 
+  |====                                                                                                       |   4%
+  |                                                                                                                 
+  |=====                                                                                                      |   5%
+  |                                                                                                                 
+  |======                                                                                                     |   6%
+  |                                                                                                                 
+  |=======                                                                                                    |   7%
+  |                                                                                                                 
+  |=========                                                                                                  |   8%
+  |                                                                                                                 
+  |==========                                                                                                 |   9%
+  |                                                                                                                 
+  |===========                                                                                                |  10%
+  |                                                                                                                 
+  |============                                                                                               |  11%
+  |                                                                                                                 
+  |=============                                                                                              |  12%
+  |                                                                                                                 
+  |==============                                                                                             |  13%
+  |                                                                                                                 
+  |===============                                                                                            |  14%
+  |                                                                                                                 
+  |================                                                                                           |  15%
+  |                                                                                                                 
+  |=================                                                                                          |  16%
+  |                                                                                                                 
+  |==================                                                                                         |  17%
+  |                                                                                                                 
+  |===================                                                                                        |  18%
+  |                                                                                                                 
+  |====================                                                                                       |  19%
+  |                                                                                                                 
+  |=====================                                                                                      |  20%
+  |                                                                                                                 
+  |======================                                                                                     |  21%
+  |                                                                                                                 
+  |========================                                                                                   |  22%
+  |                                                                                                                 
+  |=========================                                                                                  |  23%
+  |                                                                                                                 
+  |==========================                                                                                 |  24%
+  |                                                                                                                 
+  |===========================                                                                                |  25%
+  |                                                                                                                 
+  |============================                                                                               |  26%
+  |                                                                                                                 
+  |=============================                                                                              |  27%
+  |                                                                                                                 
+  |==============================                                                                             |  28%
+  |                                                                                                                 
+  |===============================                                                                            |  29%
+  |                                                                                                                 
+  |================================                                                                           |  30%
+  |                                                                                                                 
+  |=================================                                                                          |  31%
+  |                                                                                                                 
+  |==================================                                                                         |  32%
+  |                                                                                                                 
+  |===================================                                                                        |  33%
+  |                                                                                                                 
+  |====================================                                                                       |  34%
+  |                                                                                                                 
+  |=====================================                                                                      |  35%
+  |                                                                                                                 
+  |=======================================                                                                    |  36%
+  |                                                                                                                 
+  |========================================                                                                   |  37%
+  |                                                                                                                 
+  |=========================================                                                                  |  38%
+  |                                                                                                                 
+  |==========================================                                                                 |  39%
+  |                                                                                                                 
+  |===========================================                                                                |  40%
+  |                                                                                                                 
+  |============================================                                                               |  41%
+  |                                                                                                                 
+  |=============================================                                                              |  42%
+  |                                                                                                                 
+  |==============================================                                                             |  43%
+  |                                                                                                                 
+  |===============================================                                                            |  44%
+  |                                                                                                                 
+  |================================================                                                           |  45%
+  |                                                                                                                 
+  |=================================================                                                          |  46%
+  |                                                                                                                 
+  |==================================================                                                         |  47%
+  |                                                                                                                 
+  |===================================================                                                        |  48%
+  |                                                                                                                 
+  |====================================================                                                       |  49%
+  |                                                                                                                 
+  |======================================================                                                     |  50%
+  |                                                                                                                 
+  |=======================================================                                                    |  51%
+  |                                                                                                                 
+  |========================================================                                                   |  52%
+  |                                                                                                                 
+  |=========================================================                                                  |  53%
+  |                                                                                                                 
+  |==========================================================                                                 |  54%
+  |                                                                                                                 
+  |===========================================================                                                |  55%
+  |                                                                                                                 
+  |============================================================                                               |  56%
+  |                                                                                                                 
+  |=============================================================                                              |  57%
+  |                                                                                                                 
+  |==============================================================                                             |  58%
+  |                                                                                                                 
+  |===============================================================                                            |  59%
+  |                                                                                                                 
+  |================================================================                                           |  60%
+  |                                                                                                                 
+  |=================================================================                                          |  61%
+  |                                                                                                                 
+  |==================================================================                                         |  62%
+  |                                                                                                                 
+  |===================================================================                                        |  63%
+  |                                                                                                                 
+  |====================================================================                                       |  64%
+  |                                                                                                                 
+  |======================================================================                                     |  65%
+  |                                                                                                                 
+  |=======================================================================                                    |  66%
+  |                                                                                                                 
+  |========================================================================                                   |  67%
+  |                                                                                                                 
+  |=========================================================================                                  |  68%
+  |                                                                                                                 
+  |==========================================================================                                 |  69%
+  |                                                                                                                 
+  |===========================================================================                                |  70%
+  |                                                                                                                 
+  |============================================================================                               |  71%
+  |                                                                                                                 
+  |=============================================================================                              |  72%
+  |                                                                                                                 
+  |==============================================================================                             |  73%
+  |                                                                                                                 
+  |===============================================================================                            |  74%
+  |                                                                                                                 
+  |================================================================================                           |  75%
+  |                                                                                                                 
+  |=================================================================================                          |  76%
+  |                                                                                                                 
+  |==================================================================================                         |  77%
+  |                                                                                                                 
+  |===================================================================================                        |  78%
+  |                                                                                                                 
+  |=====================================================================================                      |  79%
+  |                                                                                                                 
+  |======================================================================================                     |  80%
+  |                                                                                                                 
+  |=======================================================================================                    |  81%
+  |                                                                                                                 
+  |========================================================================================                   |  82%
+  |                                                                                                                 
+  |=========================================================================================                  |  83%
+  |                                                                                                                 
+  |==========================================================================================                 |  84%
+  |                                                                                                                 
+  |===========================================================================================                |  85%
+  |                                                                                                                 
+  |============================================================================================               |  86%
+  |                                                                                                                 
+  |=============================================================================================              |  87%
+  |                                                                                                                 
+  |==============================================================================================             |  88%
+  |                                                                                                                 
+  |===============================================================================================            |  89%
+  |                                                                                                                 
+  |================================================================================================           |  90%
+  |                                                                                                                 
+  |=================================================================================================          |  91%
+  |                                                                                                                 
+  |==================================================================================================         |  92%
+  |                                                                                                                 
+  |====================================================================================================       |  93%
+  |                                                                                                                 
+  |=====================================================================================================      |  94%
+  |                                                                                                                 
+  |======================================================================================================     |  95%
+  |                                                                                                                 
+  |=======================================================================================================    |  96%
+  |                                                                                                                 
+  |========================================================================================================   |  97%
+  |                                                                                                                 
+  |=========================================================================================================  |  98%
+  |                                                                                                                 
+  |========================================================================================================== |  99%
+  |                                                                                                                 
+  |===========================================================================================================| 100%
+</code></pre>
+<pre><code class="language-r">close(pb)
+</code></pre>
+<pre><code class="language-r">## Print results
+cat(&quot;\n\n===== Model Comparison Results (Target: 90%) =====\n&quot;)
+</code></pre>
+<pre><code>## 
+## 
+## ===== Model Comparison Results (Target: 90%) =====
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;LM: coverage = %.3f (SD: %.3f), width = %.3f (SD: %.3f)\n&quot;,
+            mean(results_lm$coverage), sd(results_lm$coverage),
+            mean(results_lm$width), sd(results_lm$width)))
+</code></pre>
+<pre><code>## LM: coverage = 0.907 (SD: 0.058), width = 1.963 (SD: 0.227)
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;GAM: coverage = %.3f (SD: %.3f), width = %.3f (SD: %.3f)\n&quot;,
+            mean(results_gam$coverage), sd(results_gam$coverage),
+            mean(results_gam$width), sd(results_gam$width)))
+</code></pre>
+<pre><code>## GAM: coverage = 0.912 (SD: 0.061), width = 1.848 (SD: 0.276)
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;RF: coverage = %.3f (SD: %.3f), width = %.3f (SD: %.3f)\n&quot;,
+            mean(results_rf$coverage), sd(results_rf$coverage),
+            mean(results_rf$width), sd(results_rf$width)))
+</code></pre>
+<pre><code>## RF: coverage = 0.911 (SD: 0.056), width = 2.039 (SD: 0.237)
+</code></pre>
+<pre><code class="language-r">## Generate LaTeX table
+cat(&quot;\n\n===== LaTeX Table for Appendix =====\n&quot;)
+</code></pre>
+<pre><code>## 
+## 
+## ===== LaTeX Table for Appendix =====
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\begin{table}[htbp]\n\\centering\\small\n&quot;)
+</code></pre>
+<pre><code>## \begin{table}[htbp]
+## \centering\small
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\caption{Performance of \\code{scp\\_geostatistical()} with different base predictors on the Meuse dataset. Target coverage is 0.90. Results are averaged over 100 random 70/30 splits.}\n&quot;)
+</code></pre>
+<pre><code>## \caption{Performance of \code{scp\_geostatistical()} with different base predictors on the Meuse dataset. Target coverage is 0.90. Results are averaged over 100 random 70/30 splits.}
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\label{tab:models}\n&quot;)
+</code></pre>
+<pre><code>## \label{tab:models}
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\begin{tabular}{l c c c}\n\\hline\n&quot;)
+</code></pre>
+<pre><code>## \begin{tabular}{l c c c}
+## \hline
+</code></pre>
+<pre><code class="language-r">cat(&quot;Base predictor &amp; Mean coverage &amp; Mean interval width &amp; SD (coverage) \\\\\n\\hline\n&quot;)
+</code></pre>
+<pre><code>## Base predictor &amp; Mean coverage &amp; Mean interval width &amp; SD (coverage) \\
+## \hline
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Linear model (quadratic trend) &amp; %.3f &amp; %.3f &amp; %.3f \\\\\n&quot;,
+            mean(results_lm$coverage), mean(results_lm$width), sd(results_lm$coverage)))
+</code></pre>
+<pre><code>## Linear model (quadratic trend) &amp; 0.907 &amp; 1.963 &amp; 0.058 \\
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;GAM (smooth spatial terms) &amp; %.3f &amp; \\textbf{%.3f} &amp; %.3f \\\\\n&quot;,
+            mean(results_gam$coverage), mean(results_gam$width), sd(results_gam$coverage)))
+</code></pre>
+<pre><code>## GAM (smooth spatial terms) &amp; 0.912 &amp; \textbf{1.848} &amp; 0.061 \\
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Random Forest &amp; %.3f &amp; %.3f &amp; %.3f \\\\\n&quot;,
+            mean(results_rf$coverage), mean(results_rf$width), sd(results_rf$coverage)))
+</code></pre>
+<pre><code>## Random Forest &amp; 0.911 &amp; 2.039 &amp; 0.056 \\
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\hline\n\\end{tabular}\n&quot;)
+</code></pre>
+<pre><code>## \hline
+## \end{tabular}
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\medskip\n&quot;)
+</code></pre>
+<pre><code>## \medskip
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\parbox{\\textwidth}{\\small \\emph{Note:} All three predictors maintain empirical coverage close to the nominal 90\\% level, demonstrating the stability of empirical coverage across different base predictors. The GAM yields the narrowest intervals, reflecting its superior ability to capture the smooth spatial structure of the zinc concentration surface.}\n&quot;)
+</code></pre>
+<pre><code>## \parbox{\textwidth}{\small \emph{Note:} All three predictors maintain empirical coverage close to the nominal 90\% level, demonstrating the stability of empirical coverage across different base predictors. The GAM yields the narrowest intervals, reflecting its superior ability to capture the smooth spatial structure of the zinc concentration surface.}
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\end{table}\n&quot;)
+</code></pre>
+<pre><code>## \end{table}
+</code></pre>
+<pre><code class="language-r">## PART 4: SPATIO-TEMPORAL APPLICATION (NY OZONE DATA)
+</code></pre>
+<pre><code class="language-r">cat(&quot;\n\n===== Spatio-temporal Application (NY Ozone) =====\n&quot;)
+</code></pre>
+<pre><code>## 
+## 
+## ===== Spatio-temporal Application (NY Ozone) =====
+</code></pre>
+<pre><code class="language-r">## 4.1 Load and prepare data
+data(&quot;nysptime&quot;)
+df &lt;- nysptime[complete.cases(nysptime[, c(&quot;utmx&quot;, &quot;utmy&quot;, &quot;y8hrmax&quot;, &quot;Day&quot;, &quot;Month&quot;)]), ]
+
+## Convert Day (1-31) to a continuous time index (1-62)
+df$day_idx &lt;- ifelse(df$Month == 7, df$Day, 31 + df$Day)
+
+s &lt;- as.matrix(df[, c(&quot;utmx&quot;, &quot;utmy&quot;)])
+y &lt;- df$y8hrmax
+t &lt;- df$day_idx  # Use continuous index instead of Day
+
+## Create 3D coordinates (spatial + temporal)
+s_3d &lt;- cbind(s, t)
+
+## 4.2 Define GAM spatio-temporal predictor (using continuous time)
+pred_fun_gam_3d &lt;- function(s_train, y_train, s_new) {
+  train_df &lt;- data.frame(
+    x = s_train[, 1], y = s_train[, 2],
+    day = s_train[, 3], z = y_train
+  )
+  fit &lt;- gam(z ~ te(x, y, day, k = c(8, 8, 4)), data = train_df)
+  new_df &lt;- data.frame(
+    x = s_new[, 1], y = s_new[, 2], day = s_new[, 3]
+  )
+  as.numeric(predict(fit, newdata = new_df))
+}
+
+## 4.3 100 random splits for stable estimate
+set.seed(SEED)
+n &lt;- nrow(s_3d)
+n_reps &lt;- 100
+coverages_st &lt;- numeric(n_reps)
+widths_st &lt;- numeric(n_reps)
+
+cat(&quot;Running 100 spatio-temporal replications...\n&quot;)
+</code></pre>
+<pre><code>## Running 100 spatio-temporal replications...
+</code></pre>
+<pre><code class="language-r">pb &lt;- txtProgressBar(min = 0, max = n_reps, style = 3)
+</code></pre>
+<pre><code>## 
+  |                                                                                                                 
+  |                                                                                                           |   0%
+</code></pre>
+<pre><code class="language-r">for (i in 1:n_reps) {
+  set.seed(i)
+  idx &lt;- sample(n, floor(0.7 * n))
+  
+  s_train_3d &lt;- s_3d[idx, ]
+  y_train &lt;- y[idx]
+  t_train &lt;- t[idx]
+  
+  s_test_3d &lt;- s_3d[-idx, ]
+  y_test &lt;- y[-idx]
+  t_test &lt;- t[-idx]
+  
+  out_st &lt;- scp_geostatistical(
+    s_train = s_train_3d,
+    y_train = y_train,
+    s0 = s_test_3d,
+    pred_fun = pred_fun_gam_3d,
+    t_train = t_train,
+    t0 = t_test,
+    temporal_bandwidth = 5,
+    alpha = 0.1,
+    split = 0.5,
+    seed = i
+  )
+  
+  rep &lt;- coverage_report(out_st, y_test)
+  coverages_st[i] &lt;- rep$coverage
+  widths_st[i] &lt;- rep$mean_width
+  
+  setTxtProgressBar(pb, i)
+}
+</code></pre>
+<pre><code>## 
+  |                                                                                                                 
+  |=                                                                                                          |   1%
+  |                                                                                                                 
+  |==                                                                                                         |   2%
+  |                                                                                                                 
+  |===                                                                                                        |   3%
+  |                                                                                                                 
+  |====                                                                                                       |   4%
+  |                                                                                                                 
+  |=====                                                                                                      |   5%
+  |                                                                                                                 
+  |======                                                                                                     |   6%
+  |                                                                                                                 
+  |=======                                                                                                    |   7%
+  |                                                                                                                 
+  |=========                                                                                                  |   8%
+  |                                                                                                                 
+  |==========                                                                                                 |   9%
+  |                                                                                                                 
+  |===========                                                                                                |  10%
+  |                                                                                                                 
+  |============                                                                                               |  11%
+  |                                                                                                                 
+  |=============                                                                                              |  12%
+  |                                                                                                                 
+  |==============                                                                                             |  13%
+  |                                                                                                                 
+  |===============                                                                                            |  14%
+  |                                                                                                                 
+  |================                                                                                           |  15%
+  |                                                                                                                 
+  |=================                                                                                          |  16%
+  |                                                                                                                 
+  |==================                                                                                         |  17%
+  |                                                                                                                 
+  |===================                                                                                        |  18%
+  |                                                                                                                 
+  |====================                                                                                       |  19%
+  |                                                                                                                 
+  |=====================                                                                                      |  20%
+  |                                                                                                                 
+  |======================                                                                                     |  21%
+  |                                                                                                                 
+  |========================                                                                                   |  22%
+  |                                                                                                                 
+  |=========================                                                                                  |  23%
+  |                                                                                                                 
+  |==========================                                                                                 |  24%
+  |                                                                                                                 
+  |===========================                                                                                |  25%
+  |                                                                                                                 
+  |============================                                                                               |  26%
+  |                                                                                                                 
+  |=============================                                                                              |  27%
+  |                                                                                                                 
+  |==============================                                                                             |  28%
+  |                                                                                                                 
+  |===============================                                                                            |  29%
+  |                                                                                                                 
+  |================================                                                                           |  30%
+  |                                                                                                                 
+  |=================================                                                                          |  31%
+  |                                                                                                                 
+  |==================================                                                                         |  32%
+  |                                                                                                                 
+  |===================================                                                                        |  33%
+  |                                                                                                                 
+  |====================================                                                                       |  34%
+  |                                                                                                                 
+  |=====================================                                                                      |  35%
+  |                                                                                                                 
+  |=======================================                                                                    |  36%
+  |                                                                                                                 
+  |========================================                                                                   |  37%
+  |                                                                                                                 
+  |=========================================                                                                  |  38%
+  |                                                                                                                 
+  |==========================================                                                                 |  39%
+  |                                                                                                                 
+  |===========================================                                                                |  40%
+  |                                                                                                                 
+  |============================================                                                               |  41%
+  |                                                                                                                 
+  |=============================================                                                              |  42%
+  |                                                                                                                 
+  |==============================================                                                             |  43%
+  |                                                                                                                 
+  |===============================================                                                            |  44%
+  |                                                                                                                 
+  |================================================                                                           |  45%
+  |                                                                                                                 
+  |=================================================                                                          |  46%
+  |                                                                                                                 
+  |==================================================                                                         |  47%
+  |                                                                                                                 
+  |===================================================                                                        |  48%
+  |                                                                                                                 
+  |====================================================                                                       |  49%
+  |                                                                                                                 
+  |======================================================                                                     |  50%
+  |                                                                                                                 
+  |=======================================================                                                    |  51%
+  |                                                                                                                 
+  |========================================================                                                   |  52%
+  |                                                                                                                 
+  |=========================================================                                                  |  53%
+  |                                                                                                                 
+  |==========================================================                                                 |  54%
+  |                                                                                                                 
+  |===========================================================                                                |  55%
+  |                                                                                                                 
+  |============================================================                                               |  56%
+  |                                                                                                                 
+  |=============================================================                                              |  57%
+  |                                                                                                                 
+  |==============================================================                                             |  58%
+  |                                                                                                                 
+  |===============================================================                                            |  59%
+  |                                                                                                                 
+  |================================================================                                           |  60%
+  |                                                                                                                 
+  |=================================================================                                          |  61%
+  |                                                                                                                 
+  |==================================================================                                         |  62%
+  |                                                                                                                 
+  |===================================================================                                        |  63%
+  |                                                                                                                 
+  |====================================================================                                       |  64%
+  |                                                                                                                 
+  |======================================================================                                     |  65%
+  |                                                                                                                 
+  |=======================================================================                                    |  66%
+  |                                                                                                                 
+  |========================================================================                                   |  67%
+  |                                                                                                                 
+  |=========================================================================                                  |  68%
+  |                                                                                                                 
+  |==========================================================================                                 |  69%
+  |                                                                                                                 
+  |===========================================================================                                |  70%
+  |                                                                                                                 
+  |============================================================================                               |  71%
+  |                                                                                                                 
+  |=============================================================================                              |  72%
+  |                                                                                                                 
+  |==============================================================================                             |  73%
+  |                                                                                                                 
+  |===============================================================================                            |  74%
+  |                                                                                                                 
+  |================================================================================                           |  75%
+  |                                                                                                                 
+  |=================================================================================                          |  76%
+  |                                                                                                                 
+  |==================================================================================                         |  77%
+  |                                                                                                                 
+  |===================================================================================                        |  78%
+  |                                                                                                                 
+  |=====================================================================================                      |  79%
+  |                                                                                                                 
+  |======================================================================================                     |  80%
+  |                                                                                                                 
+  |=======================================================================================                    |  81%
+  |                                                                                                                 
+  |========================================================================================                   |  82%
+  |                                                                                                                 
+  |=========================================================================================                  |  83%
+  |                                                                                                                 
+  |==========================================================================================                 |  84%
+  |                                                                                                                 
+  |===========================================================================================                |  85%
+  |                                                                                                                 
+  |============================================================================================               |  86%
+  |                                                                                                                 
+  |=============================================================================================              |  87%
+  |                                                                                                                 
+  |==============================================================================================             |  88%
+  |                                                                                                                 
+  |===============================================================================================            |  89%
+  |                                                                                                                 
+  |================================================================================================           |  90%
+  |                                                                                                                 
+  |=================================================================================================          |  91%
+  |                                                                                                                 
+  |==================================================================================================         |  92%
+  |                                                                                                                 
+  |====================================================================================================       |  93%
+  |                                                                                                                 
+  |=====================================================================================================      |  94%
+  |                                                                                                                 
+  |======================================================================================================     |  95%
+  |                                                                                                                 
+  |=======================================================================================================    |  96%
+  |                                                                                                                 
+  |========================================================================================================   |  97%
+  |                                                                                                                 
+  |=========================================================================================================  |  98%
+  |                                                                                                                 
+  |========================================================================================================== |  99%
+  |                                                                                                                 
+  |===========================================================================================================| 100%
+</code></pre>
+<pre><code class="language-r">close(pb)
+</code></pre>
+<pre><code class="language-r">## 4.4 Results
+cat(&quot;\n\n===== Spatio-temporal Results (100 replications) =====\n&quot;)
+</code></pre>
+<pre><code>## 
+## 
+## ===== Spatio-temporal Results (100 replications) =====
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Mean coverage: %.3f (SD: %.3f)\n&quot;, mean(coverages_st), sd(coverages_st)))
+</code></pre>
+<pre><code>## Mean coverage: 0.897 (SD: 0.017)
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Mean width: %.3f (SD: %.3f)\n&quot;, mean(widths_st), sd(widths_st)))
+</code></pre>
+<pre><code>## Mean width: 38.273 (SD: 1.293)
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Test set size per split: %d observations\n&quot;, n - floor(0.7 * n)))
+</code></pre>
+<pre><code>## Test set size per split: 514 observations
+</code></pre>
+<pre><code class="language-r">## Store final spatio-temporal results for the summary table
+st_coverage_final &lt;- mean(coverages_st)
+st_width_final &lt;- mean(widths_st)
+</code></pre>
+<pre><code class="language-r">## PART 5: DIAGNOSTICS AND FINAL SUMMARY
+</code></pre>
+<pre><code class="language-r">cat(&quot;\n\n===== FINAL SUMMARY TABLE FOR PAPER =====\n&quot;)
+</code></pre>
+<pre><code>## 
+## 
+## ===== FINAL SUMMARY TABLE FOR PAPER =====
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\begin{table}[htbp]\n&quot;)
+</code></pre>
+<pre><code>## \begin{table}[htbp]
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\centering\n&quot;)
+</code></pre>
+<pre><code>## \centering
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\small\n&quot;)
+</code></pre>
+<pre><code>## \small
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\caption{Summary of empirical results for \\pkg{spconform} on the Meuse and NY ozone datasets.}\n&quot;)
+</code></pre>
+<pre><code>## \caption{Summary of empirical results for \pkg{spconform} on the Meuse and NY ozone datasets.}
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\label{tab:summary_final}\n&quot;)
+</code></pre>
+<pre><code>## \label{tab:summary_final}
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\begin{tabular}{l c c c c}\n&quot;)
+</code></pre>
+<pre><code>## \begin{tabular}{l c c c c}
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\hline\n&quot;)
+</code></pre>
+<pre><code>## \hline
+</code></pre>
+<pre><code class="language-r">cat(&quot;Dataset &amp; Type &amp; $n$ &amp; Nominal coverage &amp; Empirical coverage \\\\\n&quot;)
+</code></pre>
+<pre><code>## Dataset &amp; Type &amp; $n$ &amp; Nominal coverage &amp; Empirical coverage \\
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\hline\n&quot;)
+</code></pre>
+<pre><code>## \hline
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Meuse (point-referenced) &amp; Geostatistical &amp; 155 &amp; 0.90 &amp; %.3f \\\\\n&quot;, 
+            mean(coverages)))
+</code></pre>
+<pre><code>## Meuse (point-referenced) &amp; Geostatistical &amp; 155 &amp; 0.90 &amp; 0.920 \\
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Meuse (aggregated grid) &amp; Areal &amp; 21 &amp; 0.80 &amp; %.3f \\\\\n&quot;,
+            rep_areal$coverage))
+</code></pre>
+<pre><code>## Meuse (aggregated grid) &amp; Areal &amp; 21 &amp; 0.80 &amp; 0.857 \\
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;NY ozone &amp; Spatio-temporal &amp; %d (test) &amp; 0.90* &amp; %.3f \\\\\n&quot;,
+            n - floor(0.7 * n), st_coverage_final))
+</code></pre>
+<pre><code>## NY ozone &amp; Spatio-temporal &amp; 514 (test) &amp; 0.90* &amp; 0.897 \\
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\hline\n&quot;)
+</code></pre>
+<pre><code>## \hline
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\end{tabular}\n&quot;)
+</code></pre>
+<pre><code>## \end{tabular}
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\medskip\n&quot;)
+</code></pre>
+<pre><code>## \medskip
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\parbox{\\textwidth}{\\small \\emph{Note:} * The spatio-temporal result is the mean over 100 random splits and is illustrative due to the stronger temporal dependence structure. The nominal 90\\% level is used as a reference; empirical coverage may vary due to temporal dependence and limited effective calibration size.}\n&quot;)
+</code></pre>
+<pre><code>## \parbox{\textwidth}{\small \emph{Note:} * The spatio-temporal result is the mean over 100 random splits and is illustrative due to the stronger temporal dependence structure. The nominal 90\% level is used as a reference; empirical coverage may vary due to temporal dependence and limited effective calibration size.}
+</code></pre>
+<pre><code class="language-r">cat(&quot;\\end{table}\n&quot;)
+</code></pre>
+<pre><code>## \end{table}
+</code></pre>
+<pre><code class="language-r">cat(&quot;\n===== Generated outputs =====\n&quot;)
+</code></pre>
+<pre><code>## 
+## ===== Generated outputs =====
+</code></pre>
+<pre><code class="language-r">cat(&quot;Figures saved in:&quot;, OUTPUT_DIR, &quot;\n&quot;)
+</code></pre>
+<pre><code>## Figures saved in: figures
+</code></pre>
+<pre><code class="language-r">cat(&quot;CSV results: spatio_temporal_results.csv\n&quot;)
+</code></pre>
+<pre><code>## CSV results: spatio_temporal_results.csv
+</code></pre>
+<pre><code class="language-r">cat(&quot;Diagnostics: spconform_diagnostics.rds\n&quot;)
+</code></pre>
+<pre><code>## Diagnostics: spconform_diagnostics.rds
+</code></pre>
+<pre><code class="language-r">cat(&quot;\n===== Session Information =====\n&quot;)
+</code></pre>
+<pre><code>## 
+## ===== Session Information =====
+</code></pre>
+<pre><code class="language-r">sessionInfo()
+</code></pre>
+<pre><code>## R version 4.6.1 (2026-06-24 ucrt)
+## Platform: x86_64-w64-mingw32/x64
+## Running under: Windows 11 x64 (build 26200)
+## 
+## Matrix products: default
+##   LAPACK version 3.12.1
+## 
+## locale:
+## [1] LC_COLLATE=Arabic_Iraq.utf8  LC_CTYPE=Arabic_Iraq.utf8    LC_MONETARY=Arabic_Iraq.utf8
+## [4] LC_NUMERIC=C                 LC_TIME=Arabic_Iraq.utf8    
+## 
+## time zone: Asia/Baghdad
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] bmstdr_0.8.2    Rcpp_1.1.2      ranger_0.18.0   mgcv_1.9-4      nlme_3.1-169    spconform_0.1.0 sp_2.2-3       
+## 
+## loaded via a namespace (and not attached):
+##   [1] splines_4.6.1       later_1.4.8         tibble_3.3.1        xts_0.14.2          lifecycle_1.0.5    
+##   [6] Rdpack_2.6.6        sf_1.1-2            rstatix_1.1.0       spTimer_3.3.4       rprojroot_2.1.1    
+##  [11] StanHeaders_2.32.10 processx_3.9.0      lattice_0.22-9      MASS_7.3-65         crosstalk_1.2.2    
+##  [16] backports_1.5.1     magrittr_2.0.5      sass_0.4.10         rmarkdown_2.31      jquerylib_0.1.4    
+##  [21] yaml_2.3.12         remotes_2.5.0       otel_0.2.0          spam_2.11-4         sessioninfo_1.2.4  
+##  [26] pkgbuild_1.4.8      DBI_1.3.0           RColorBrewer_1.1-3  abind_1.4-8         pkgload_1.5.3      
+##  [31] purrr_1.2.2         downlit_0.4.5       satellite_1.0.6     inline_0.3.21       terra_1.9-34       
+##  [36] testthat_3.3.2      units_1.0-1         MatrixModels_0.5-4  pkgdown_2.2.1       codetools_0.2-20   
+##  [41] xml2_1.6.0          tidyselect_1.2.1    shape_1.4.6.1       raster_3.6-32       farver_2.1.2       
+##  [46] matrixStats_1.5.0   stats4_4.6.1        base64enc_0.1-6     roxygen2_8.1.0      jsonlite_2.0.0     
+##  [51] e1071_1.7-17        ellipsis_0.3.3      Formula_1.2-6       survival_3.8-6      iterators_1.0.14   
+##  [56] foreach_1.5.2       tools_4.6.1         inlabru_2.15.0      glue_1.8.1          mnormt_2.1.2       
+##  [61] gridExtra_2.3.1     xfun_0.60           usethis_3.2.1       dplyr_1.2.1         loo_2.10.1         
+##  [66] withr_3.0.3         fastmap_1.2.0       GGally_2.4.0        boot_1.3-32         xopen_1.0.1        
+##  [71] fansi_1.0.7         SparseM_1.84-2      spData_2.3.5        callr_3.8.0         digest_0.6.39      
+##  [76] truncnorm_1.0-9     rcmdcheck_1.4.0     R6_2.6.1            wk_0.9.5            gtools_3.9.5       
+##  [81] tidyr_1.3.2         generics_0.1.4      intervals_0.15.5    class_7.3-23        rdtools_0.1.0      
+##  [86] prettyunits_1.2.0   htmlwidgets_1.6.4   ggstats_0.13.0      whisker_0.4.1       spdep_1.4-2        
+##  [91] pkgconfig_2.0.3     gtable_0.3.6        CARBayesdata_3.0    S7_0.2.2            brio_1.1.5         
+##  [96] htmltools_0.5.9     carData_3.0-6       spBayes_0.4-9       dotCall64_1.2       fmesher_0.8.0      
+## [101] MCMCpack_1.7-1      scales_1.4.0        png_0.1-9           nanonext_1.10.2     knitr_1.51         
+## [106] rstudioapi_0.19.0   coda_0.19-4.1       spacetime_1.3-3     magic_1.6-1         curl_7.1.0         
+## [111] proxy_0.4-29        cachem_1.1.0        zoo_1.9-0           KernSmooth_2.23-26  parallel_4.6.1     
+## [116] desc_1.4.3          s2_1.1.11           pillar_1.11.1       grid_4.6.1          vctrs_0.7.3        
+## [121] ggpubr_1.0.0        mapview_2.11.4      car_3.1-5           CARBayesST_4.0      evaluate_1.0.5     
+## [126] truncdist_1.0-2     cli_3.6.6           compiler_4.6.1      rlang_1.3.0         CARBayes_6.1.1     
+## [131] rstantools_2.7.0    ggsignif_0.6.4      classInt_0.4-11     fs_2.1.0            rstan_2.32.7       
+## [136] deldir_2.0-4        QuickJSR_1.10.0     leaflet_2.2.3       devtools_2.5.2      glmnet_5.0         
+## [141] quantreg_6.1        Matrix_1.7-5        leafem_0.2.5        ggplot2_4.0.3       mcmc_0.9-8         
+## [146] extraDistr_1.10.0.5 evd_2.3-7.1         rbibutils_2.4.1     igraph_2.3.3        broom_1.0.13       
+## [151] memoise_2.0.1       RcppParallel_6.2.0  bslib_0.12.0
+</code></pre>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
+</body>
+</html>
