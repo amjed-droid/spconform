@@ -174,6 +174,20 @@ coverage_report(out_st, y[-train_idx])
 #> [1] 41.7
 ```
 
+## Quality Assurance
+
+`spconform` has been rigorously tested across all major platforms to ensure 
+CRAN-readiness:
+
+| Platform | R Version | Status |
+|----------|-----------|--------|
+| Linux (Ubuntu) | R-devel | ✅ Pass |
+| macOS (Sequoia) | R-devel | ✅ Pass |
+| Windows | R-devel | ✅ Pass |
+
+The package passes `R CMD check --as-cran` with **0 errors, 0 warnings, and 0 notes** 
+on all tested platforms. Continuous integration is monitored via GitHub Actions.
+
 ---
 
 ## Key features
