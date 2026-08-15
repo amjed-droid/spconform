@@ -1,25 +1,32 @@
+## Initial Submission: spconform 0.1.0
+
+This is the initial submission of the 'spconform' package to CRAN (Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R).
+
 ## Test environments
 
-- Local: Windows 11, R 4.6.1
-- win-builder: R-devel, Windows
-- GitHub Actions: Ubuntu-latest, R-devel
-- GitHub Actions: macOS-latest (Sequoia 15.7.7), R-devel
-- GitHub Actions: Windows-latest, R-devel
-- R-hub v2: Linux, Windows, macOS (with `donttest`)
+* Local: Windows 11 x64 (build 26200), R 4.6.1 ucrt
+* win-builder: Windows Server 2022, R release (4.6.1)
+* win-builder: Windows Server 2022, R Under development (unstable)
+* GitHub Actions:
+  - Ubuntu Linux (R-release, R-devel)
+  - macOS (R-release, R-devel)
+  - Windows (R-release, R-devel)
+* R-hub v2: Linux, macOS, and Windows platforms
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+0 errors | 0 warnings | 1 note
+
+* Status: 1 NOTE (CRAN incoming feasibility check)
+
+### Notes on CRAN check:
+
+1. **New submission**:
+   - This is a new submission to CRAN.
+
+2. **Possibly misspelled words in DESCRIPTION**:
+   - The words flagged by the spellchecker (`Spatio`, `spatio`, `geostatistical`, `exchangeability`) are standard mathematical and spatial statistical terminology, correctly spelled in their respective contexts.
 
 ## Reverse dependencies
 
-There are no reverse dependencies.
-
-## Additional comments
-
-This is the first submission of `spconform` to CRAN.
-
-The package has been tested extensively across all major CRAN platforms 
-(Linux, macOS, Windows) via both GitHub Actions and R-hub v2 to ensure 
-robust, portable behaviour. All checks pass cleanly with 0 errors, 
-0 warnings, and 0 notes.
+There are currently no reverse dependencies for this initial release.
