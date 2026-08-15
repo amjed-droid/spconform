@@ -1,33 +1,35 @@
-## =============================================================
-## spconform - Reproducible Analysis Script 
-## Generates all figures, tables, and results 
-## =============================================================
+## =============================================================================
+## spconform - Master Reproducible Analysis Script 
+## Generates all figures (fig1.pdf - fig8.pdf), tables, and benchmark outputs 
+## =============================================================================
 
-## ---- Setup ----
 options(stringsAsFactors = FALSE)
 
 SEED <- 123
 set.seed(SEED)
 
 OUTPUT_DIR <- "figures"
-if (!dir.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR)
+if (!dir.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR, recursive = TRUE)
 
 library(sp)
 library(spconform)
-library(mgcv)      # For GAM
-library(ranger)    # For Random Forest
-library(bmstdr)    # For NY ozone data
+library(mgcv)       # For Spatio-temporal GAMs
+library(ranger)     # For Random Forest benchmarks
+library(bmstdr)     # For New York Ozone dataset
 
-## -------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## PART 1: MEUSE RIVER DATA - GEOSTATISTICAL ILLUSTRATION
-## -------------------------------------------------------------
+## -----------------------------------------------------------------------------
 
-## 1.1 Load data and define predictors
-data(meuse)
+cat("\n============================================================\n")
+cat("  PART 1: Meuse River Data - Geostatistical Analysis        \n")
+cat("============================================================\n")
+
+## 1.1 Load data and define base predictor
+data(meuse, package = "sp")
 s <- as.matrix(meuse[, c("x", "y")])
 y <- log(meuse$zinc)
 
-## Point predictor: quadratic trend surface
 pred_fun <- function(s_train, y_train, s_new) {
   fit <- lm(y_train ~ s_train[, 1] + s_train[, 2] +
               I(s_train[, 1]^2) + I(s_train[, 2]^2))
@@ -36,7 +38,7 @@ pred_fun <- function(s_train, y_train, s_new) {
 }
 
 ## 1.2 Figure 1: Spatial layout
-pdf(file.path(OUTPUT_DIR, "fig1_meuse_locations.pdf"), width = 6, height = 5)
+pdf(file.path(OUTPUT_DIR, "fig1.pdf"), width = 6, height = 5)
 plot(meuse$x, meuse$y,
      col = rgb(0.2, 0.4, 0.8, 0.5), pch = 19,
      xlab = "X coordinate", ylab = "Y coordinate",
@@ -53,17 +55,18 @@ s_test  <- s[-idx, ]; y_test  <- y[-idx]
 out <- scp_geostatistical(s_train, y_train, s_test, pred_fun,
                           alpha = 0.1, seed = SEED)
 
-## Figure 2: geostatistical prediction intervals
-pdf(file.path(OUTPUT_DIR, "fig2_meuse_geostat_intervals.pdf"), width = 7, height = 5)
+## Figure 2: Single-split prediction intervals
+pdf(file.path(OUTPUT_DIR, "fig2.pdf"), width = 7, height = 5)
 if (any(is.na(out$lower)) || any(is.na(out$upper))) {
-  warning("NA values found in prediction intervals. Filtering them out.")
   valid <- !is.na(out$lower) & !is.na(out$upper)
-  out$lower <- out$lower[valid]
-  out$upper <- out$upper[valid]
-  out$pred <- out$pred[valid]
-  y_test <- y_test[valid]
+  out_plot <- out
+  out_plot$lower <- out$lower[valid]
+  out_plot$upper <- out$upper[valid]
+  out_plot$pred  <- out$pred[valid]
+  plot(out_plot, y_true = y_test[valid])
+} else {
+  plot(out, y_true = y_test)
 }
-plot(out, y_true = y_test)
 dev.off()
 
 ## 1.4 Monte Carlo: 50 random splits
@@ -72,18 +75,18 @@ coverages <- numeric(50)
 widths    <- numeric(50)
 
 for (i in 1:50) {
-  idx_i <- sample(n, floor(0.7 * n))
-  s_tr <- s[idx_i, ]; y_tr <- y[idx_i]
-  s_te <- s[-idx_i, ]; y_te <- y[-idx_i]
-  out_i <- scp_geostatistical(s_tr, y_tr, s_te, pred_fun,
-                              alpha = 0.1, seed = i)
-  rep_i <- coverage_report(out_i, y_te)
+  idx_i  <- sample(n, floor(0.7 * n))
+  s_tr   <- s[idx_i, ]; y_tr <- y[idx_i]
+  s_te   <- s[-idx_i, ]; y_te <- y[-idx_i]
+  out_i  <- scp_geostatistical(s_tr, y_tr, s_te, pred_fun,
+                               alpha = 0.1, seed = i)
+  rep_i  <- coverage_report(out_i, y_te)
   coverages[i] <- rep_i$coverage
-  widths[i] <- rep_i$mean_width
+  widths[i]    <- rep_i$mean_width
 }
 
-## Figure 3: Coverage histogram
-pdf(file.path(OUTPUT_DIR, "fig3_meuse_coverage_hist.pdf"), width = 6, height = 5)
+## Figure 3: Coverage histogram across 50 splits
+pdf(file.path(OUTPUT_DIR, "fig3.pdf"), width = 6, height = 5)
 hist(coverages, breaks = 15, col = "lightblue", border = "white",
      main = "Empirical Coverage Across 50 Random Splits",
      xlab = "Empirical Coverage", xlim = c(0.7, 1))
@@ -95,26 +98,51 @@ dev.off()
 ## 1.5 Figure 4: Spatial distribution of interval width
 plot_df <- data.frame(x = s_test[, 1], y = s_test[, 2],
                       width = out$upper - out$lower)
-pdf(file.path(OUTPUT_DIR, "fig4_meuse_width_spatial.pdf"), width = 6, height = 5)
+pdf(file.path(OUTPUT_DIR, "fig4.pdf"), width = 6, height = 5)
 plot(plot_df$x, plot_df$y, cex = plot_df$width, pch = 19,
      col = rgb(0.2, 0.4, 0.8, 0.5),
      xlab = "X coordinate", ylab = "Y coordinate",
      main = "Spatial Distribution of Interval Width")
 dev.off()
 
-## 1.6 Summary statistics
-cat("\n===== Meuse Geostatistical Results =====\n")
+## 1.6 Summary statistics for Geostatistical section
 cat(sprintf("Single split coverage: %.3f\n", coverage_report(out, y_test)$coverage))
 cat(sprintf("Mean coverage (50 splits): %.3f (SD: %.3f)\n", 
             mean(coverages), sd(coverages)))
 cat(sprintf("Mean width (50 splits): %.3f\n", mean(widths)))
 
 
-## -------------------------------------------------------------
-## PART 2: MEUSE RIVER DATA - AREAL ILLUSTRATION
-## -------------------------------------------------------------
+## -----------------------------------------------------------------------------
+## PART 2: DIAGNOSTIC REPORT (FIGURE 5)
+## -----------------------------------------------------------------------------
 
-## 2.1 Aggregate to 6x6 grid
+cat("\n============================================================\n")
+cat("  PART 2: Spatial Diagnostics (Figure 5)                    \n")
+cat("============================================================\n")
+
+pdf(file.path(OUTPUT_DIR, "fig8.pdf"), width = 8.5, height = 7)
+diag_meuse <- diagnose(
+  object  = out,
+  y_true  = y_test,
+  s_test  = s_test,
+  n_bins  = 4,
+  plot    = TRUE
+)
+dev.off()
+
+saveRDS(diag_meuse, file = "spconform_diagnostics.rds")
+cat("Figure 5 (diagnostics) saved to:", file.path(OUTPUT_DIR, "fig8.pdf"), "\n")
+
+
+## -----------------------------------------------------------------------------
+## PART 3: MEUSE RIVER DATA - AREAL ILLUSTRATION
+## -----------------------------------------------------------------------------
+
+cat("\n============================================================\n")
+cat("  PART 3: Meuse River Data - Areal Lattice Analysis         \n")
+cat("============================================================\n")
+
+## 3.1 Aggregate Meuse to 6x6 grid
 xbreaks <- seq(min(meuse$x), max(meuse$x), length.out = 7)
 ybreaks <- seq(min(meuse$y), max(meuse$y), length.out = 7)
 
@@ -141,52 +169,46 @@ for (i in 1:n_cells) {
   }
 }
 
-## 2.2 Areal conformal prediction
+## 3.2 Areal conformal prediction
 out2 <- scp_areal(agg$y, adjacency = adj, alpha = 0.2, decay = 0.5)
 
-## Figure 5: Areal prediction intervals
-pdf(file.path(OUTPUT_DIR, "fig5_meuse_areal_intervals.pdf"), width = 7, height = 5)
+## Figure 6 (in paper): Areal prediction intervals
+pdf(file.path(OUTPUT_DIR, "fig5.pdf"), width = 7, height = 5)
 if (any(is.na(out2$lower)) || any(is.na(out2$upper))) {
-  warning("NA values found in areal prediction intervals. Filtering them out.")
   valid <- !is.na(out2$lower) & !is.na(out2$upper)
-  out2$lower <- out2$lower[valid]
-  out2$upper <- out2$upper[valid]
-  out2$pred <- out2$pred[valid]
-  y_true_areal <- agg$y[valid]
-  plot(out2, y_true = y_true_areal)
+  out2_plot <- out2
+  out2_plot$lower <- out2$lower[valid]
+  out2_plot$upper <- out2$upper[valid]
+  out2_plot$pred  <- out2$pred[valid]
+  plot(out2_plot, y_true = agg$y[valid])
 } else {
   plot(out2, y_true = agg$y)
 }
 dev.off()
 
-## Figure 6: Width comparison
-pdf(file.path(OUTPUT_DIR, "fig6_meuse_width_comparison.pdf"), width = 6, height = 5)
-geo_width <- out$upper - out$lower
+## Figure 7 (in paper): Interval width comparison (Geostatistical vs Areal)
+pdf(file.path(OUTPUT_DIR, "fig6.pdf"), width = 6, height = 5)
+geo_width   <- out$upper - out$lower
 areal_width <- out2$upper - out2$lower
-geo_width <- geo_width[!is.na(geo_width)]
+geo_width   <- geo_width[!is.na(geo_width)]
 areal_width <- areal_width[!is.na(areal_width)]
+
 if (length(geo_width) > 0 && length(areal_width) > 0) {
   boxplot(list(Geostatistical = geo_width,
-               Areal = areal_width),
+               Areal           = areal_width),
           main = "Interval Width Comparison",
           ylab = "Interval Width",
-          col = c("lightblue", "lightgreen"))
-} else {
-  plot.new()
-  text(0.5, 0.5, "Insufficient data for boxplot")
+          col  = c("lightblue", "lightgreen"))
 }
 dev.off()
 
-## Areal summary statistics
-cat("\n===== Meuse Areal Results =====\n")
+## Summary statistics for Areal section
 if (any(is.na(out2$lower)) || any(is.na(out2$upper))) {
-  warning("NA values in areal intervals. Computing coverage on complete cases only.")
   valid <- !is.na(out2$lower) & !is.na(out2$upper)
-  y_true_areal <- agg$y[valid]
   rep_areal <- coverage_report(
     list(pred = out2$pred[valid], lower = out2$lower[valid], 
          upper = out2$upper[valid], alpha = out2$alpha),
-    y_true_areal
+    agg$y[valid]
   )
 } else {
   rep_areal <- coverage_report(out2, agg$y)
@@ -195,13 +217,37 @@ cat(sprintf("Areal coverage: %.3f\n", rep_areal$coverage))
 cat(sprintf("Areal mean width: %.3f\n", rep_areal$mean_width))
 
 
-## -------------------------------------------------------------
-## PART 3: MODEL COMPARISON (SENSITIVITY ANALYSIS)
-## -------------------------------------------------------------
+## -----------------------------------------------------------------------------
+## PART 4: HELD-OUT AREAL EVALUATION (FIGURE 8)
+## -----------------------------------------------------------------------------
 
-cat("\n===== Running Model Comparison (100 splits) =====\n")
+cat("\n============================================================\n")
+cat("  PART 4: Held-out Areal Evaluation (Figure 8)              \n")
+cat("============================================================\n")
 
-## Define predictors
+script_path <- file.path("inst", "scripts", "eval_areal_heldout.R")
+if (!file.exists(script_path)) {
+  script_path <- system.file("scripts", "eval_areal_heldout.R", package = "spconform")
+}
+
+if (file.exists(script_path)) {
+  pdf(file.path(OUTPUT_DIR, "fig7.pdf"), width = 8.5, height = 4.5)
+  source(script_path, local = TRUE)
+  dev.off()
+  cat("Figure 8 saved to:", file.path(OUTPUT_DIR, "fig7.pdf"), "\n")
+} else {
+  warning("eval_areal_heldout.R not found in expected paths!")
+}
+
+
+## -----------------------------------------------------------------------------
+## PART 5: SENSITIVITY ANALYSIS: MODEL COMPARISON (100 SPLITS)
+## -----------------------------------------------------------------------------
+
+cat("\n============================================================\n")
+cat("  PART 5: Sensitivity Analysis (Linear vs GAM vs RF)        \n")
+cat("============================================================\n")
+
 pred_fun_lm <- function(s_train, y_train, s_new) {
   fit <- lm(y_train ~ s_train[, 1] + s_train[, 2] +
               I(s_train[, 1]^2) + I(s_train[, 2]^2))
@@ -224,12 +270,10 @@ pred_fun_rf <- function(s_train, y_train, s_new) {
   predict(fit, data = new_df)$predictions
 }
 
-## Run comparison
 set.seed(SEED)
 n_splits <- 100
-n <- nrow(s)
 
-results_lm <- data.frame(coverage = numeric(n_splits), width = numeric(n_splits))
+results_lm  <- data.frame(coverage = numeric(n_splits), width = numeric(n_splits))
 results_gam <- data.frame(coverage = numeric(n_splits), width = numeric(n_splits))
 results_rf  <- data.frame(coverage = numeric(n_splits), width = numeric(n_splits))
 
@@ -242,74 +286,47 @@ for (i in 1:n_splits) {
   out_lm <- scp_geostatistical(s_train, y_train, s_test, pred_fun_lm, alpha = 0.1, seed = i)
   rep_lm <- coverage_report(out_lm, y_test)
   results_lm$coverage[i] <- rep_lm$coverage
-  results_lm$width[i] <- rep_lm$mean_width
+  results_lm$width[i]    <- rep_lm$mean_width
   
   out_gam <- scp_geostatistical(s_train, y_train, s_test, pred_fun_gam, alpha = 0.1, seed = i)
   rep_gam <- coverage_report(out_gam, y_test)
   results_gam$coverage[i] <- rep_gam$coverage
-  results_gam$width[i] <- rep_gam$mean_width
+  results_gam$width[i]    <- rep_gam$mean_width
   
   out_rf <- scp_geostatistical(s_train, y_train, s_test, pred_fun_rf, alpha = 0.1, seed = i)
   rep_rf <- coverage_report(out_rf, y_test)
   results_rf$coverage[i] <- rep_rf$coverage
-  results_rf$width[i] <- rep_rf$mean_width
+  results_rf$width[i]    <- rep_rf$mean_width
   
   setTxtProgressBar(pb, i)
 }
 close(pb)
 
-## Print results
-cat("\n\n===== Model Comparison Results (Target: 90%) =====\n")
-cat(sprintf("LM: coverage = %.3f (SD: %.3f), width = %.3f (SD: %.3f)\n",
-            mean(results_lm$coverage), sd(results_lm$coverage),
-            mean(results_lm$width), sd(results_lm$width)))
-cat(sprintf("GAM: coverage = %.3f (SD: %.3f), width = %.3f (SD: %.3f)\n",
-            mean(results_gam$coverage), sd(results_gam$coverage),
-            mean(results_gam$width), sd(results_gam$width)))
-cat(sprintf("RF: coverage = %.3f (SD: %.3f), width = %.3f (SD: %.3f)\n",
-            mean(results_rf$coverage), sd(results_rf$coverage),
-            mean(results_rf$width), sd(results_rf$width)))
-
-## Generate LaTeX table
-cat("\n\n===== LaTeX Table for Appendix =====\n")
-cat("\\begin{table}[htbp]\n\\centering\\small\n")
-cat("\\caption{Performance of \\code{scp\\_geostatistical()} with different base predictors on the Meuse dataset. Target coverage is 0.90. Results are averaged over 100 random 70/30 splits.}\n")
-cat("\\label{tab:models}\n")
-cat("\\begin{tabular}{l c c c}\n\\hline\n")
-cat("Base predictor & Mean coverage & Mean interval width & SD (coverage) \\\\\n\\hline\n")
-cat(sprintf("Linear model (quadratic trend) & %.3f & %.3f & %.3f \\\\\n",
-            mean(results_lm$coverage), mean(results_lm$width), sd(results_lm$coverage)))
-cat(sprintf("GAM (smooth spatial terms) & %.3f & \\textbf{%.3f} & %.3f \\\\\n",
-            mean(results_gam$coverage), mean(results_gam$width), sd(results_gam$coverage)))
-cat(sprintf("Random Forest & %.3f & %.3f & %.3f \\\\\n",
-            mean(results_rf$coverage), mean(results_rf$width), sd(results_rf$coverage)))
-cat("\\hline\n\\end{tabular}\n")
-cat("\\medskip\n")
-cat("\\parbox{\\textwidth}{\\small \\emph{Note:} All three predictors maintain empirical coverage close to the nominal 90\\% level, demonstrating the stability of empirical coverage across different base predictors. The GAM yields the narrowest intervals, reflecting its superior ability to capture the smooth spatial structure of the zinc concentration surface.}\n")
-cat("\\end{table}\n")
+cat("\nLM:  coverage = ", round(mean(results_lm$coverage), 3), " (SD: ", round(sd(results_lm$coverage), 3), "), width = ", round(mean(results_lm$width), 3), "\n", sep = "")
+cat("GAM: coverage = ", round(mean(results_gam$coverage), 3), " (SD: ", round(sd(results_gam$coverage), 3), "), width = ", round(mean(results_gam$width), 3), "\n", sep = "")
+cat("RF:  coverage = ", round(mean(results_rf$coverage), 3), " (SD: ", round(sd(results_rf$coverage), 3), "), width = ", round(mean(results_rf$width), 3), "\n", sep = "")
 
 
-## -------------------------------------------------------------
-## PART 4: SPATIO-TEMPORAL APPLICATION (NY OZONE DATA)
-## -------------------------------------------------------------
+## -----------------------------------------------------------------------------
+## PART 6: SPATIO-TEMPORAL APPLICATION (NY OZONE DATA)
+## -----------------------------------------------------------------------------
 
-cat("\n\n===== Spatio-temporal Application (NY Ozone) =====\n")
+cat("\n============================================================\n")
+cat("  PART 6: Spatio-temporal Application (NY Ozone)            \n")
+cat("============================================================\n")
 
-## 4.1 Load and prepare data
-data("nysptime")
+data("nysptime", package = "bmstdr")
 df <- nysptime[complete.cases(nysptime[, c("utmx", "utmy", "y8hrmax", "Day", "Month")]), ]
 
-## Convert Day (1-31) to a continuous time index (1-62)
+## Continuous time index (1-62)
 df$day_idx <- ifelse(df$Month == 7, df$Day, 31 + df$Day)
 
-s <- as.matrix(df[, c("utmx", "utmy")])
-y <- df$y8hrmax
-t <- df$day_idx  # Use continuous index instead of Day
+s_st <- as.matrix(df[, c("utmx", "utmy")])
+y_st <- df$y8hrmax
+t_st <- df$day_idx
 
-## Create 3D coordinates (spatial + temporal)
-s_3d <- cbind(s, t)
+s_3d <- cbind(s_st, t_st)
 
-## 4.2 Define GAM spatio-temporal predictor (using continuous time)
 pred_fun_gam_3d <- function(s_train, y_train, s_new) {
   train_df <- data.frame(
     x = s_train[, 1], y = s_train[, 2],
@@ -322,89 +339,73 @@ pred_fun_gam_3d <- function(s_train, y_train, s_new) {
   as.numeric(predict(fit, newdata = new_df))
 }
 
-## 4.3 100 random splits for stable estimate
-set.seed(SEED)
-n <- nrow(s_3d)
-n_reps <- 100
-coverages_st <- numeric(n_reps)
-widths_st <- numeric(n_reps)
+n_st <- nrow(s_3d)
+n_reps_st <- 100
+coverages_st <- numeric(n_reps_st)
+widths_st    <- numeric(n_reps_st)
 
-cat("Running 100 spatio-temporal replications...\n")
-pb <- txtProgressBar(min = 0, max = n_reps, style = 3)
-
-for (i in 1:n_reps) {
+pb <- txtProgressBar(min = 0, max = n_reps_st, style = 3)
+for (i in 1:n_reps_st) {
   set.seed(i)
-  idx <- sample(n, floor(0.7 * n))
-  
-  s_train_3d <- s_3d[idx, ]
-  y_train <- y[idx]
-  t_train <- t[idx]
-  
-  s_test_3d <- s_3d[-idx, ]
-  y_test <- y[-idx]
-  t_test <- t[-idx]
+  idx_st <- sample(n_st, floor(0.7 * n_st))
   
   out_st <- scp_geostatistical(
-    s_train = s_train_3d,
-    y_train = y_train,
-    s0 = s_test_3d,
-    pred_fun = pred_fun_gam_3d,
-    t_train = t_train,
-    t0 = t_test,
+    s_train            = s_3d[idx_st, ],
+    y_train            = y_st[idx_st],
+    s0                 = s_3d[-idx_st, ],
+    pred_fun           = pred_fun_gam_3d,
+    t_train            = t_st[idx_st],
+    t0                 = t_st[-idx_st],
     temporal_bandwidth = 5,
-    alpha = 0.1,
-    split = 0.5,
-    seed = i
+    alpha              = 0.1,
+    split              = 0.5,
+    seed               = i
   )
   
-  rep <- coverage_report(out_st, y_test)
-  coverages_st[i] <- rep$coverage
-  widths_st[i] <- rep$mean_width
+  rep_st <- coverage_report(out_st, y_st[-idx_st])
+  coverages_st[i] <- rep_st$coverage
+  widths_st[i]    <- rep_st$mean_width
   
   setTxtProgressBar(pb, i)
 }
 close(pb)
 
-## 4.4 Results
-cat("\n\n===== Spatio-temporal Results (100 replications) =====\n")
-cat(sprintf("Mean coverage: %.3f (SD: %.3f)\n", mean(coverages_st), sd(coverages_st)))
-cat(sprintf("Mean width: %.3f (SD: %.3f)\n", mean(widths_st), sd(widths_st)))
-cat(sprintf("Test set size per split: %d observations\n", n - floor(0.7 * n)))
+## Save CSV results
+st_results_df <- data.frame(
+  replication = 1:n_reps_st,
+  coverage    = coverages_st,
+  width       = widths_st
+)
+write.csv(st_results_df, file = "spatio_temporal_results.csv", row.names = FALSE)
 
-## Store final spatio-temporal results for the summary table
-st_coverage_final <- mean(coverages_st)
-st_width_final <- mean(widths_st)
+cat(sprintf("\nMean coverage (NY Ozone): %.3f (SD: %.3f)\n", mean(coverages_st), sd(coverages_st)))
+cat(sprintf("Mean width (NY Ozone):    %.3f (SD: %.3f)\n", mean(widths_st), sd(widths_st)))
 
-## -------------------------------------------------------------
-## PART 5: DIAGNOSTICS AND FINAL SUMMARY
-## -------------------------------------------------------------
 
-cat("\n\n===== FINAL SUMMARY TABLE FOR PAPER =====\n")
+## -----------------------------------------------------------------------------
+## PART 7: FINAL SUMMARY TABLE & SESSION INFO
+## -----------------------------------------------------------------------------
+
+cat("\n============================================================\n")
+cat("  FINAL SUMMARY TABLE                                       \n")
+cat("============================================================\n")
+
 cat("\\begin{table}[htbp]\n")
-cat("\\centering\n")
-cat("\\small\n")
+cat("\\centering\n\\small\n")
 cat("\\caption{Summary of empirical results for \\pkg{spconform} on the Meuse and NY ozone datasets.}\n")
 cat("\\label{tab:summary_final}\n")
-cat("\\begin{tabular}{l c c c c}\n")
-cat("\\hline\n")
-cat("Dataset & Type & $n$ & Nominal coverage & Empirical coverage \\\\\n")
-cat("\\hline\n")
-cat(sprintf("Meuse (point-referenced) & Geostatistical & 155 & 0.90 & %.3f \\\\\n", 
-            mean(coverages)))
-cat(sprintf("Meuse (aggregated grid) & Areal & 21 & 0.80 & %.3f \\\\\n",
-            rep_areal$coverage))
-cat(sprintf("NY ozone & Spatio-temporal & %d (test) & 0.90* & %.3f \\\\\n",
-            n - floor(0.7 * n), st_coverage_final))
-cat("\\hline\n")
-cat("\\end{tabular}\n")
-cat("\\medskip\n")
-cat("\\parbox{\\textwidth}{\\small \\emph{Note:} * The spatio-temporal result is the mean over 100 random splits and is illustrative due to the stronger temporal dependence structure. The nominal 90\\% level is used as a reference; empirical coverage may vary due to temporal dependence and limited effective calibration size.}\n")
-cat("\\end{table}\n")
+cat("\\begin{tabular}{l c c c c}\n\\hline\n")
+cat("Dataset & Type & $n$ & Nominal coverage & Empirical coverage \\\\\n\\hline\n")
+cat(sprintf("Meuse (point-referenced) & Geostatistical  & 155        & 0.90  & %.3f \\\\\n", mean(coverages)))
+cat(sprintf("Meuse (aggregated grid)   & Areal           & 21         & 0.80  & %.3f \\\\\n", rep_areal$coverage))
+cat(sprintf("NY ozone                 & Spatio-temporal & %d (test) & 0.90* & %.3f \\\\\n", n_st - floor(0.7 * n_st), mean(coverages_st)))
+cat("\\hline\n\\end{tabular}\n\\medskip\n")
+cat("\\parbox{\\textwidth}{\\small \\emph{Note:} * The spatio-temporal result is the mean empirical coverage evaluated over 100 independent Monte Carlo data splits ($n_{\\text{test}} = 514$, $\\text{SD} = 0.017$). The mean prediction interval width is $38.273$ ($\\text{SD} = 1.293$).}\n")
+cat("\\end{table}\n\n")
 
-cat("\n===== Generated outputs =====\n")
-cat("Figures saved in:", OUTPUT_DIR, "\n")
-cat("CSV results: spatio_temporal_results.csv\n")
-cat("Diagnostics: spconform_diagnostics.rds\n")
+cat("Outputs successfully saved:\n")
+cat("  - Figures:      ", file.path(OUTPUT_DIR, "fig1.pdf"), "through", file.path(OUTPUT_DIR, "fig8.pdf"), "\n")
+cat("  - Diagnostics:  spconform_diagnostics.rds\n")
+cat("  - CSV Results:  spatio_temporal_results.csv\n\n")
 
-cat("\n===== Session Information =====\n")
 sessionInfo()
