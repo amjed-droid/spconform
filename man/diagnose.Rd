@@ -49,9 +49,17 @@ percentage points, a message is issued suggesting bandwidth
 reduction for tighter intervals.
 }
 \examples{
-\dontrun{
-out <- scp_geostatistical(s_train, y_train, s_test, pred_fun, alpha = 0.1)
-diag <- diagnose(out, y_test, s_test)
-}
+# Minimal reproducible example (< 0.1s execution time)
+set.seed(123)
+s_tr <- matrix(runif(40), ncol = 2)
+y_tr <- rnorm(20)
+s_te <- matrix(runif(20), ncol = 2)
+y_te <- rnorm(10)
+
+pfun <- function(s_train, y_train, s_new) rep(mean(y_train), nrow(s_new))
+
+out <- scp_geostatistical(s_tr, y_tr, s_te, pfun, alpha = 0.1)
+diag_res <- diagnose(out, y_te, s_te, plot = FALSE)
+print(diag_res)
 
 }

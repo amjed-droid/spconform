@@ -12,3 +12,8 @@
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^code\.html$
+^code\.R$
+^spatio_temporal_results\.csv$
+^CRAN-SUBMISSION$
+^CRAN_PACKAGE$

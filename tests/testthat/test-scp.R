@@ -28,11 +28,10 @@ test_that("scp_geostatistical achieves roughly nominal coverage", {
                              alpha = 0.1, seed = 7)
 
   expect_s3_class(out, "spconform")
-  expect_equal(length(out$pred), nrow(s_test))
+  expect_length(out$pred, nrow(s_test))
   expect_true(all(out$upper >= out$lower))
 
   cov <- coverage_report(out, y_test)
-  # allow generous tolerance given small-sample / kernel approx
   expect_gt(cov$coverage, 0.70)
 })
 
@@ -42,8 +41,8 @@ test_that("areal_neighbor_weights gives zero self-weight and decays with hops", 
   for (i in 1:(n - 1)) { adj[i, i + 1] <- 1; adj[i + 1, i] <- 1 }
   w <- areal_neighbor_weights(1, adj)
   expect_equal(w[1], 0)
-  expect_true(w[2] > w[3])
-  expect_true(w[3] > w[4])
+  expect_gt(w[2], w[3])
+  expect_gt(w[3], w[4])
 })
 
 test_that("scp_areal returns valid intervals with default predictor", {
@@ -55,11 +54,33 @@ test_that("scp_areal returns valid intervals with default predictor", {
 
   out <- scp_areal(y, adjacency = adj, alpha = 0.2)
   expect_s3_class(out, "spconform")
-  expect_equal(out$type, "areal")
+  expect_identical(out$type, "areal")
   expect_true(all(out$upper >= out$lower))
 
   cov <- coverage_report(out, y)
   expect_gt(cov$coverage, 0.5)
+})
+
+test_that("diagnose and methods work as expected", {
+  set.seed(123)
+  s_tr <- matrix(runif(40), ncol = 2)
+  y_tr <- rnorm(20)
+  s_te <- matrix(runif(20), ncol = 2)
+  y_te <- rnorm(10)
+
+  pfun <- function(s_train, y_train, s_new) rep(mean(y_train), nrow(s_new))
+  out <- scp_geostatistical(s_tr, y_tr, s_te, pfun, alpha = 0.1)
+
+  diag_res <- diagnose(out, y_te, s_te, plot = FALSE)
+  expect_s3_class(diag_res, "spconform_diagnose")
+  expect_true(!is.null(diag_res$marginal))
+  expect_true(!is.null(diag_res$boundary))
+
+  # Test print, summary, plot methods
+  expect_output(print(out))
+  expect_output(summary(out))
+  expect_output(print(diag_res))
+  expect_silent(plot(out, y_true = y_te))
 })
 
 test_that("input validation errors fire correctly", {

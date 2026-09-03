@@ -17,11 +17,14 @@ matrix). Row/column \code{i0} corresponds to the target unit.}
 from \code{i0}; larger values down-weight distant neighbours more
 aggressively. Defaults to 1.}
 }
-\value{
-A numeric vector of length \code{nrow(adjacency)} with weights
-  based on graph distance from \code{i0} (self-weight is 0, i.e. the
-  target unit is excluded from its own calibration set).
-}
 \description{
 Compute neighbourhood-based weights for areal (lattice) data
+}
+\examples{
+adj <- matrix(c(0, 1, 0,
+                1, 0, 1,
+                0, 1, 0), nrow = 3, byrow = TRUE)
+w <- areal_neighbor_weights(1, adj, decay = 0.5)
+print(w)
+
 }

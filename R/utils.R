@@ -87,9 +87,12 @@ spatial_kernel_weights <- function(s0, s, bandwidth = NULL,
 #'   from \code{i0}; larger values down-weight distant neighbours more
 #'   aggressively. Defaults to 1.
 #'
-#' @return A numeric vector of length \code{nrow(adjacency)} with weights
-#'   based on graph distance from \code{i0} (self-weight is 0, i.e. the
-#'   target unit is excluded from its own calibration set).
+#' @examples
+#' adj <- matrix(c(0, 1, 0,
+#'                 1, 0, 1,
+#'                 0, 1, 0), nrow = 3, byrow = TRUE)
+#' w <- areal_neighbor_weights(1, adj, decay = 0.5)
+#' print(w)
 #'
 #' @export
 areal_neighbor_weights <- function(i0, adjacency, decay = 1) {

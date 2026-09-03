@@ -35,7 +35,7 @@ Suggests:
     sp,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
-URL: https://github.com/amjed-droid/spconform, https://amjed-droid.github.io/spconform/, https://doi.org/10.5281/zenodo.21862025
+URL: https://github.com/amjed-droid/spconform, https://amjed-droid.github.io/spconform/, https://doi.org/10.5281/zenodo.21862024
 BugReports: https://github.com/amjed-droid/spconform/issues
 Config/testthat/edition: 3
 Language: en-US

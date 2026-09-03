@@ -24,27 +24,14 @@ library(spconform)
 
 ## Overview
 
-`spconform` provides distribution-free, finite-sample prediction
-intervals for spatial and spatio-temporal data by relaxing the
-exchangeability assumption of standard conformal prediction. It offers
-two core procedures:
+`spconform` provides distribution-free, finite-sample prediction intervals for spatial and spatio-temporal data by relaxing the exchangeability assumption of standard conformal prediction. It offers two core procedures:
 
-- `scp_geostatistical()` for point-referenced (geostatistical) data,
-  using locally weighted split conformal prediction with spatial (and,
-  optionally, temporal) Gaussian kernels.
-- `scp_areal()` for areal (lattice) data, using a neighbourhood-weighted
-  leave-one-out conformal procedure based on a graph adjacency
-  structure.
+- `scp_geostatistical()` for point-referenced (geostatistical) data, using locally weighted split conformal prediction with spatial (and, optionally, temporal) Gaussian kernels.
+- `scp_areal()` for areal (lattice) data, using a neighbourhood-weighted leave-one-out conformal procedure based on a graph adjacency structure.
 
-Both procedures are **model-agnostic**: you supply your own point
-predictor (a linear model, a GAM, a random forest, kriging, or anything
-else), and `spconform` handles only the conformal calibration layer,
-producing prediction intervals with a guaranteed marginal coverage
-level regardless of whether your predictor is well specified.
+Both procedures are **model-agnostic**: you supply your own point predictor (a linear model, a GAM, a random forest, kriging, or anything else), and `spconform` handles only the conformal calibration layer, producing prediction intervals with a guaranteed marginal coverage level regardless of whether your predictor is well specified.
 
-This vignette illustrates both procedures on the `meuse` river dataset
-(Pebesma and Bivand 2005), a standard geostatistics benchmark
-distributed with the **sp** package.
+This vignette illustrates both procedures on the `meuse` river dataset (Pebesma and Bivand 2005), a standard geostatistics benchmark distributed with the **sp** package.
 
 ```{r}
 library(sp)
@@ -54,10 +41,7 @@ s <- as.matrix(meuse[, c("x", "y")])
 y <- log(meuse$zinc)
 ```
 
-We use log-transformed zinc concentration (ppm) as the response, and
-the projected coordinates as the spatial index. The 155 sampling
-locations trace a diagonal band following the natural course of the
-river.
+We use log-transformed zinc concentration (ppm) as the response, and the projected coordinates as the spatial index. The 155 sampling locations trace a diagonal band following the natural course of the river.
 
 ```{r fig-layout}
 plot(meuse$x, meuse$y, col = rgb(0.2, 0.4, 0.8, 0.5), pch = 19,
@@ -69,10 +53,7 @@ plot(meuse$x, meuse$y, col = rgb(0.2, 0.4, 0.8, 0.5), pch = 19,
 
 ### Defining a point predictor
 
-`scp_geostatistical()` requires a `pred_fun` with signature
-`function(s_train, y_train, s_new)`, returning point predictions at the
-new locations `s_new`. Here we use a deliberately simple quadratic
-trend surface, fit by ordinary least squares:
+`scp_geostatistical()` requires a `pred_fun` with signature `function(s_train, y_train, s_new)`, returning point predictions at the new locations `s_new`. Here we use a deliberately simple quadratic trend surface, fit by ordinary least squares:
 
 ```{r}
 pred_fun <- function(s_train, y_train, s_new) {
@@ -82,14 +63,11 @@ pred_fun <- function(s_train, y_train, s_new) {
 }
 ```
 
-This predictor is intentionally simple; the point of conformal
-prediction is that the resulting intervals remain valid even when the
-underlying model is imperfect.
+This predictor is intentionally simple; the point of conformal prediction is that the resulting intervals remain valid even when the underlying model is imperfect.
 
 ### Fitting the conformal intervals
 
-We split the data 70/30 into training and test sets, and construct 90%
-prediction intervals on the test locations:
+We split the data 70/30 into training and test sets, and construct 90% prediction intervals on the test locations:
 
 ```{r}
 set.seed(1)
@@ -100,12 +78,11 @@ s_train <- s[idx, ]; y_train <- y[idx]
 s_test  <- s[-idx, ]; y_test  <- y[-idx]
 
 out <- scp_geostatistical(s_train, y_train, s_test, pred_fun,
-                           alpha = 0.1, seed = 1)
+                          alpha = 0.1, seed = 1)
 print(out)
 ```
 
-`coverage_report()` compares the intervals against the (here, known)
-true test values:
+`coverage_report()` compares the intervals against the true test values:
 
 ```{r}
 coverage_report(out, y_test)
@@ -113,17 +90,24 @@ coverage_report(out, y_test)
 
 ### Visualizing the intervals
 
-The `plot()` method displays the point predictions, intervals, and
-(optionally) the true values:
+The `plot()` method displays the point predictions, conformal intervals, and the true test values:
 
 ```{r fig-intervals}
 plot(out, y_true = y_test)
 ```
 
+### Spatial diagnostics suite
+
+`spconform` provides a comprehensive multi-panel diagnostic tool `diagnose()` to audit marginal coverage, conditional coverage across spatial strata, boundary effects, and the distribution of nonconformity scores:
+
+```{r fig-diagnostics, fig.width = 7, fig.height = 5.5}
+diag <- diagnose(out, y_true = y_test, s_test = s_test, plot = TRUE)
+print(diag)
+```
+
 ### Assessing stability via Monte Carlo replication
 
-A single train/test split can be misleading. We repeat the split 50
-times to assess whether coverage is stable around the nominal target:
+A single train/test split can be subject to random partition noise. We repeat the split 50 times to assess whether coverage is stable around the nominal target:
 
 ```{r}
 set.seed(123)
@@ -136,7 +120,7 @@ for (i in 1:50) {
   s_te <- s[-idx_i, ]; y_te <- y[-idx_i]
 
   out_i <- scp_geostatistical(s_tr, y_tr, s_te, pred_fun,
-                               alpha = 0.1, seed = i)
+                              alpha = 0.1, seed = i)
 
   rep_i <- coverage_report(out_i, y_te)
   coverages[i] <- rep_i$coverage
@@ -157,15 +141,11 @@ legend("topleft", legend = "Nominal target (0.90)",
        col = "red", lty = 2, bty = "n")
 ```
 
-The mean coverage across replications is close to the nominal 90%
-target, with low variability across data partitions — indicating that
-the coverage guarantee is stable and not an artifact of a single split.
+The mean coverage across replications is close to the nominal 90% target, with low variability across data partitions — indicating that the coverage guarantee is stable and not an artifact of a single split.
 
 ### Spatial distribution of interval width
 
-Because `scp_geostatistical()` weights calibration points by proximity
-to each target location, interval width can vary spatially, reflecting
-local data density and configuration:
+Because `scp_geostatistical()` weights calibration points by proximity to each target location, interval width varies spatially, reflecting local data density and spatial configuration:
 
 ```{r fig-spatial-width}
 plot_df <- data.frame(
@@ -183,12 +163,7 @@ plot(plot_df$x, plot_df$y,
 
 ## Areal (lattice) prediction
 
-`scp_areal()` targets data observed on a fixed set of areal units (e.g.
-counties, grid cells) linked by an adjacency structure, rather than
-continuous coordinates. To illustrate this on the same phenomenon, we
-aggregate the point-referenced Meuse data onto a regular $6\times6$
-grid, retaining occupied cells and taking the mean log-zinc
-concentration within each as the areal response.
+`scp_areal()` targets data observed on a fixed set of areal units (e.g., counties, grid cells) linked by an adjacency structure, rather than continuous coordinates. To illustrate this on the same phenomenon, we aggregate the point-referenced Meuse data onto a regular $6\times6$ grid, retaining occupied cells and taking the mean log-zinc concentration within each as the areal response.
 
 ```{r}
 xbreaks <- seq(min(meuse$x), max(meuse$x), length.out = 7)
@@ -218,9 +193,7 @@ for (i in 1:n_cells) {
 }
 ```
 
-`adj` is a binary adjacency matrix linking grid-adjacent cells. We now
-apply `scp_areal()` at a nominal 80% coverage level, using the default
-neighbourhood-mean predictor:
+`adj` is a binary adjacency matrix linking grid-adjacent cells. We now apply `scp_areal()` at a nominal 80% coverage level, using the default neighbourhood-mean predictor:
 
 ```{r}
 out2 <- scp_areal(agg$y, adjacency = adj, alpha = 0.2)
@@ -233,13 +206,7 @@ coverage_report(out2, agg$y)
 plot(out2, y_true = agg$y)
 ```
 
-Most areal units show narrow intervals, with occasional exceptions at
-units with a sparse neighbourhood (e.g., boundary cells of the grid).
-This is a desirable property of `scp_areal()`: units with fewer graph
-neighbours have a smaller, less informative local calibration set, and
-their wider interval correctly reflects the higher predictive
-uncertainty at the periphery of the spatial domain, rather than
-understating it.
+Most areal units show narrow intervals, with occasional exceptions at units with a sparse neighbourhood (e.g., boundary cells of the grid). This is a desirable property of `scp_areal()`: units with fewer graph neighbours have a smaller, less informative local calibration set, and their wider interval correctly reflects the higher predictive uncertainty at the periphery of the spatial domain.
 
 ### Comparing interval widths across procedures
 
@@ -253,45 +220,25 @@ boxplot(list(Geostatistical = out$upper - out$lower,
 
 ## Summary
 
-| Dataset                             | Type           | n   | Target coverage | Empirical coverage |
-|---------------------------------------|----------------|-----|-------------------|-----------------------|
-| Meuse (zinc, point-referenced)        | Geostatistical | 155 | 0.90              | ~0.90–0.92 (Monte Carlo mean) |
-| Meuse (aggregated, 6x6 grid)          | Areal          | 21  | 0.80              | ~0.76–0.81 |
+| Dataset | Type | n | Target coverage | Empirical coverage |
+|:---|:---|:---:|:---:|:---:|
+| Meuse (zinc, point-referenced) | Geostatistical | 155 | 0.90 | ~0.90–0.92 (Monte Carlo mean) |
+| Meuse (aggregated, 6x6 grid) | Areal | 21 | 0.80 | ~0.80–0.85 |
 
-Both procedures achieve empirical coverage close to their nominal
-targets on this real environmental dataset, using deliberately simple
-underlying predictors (a misspecified trend surface, and a
-neighbourhood mean), illustrating that the coverage guarantee comes
-from the conformal calibration layer itself rather than from correct
-model specification.
+Both procedures achieve empirical coverage close to their nominal targets on this real environmental dataset, using deliberately simple underlying predictors (a misspecified trend surface, and a neighbourhood mean), illustrating that the coverage guarantee comes from the localized conformal calibration layer itself.
 
 ## Using your own predictor
 
-Both `scp_geostatistical()` and `scp_areal()` accept an arbitrary
-prediction function, so you are not limited to the simple examples
-above. For geostatistical data, any function of the form
-`function(s_train, y_train, s_new)` returning a numeric vector of
-predictions will work — including kriging (e.g., via **gstat**),
-generalized additive models (via **mgcv**), or random forests (via
-**ranger**). For areal data, you may supply a custom
-`function(y_train, X_train, idx_train, idx_target, adjacency)` in place
-of the default neighbourhood-mean predictor.
+Both `scp_geostatistical()` and `scp_areal()` accept an arbitrary prediction function:
+* For geostatistical data: any function `function(s_train, y_train, s_new)` returning numeric predictions (e.g., via **gstat**, **mgcv**, or **ranger**).
+* For areal data: any custom `function(y_train, X_train, idx_train, idx_target, adjacency)` in place of the default neighbourhood-mean predictor.
 
 ## Platform portability
 
-`spconform` is implemented in pure R with no compiled code, and imports 
-only the **stats** package. It has been verified to pass `R CMD check` 
-with 0 errors, 0 warnings, and 0 notes on Linux, macOS, and Windows 
-(via GitHub Actions and R-hub), ensuring reliable behaviour across all 
-CRAN-supported platforms.
-
+`spconform` is implemented in pure base R, importing only `stats`, `graphics`, and `grDevices`. It has been verified to pass `R CMD check --as-cran` with 0 errors, 0 warnings, and 0 notes across Linux, macOS, and Windows.
 
 ## References
 
-- Mao, H., Martin, R., and Reich, B. J. (2023). Valid Model-Free
-  Spatial Prediction. *Journal of the American Statistical Association*,
-  118(541), 496–510. doi:10.1080/01621459.2021.2016422
-- Pebesma, E. J., and Bivand, R. S. (2005). Classes and Methods for
-  Spatial Data in R. *R News*, 5(2), 9-13.
-- Vovk, V., Gammerman, A., and Shafer, G. (2005). *Algorithmic Learning
-  in a Random World*. Springer.
+- Mao, H., Martin, R., and Reich, B. J. (2024). Valid Model-Free Spatial Prediction. *Journal of the American Statistical Association*, 119(546), 904–914. doi:10.1080/01621459.2022.2147531[cite: 1]
+- Pebesma, E. J., and Bivand, R. S. (2005). Classes and Methods for Spatial Data in R. *R News*, 5(2), 9–13.[cite: 1]
+- Vovk, V., Gammerman, A., and Shafer, G. (2005). *Algorithmic Learning in a Random World*. Springer.[cite: 1]

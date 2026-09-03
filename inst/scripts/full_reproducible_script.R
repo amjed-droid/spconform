@@ -8,7 +8,7 @@ options(stringsAsFactors = FALSE)
 SEED <- 123
 set.seed(SEED)
 
-OUTPUT_DIR <- "figures"
+OUTPUT_DIR <- file.path(tempdir(), "figures")
 if (!dir.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR, recursive = TRUE)
 
 library(sp)
@@ -130,7 +130,7 @@ diag_meuse <- diagnose(
 )
 dev.off()
 
-saveRDS(diag_meuse, file = "spconform_diagnostics.rds")
+saveRDS(diag_meuse, file = file.path(OUTPUT_DIR, "spconform_diagnostics.rds"))
 cat("Figure 5 (diagnostics) saved to:", file.path(OUTPUT_DIR, "fig8.pdf"), "\n")
 
 
@@ -376,7 +376,7 @@ st_results_df <- data.frame(
   coverage    = coverages_st,
   width       = widths_st
 )
-write.csv(st_results_df, file = "spatio_temporal_results.csv", row.names = FALSE)
+write.csv(st_results_df, file = file.path(OUTPUT_DIR, "spatio_temporal_results.csv"), row.names = FALSE)
 
 cat(sprintf("\nMean coverage (NY Ozone): %.3f (SD: %.3f)\n", mean(coverages_st), sd(coverages_st)))
 cat(sprintf("Mean width (NY Ozone):    %.3f (SD: %.3f)\n", mean(widths_st), sd(widths_st)))
@@ -405,7 +405,7 @@ cat("\\end{table}\n\n")
 
 cat("Outputs successfully saved:\n")
 cat("  - Figures:      ", file.path(OUTPUT_DIR, "fig1.pdf"), "through", file.path(OUTPUT_DIR, "fig8.pdf"), "\n")
-cat("  - Diagnostics:  spconform_diagnostics.rds\n")
-cat("  - CSV Results:  spatio_temporal_results.csv\n\n")
+cat("  - Diagnostics:  ", file.path(OUTPUT_DIR, "spconform_diagnostics.rds"), "\n")
+cat("  - CSV Results:  ", file.path(OUTPUT_DIR, "spatio_temporal_results.csv"), "\n\n")
 
 sessionInfo()

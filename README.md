@@ -1,9 +1,8 @@
 # spconform
 
 [![R-CMD-check](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862025.svg)](https://doi.org/10.5281/zenodo.21862025)
-
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862024.svg)](https://doi.org/10.5281/zenodo.21862024)
 
 **Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R**
 
@@ -92,28 +91,32 @@ coverage_report(out, y[-idx])
 ```
 
 ### 2. Comprehensive Spatial Diagnostics
-'spconform' includes a multi-panel diagnostic suite (diagnose()) to evaluate marginal coverage, conditional coverage across spatial strata, boundary effects, 
-and the distribution of nonconformity scores:
+
+`spconform` includes a multi-panel diagnostic suite (`diagnose()`) to evaluate marginal coverage, conditional coverage across spatial strata, boundary effects, and the distribution of nonconformity scores:
+
+```r
 # Run diagnostics and produce publication-quality multi-panel plot
 diag <- diagnose(out, y_true = y[-idx], s_test = s[-idx], plot = TRUE)
 
 # View textual diagnostic summary
 print(diag)
-=== spconform Diagnostic Report ===
+#> === spconform Diagnostic Report ===
+#> 
+#> Marginal coverage:
+#>   Empirical: 0.9574 (nominal: 0.9)
+#>   Mean width: 2.2105 
+#>   n = 47 , covered = 45 
+#> 
+#> Conditional coverage by spatial bin:
+#>   Q1-1: 1.0000 (n=7, width=3.529)
+#>   Q1-2: 1.0000 (n=6, width=2.975)
+#>   Q4-4: 0.8889 (n=9, width=1.930)
+#> 
+#> Boundary effect:
+#>   Near boundary:    0.9583 (n=24)
+#>   Far from boundary: 0.9565 (n=23)
+```
 
-Marginal coverage:
-  Empirical: 0.9574 (nominal: 0.9)
-  Mean width: 2.2105 
-  n = 47 , covered = 45 
-
-Conditional coverage by spatial bin:
-  Q1-1: 1.0000 (n=7, width=3.529)
-  Q1-2: 1.0000 (n=6, width=2.975)
-  Q4-4: 0.8889 (n=9, width=1.930)
-
-Boundary effect:
-  Near boundary:    0.9583 (n=24)
-  Far from boundary: 0.9565 (n=23)
 ### 3. Areal / lattice data
 
 ```r

@@ -17,6 +17,7 @@ importFrom(graphics,
   layout,
   legend,
   par,
+  plot,
   points,
   segments,
   text

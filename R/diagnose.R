@@ -35,10 +35,18 @@
 #' reduction for tighter intervals.
 #'
 #' @examples
-#' \dontrun{
-#' out <- scp_geostatistical(s_train, y_train, s_test, pred_fun, alpha = 0.1)
-#' diag <- diagnose(out, y_test, s_test)
-#' }
+#' # Minimal reproducible example (< 0.1s execution time)
+#' set.seed(123)
+#' s_tr <- matrix(runif(40), ncol = 2)
+#' y_tr <- rnorm(20)
+#' s_te <- matrix(runif(20), ncol = 2)
+#' y_te <- rnorm(10)
+#'
+#' pfun <- function(s_train, y_train, s_new) rep(mean(y_train), nrow(s_new))
+#'
+#' out <- scp_geostatistical(s_tr, y_tr, s_te, pfun, alpha = 0.1)
+#' diag_res <- diagnose(out, y_te, s_te, plot = FALSE)
+#' print(diag_res)
 #'
 #' @importFrom stats median sd quantile qqnorm qqline
 #' @importFrom graphics abline barplot layout par text
@@ -60,12 +68,12 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
   widths  <- object$upper - object$lower
   
   marginal <- list(
-    coverage    = mean(covered, na.rm = TRUE),
-    mean_width  = mean(widths, na.rm = TRUE),
+    coverage     = mean(covered, na.rm = TRUE),
+    mean_width   = mean(widths, na.rm = TRUE),
     median_width = median(widths, na.rm = TRUE),
-    sd_width    = sd(widths, na.rm = TRUE),
-    n           = n,
-    n_covered   = sum(covered, na.rm = TRUE)
+    sd_width     = sd(widths, na.rm = TRUE),
+    n            = n,
+    n_covered    = sum(covered, na.rm = TRUE)
   )
   
   ## ---- Overcoverage warning ----
@@ -88,9 +96,9 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
     bin_id <- paste0("Q", x_q, "-", y_q)
     
     conditional <- data.frame(
-      bin   = character(),
-      n     = integer(),
-      coverage = numeric(),
+      bin        = character(),
+      n          = integer(),
+      coverage   = numeric(),
       mean_width = numeric(),
       stringsAsFactors = FALSE
     )
@@ -120,15 +128,15 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
     is_near <- dist_to_boundary <= boundary_thresh
     
     boundary <- list(
-      threshold   = boundary_thresh,
+      threshold     = boundary_thresh,
       near_boundary = list(
-        n        = sum(is_near),
-        coverage = mean(covered[is_near], na.rm = TRUE),
+        n          = sum(is_near),
+        coverage   = mean(covered[is_near], na.rm = TRUE),
         mean_width = mean(widths[is_near], na.rm = TRUE)
       ),
       far_boundary = list(
-        n        = sum(!is_near),
-        coverage = mean(covered[!is_near], na.rm = TRUE),
+        n          = sum(!is_near),
+        coverage   = mean(covered[!is_near], na.rm = TRUE),
         mean_width = mean(widths[!is_near], na.rm = TRUE)
       )
     )
@@ -157,7 +165,10 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
     }
     
     old_par <- par(no.readonly = TRUE)
-    on.exit(par(old_par))
+    on.exit({
+      par(old_par)
+      layout(1)
+    }, add = TRUE)
     
     layout(layout_mat)
     par(mar = c(4, 4, 3, 1))
@@ -168,13 +179,11 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
                   col = c("steelblue", "gray80"),
                   ylab = "Coverage",
                   main = paste0("Marginal coverage (n=", marginal$n, ")"),
-                  ylim = c(0, 1.15)) # زيادة بسيطة ليتسع النص بالأعلى
+                  ylim = c(0, 1.15))
     abline(h = nominal, col = "red", lty = 2)
     
-    ## وضع القيمة الرقمية بدقة فوق العمود الأول
     text(bp[1], min(marginal$coverage + 0.06, 1.06), 
          labels = round(marginal$coverage, 3), cex = 1.1, font = 2)
-    ## وضع القيمة الاسمية فوق العمود الثاني
     text(bp[2], nominal + 0.06, 
          labels = round(nominal, 3), cex = 1.1, font = 2)
     
@@ -223,7 +232,7 @@ print.spconform_diagnose <- function(x, ...) {
   
   cat("Marginal coverage:\n")
   cat("  Empirical:", round(x$marginal$coverage, 4), 
-      "(nominal:", 1 - x$alpha, ")\n")
+      " (nominal:", 1 - x$alpha, ")\n")
   cat("  Mean width:", round(x$marginal$mean_width, 4), "\n")
   cat("  n =", x$marginal$n, ", covered =", x$marginal$n_covered, "\n\n")
   
@@ -240,7 +249,7 @@ print.spconform_diagnose <- function(x, ...) {
   
   if (!is.null(x$boundary)) {
     cat("Boundary effect:\n")
-    cat("  Near boundary:  ", round(x$boundary$near_boundary$coverage, 4),
+    cat("  Near boundary:   ", round(x$boundary$near_boundary$coverage, 4),
         " (n=", x$boundary$near_boundary$n, ")\n", sep = "")
     cat("  Far from boundary:", round(x$boundary$far_boundary$coverage, 4),
         " (n=", x$boundary$far_boundary$n, ")\n\n", sep = "")
@@ -251,4 +260,5 @@ print.spconform_diagnose <- function(x, ...) {
   cat("  Median:", round(x$scores$median, 4), "\n")
   cat("  SD:", round(x$scores$sd, 4), "\n")
   cat("  90% quantile:", round(x$scores$q90, 4), "\n")
+  invisible(x)
 }
