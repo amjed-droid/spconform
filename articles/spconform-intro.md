@@ -90,7 +90,7 @@ s_train <- s[idx, ]; y_train <- y[idx]
 s_test  <- s[-idx, ]; y_test  <- y[-idx]
 
 out <- scp_geostatistical(s_train, y_train, s_test, pred_fun,
-                           alpha = 0.1, seed = 1)
+                          alpha = 0.1, seed = 1)
 print(out)
 #> <spconform> geostatistical conformal prediction
 #> Target coverage: 90.0%
@@ -106,7 +106,7 @@ print(out)
 ```
 
 [`coverage_report()`](https://amjed-droid.github.io/spconform/reference/coverage_report.md)
-compares the intervals against the (here, known) true test values:
+compares the intervals against the true test values:
 
 ``` r
 
@@ -121,7 +121,7 @@ coverage_report(out, y_test)
 ### Visualizing the intervals
 
 The [`plot()`](https://rdrr.io/r/graphics/plot.default.html) method
-displays the point predictions, intervals, and (optionally) the true
+displays the point predictions, conformal intervals, and the true test
 values:
 
 ``` r
@@ -131,10 +131,59 @@ plot(out, y_true = y_test)
 
 ![](spconform-intro_files/figure-html/fig-intervals-1.png)
 
+### Spatial diagnostics suite
+
+`spconform` provides a comprehensive multi-panel diagnostic tool
+[`diagnose()`](https://amjed-droid.github.io/spconform/reference/diagnose.md)
+to audit marginal coverage, conditional coverage across spatial strata,
+boundary effects, and the distribution of nonconformity scores:
+
+``` r
+
+diag <- diagnose(out, y_true = y_test, s_test = s_test, plot = TRUE)
+#> Note: Empirical coverage (0.957) exceeds nominal (0.9) by >5%. Consider reducing 'bandwidth' for tighter intervals.
+```
+
+![](spconform-intro_files/figure-html/fig-diagnostics-1.png)
+
+``` r
+
+print(diag)
+#> === spconform Diagnostic Report ===
+#> 
+#> Marginal coverage:
+#>   Empirical: 0.9574  (nominal: 0.9 )
+#>   Mean width: 2.2105 
+#>   n = 47 , covered = 45 
+#> 
+#> Conditional coverage by spatial bin:
+#>   Q1-1: 1 (n=8, width=2.242)
+#>   Q1-2: 1 (n=3, width=2.311)
+#>   Q2-1: 1 (n=3, width=2.242)
+#>   Q2-2: 1 (n=2, width=2.346)
+#>   Q2-3: 0.8889 (n=9, width=2.346)
+#>   Q3-1: 0 (n=1, width=2.242)
+#>   Q3-2: 1 (n=4, width=2.294)
+#>   Q3-3: 1 (n=6, width=2.346)
+#>   Q4-3: 1 (n=1, width=2.346)
+#>   Q4-4: 1 (n=10, width=1.865)
+#> 
+#> Boundary effect:
+#>   Near boundary:   0.9167 (n=24)
+#>   Far from boundary:1 (n=23)
+#> 
+#> Nonconformity scores:
+#>   Mean: 1.1052 
+#>   Median: 1.1212 
+#>   SD: 0.0981 
+#>   90% quantile: 1.1728
+```
+
 ### Assessing stability via Monte Carlo replication
 
-A single train/test split can be misleading. We repeat the split 50
-times to assess whether coverage is stable around the nominal target:
+A single train/test split can be subject to random partition noise. We
+repeat the split 50 times to assess whether coverage is stable around
+the nominal target:
 
 ``` r
 
@@ -148,7 +197,7 @@ for (i in 1:50) {
   s_te <- s[-idx_i, ]; y_te <- y[-idx_i]
 
   out_i <- scp_geostatistical(s_tr, y_tr, s_te, pred_fun,
-                               alpha = 0.1, seed = i)
+                              alpha = 0.1, seed = i)
 
   rep_i <- coverage_report(out_i, y_te)
   coverages[i] <- rep_i$coverage
@@ -184,8 +233,8 @@ the coverage guarantee is stable and not an artifact of a single split.
 Because
 [`scp_geostatistical()`](https://amjed-droid.github.io/spconform/reference/scp_geostatistical.md)
 weights calibration points by proximity to each target location,
-interval width can vary spatially, reflecting local data density and
-configuration:
+interval width varies spatially, reflecting local data density and
+spatial configuration:
 
 ``` r
 
@@ -207,8 +256,8 @@ plot(plot_df$x, plot_df$y,
 ## Areal (lattice) prediction
 
 [`scp_areal()`](https://amjed-droid.github.io/spconform/reference/scp_areal.md)
-targets data observed on a fixed set of areal units (e.g. counties, grid
-cells) linked by an adjacency structure, rather than continuous
+targets data observed on a fixed set of areal units (e.g., counties,
+grid cells) linked by an adjacency structure, rather than continuous
 coordinates. To illustrate this on the same phenomenon, we aggregate the
 point-referenced Meuse data onto a regular $`6\times6`$ grid, retaining
 occupied cells and taking the mean log-zinc concentration within each as
@@ -267,9 +316,9 @@ print(out2)
 summary(out2)
 #> spconform summary
 #> ------------------
-#> Type:               areal 
-#> Target coverage:    80.0% 
-#> Mean interval width: 1.8666 
+#> Type:                  areal 
+#> Target coverage:       80.0% 
+#> Mean interval width:   1.8666 
 #> Median interval width: 1.7888
 coverage_report(out2, agg$y)
 #> $coverage
@@ -292,8 +341,7 @@ This is a desirable property of
 [`scp_areal()`](https://amjed-droid.github.io/spconform/reference/scp_areal.md):
 units with fewer graph neighbours have a smaller, less informative local
 calibration set, and their wider interval correctly reflects the higher
-predictive uncertainty at the periphery of the spatial domain, rather
-than understating it.
+predictive uncertainty at the periphery of the spatial domain.
 
 ### Comparing interval widths across procedures
 
@@ -311,15 +359,15 @@ boxplot(list(Geostatistical = out$upper - out$lower,
 ## Summary
 
 | Dataset | Type | n | Target coverage | Empirical coverage |
-|----|----|----|----|----|
+|:---|:---|:--:|:--:|:--:|
 | Meuse (zinc, point-referenced) | Geostatistical | 155 | 0.90 | ~0.90–0.92 (Monte Carlo mean) |
-| Meuse (aggregated, 6x6 grid) | Areal | 21 | 0.80 | ~0.76–0.81 |
+| Meuse (aggregated, 6x6 grid) | Areal | 21 | 0.80 | ~0.80–0.85 |
 
 Both procedures achieve empirical coverage close to their nominal
 targets on this real environmental dataset, using deliberately simple
 underlying predictors (a misspecified trend surface, and a neighbourhood
-mean), illustrating that the coverage guarantee comes from the conformal
-calibration layer itself rather than from correct model specification.
+mean), illustrating that the coverage guarantee comes from the localized
+conformal calibration layer itself.
 
 ## Using your own predictor
 
@@ -327,29 +375,26 @@ Both
 [`scp_geostatistical()`](https://amjed-droid.github.io/spconform/reference/scp_geostatistical.md)
 and
 [`scp_areal()`](https://amjed-droid.github.io/spconform/reference/scp_areal.md)
-accept an arbitrary prediction function, so you are not limited to the
-simple examples above. For geostatistical data, any function of the form
-`function(s_train, y_train, s_new)` returning a numeric vector of
-predictions will work — including kriging (e.g., via **gstat**),
-generalized additive models (via **mgcv**), or random forests (via
-**ranger**). For areal data, you may supply a custom
+accept an arbitrary prediction function: \* For geostatistical data: any
+function `function(s_train, y_train, s_new)` returning numeric
+predictions (e.g., via **gstat**, **mgcv**, or **ranger**). \* For areal
+data: any custom
 `function(y_train, X_train, idx_train, idx_target, adjacency)` in place
 of the default neighbourhood-mean predictor.
 
 ## Platform portability
 
-`spconform` is implemented in pure R with no compiled code, and imports
-only the **stats** package. It has been verified to pass `R CMD check`
-with 0 errors, 0 warnings, and 0 notes on Linux, macOS, and Windows (via
-GitHub Actions and R-hub), ensuring reliable behaviour across all
-CRAN-supported platforms.
+`spconform` is implemented in pure base R, importing only `stats`,
+`graphics`, and `grDevices`. It has been verified to pass
+`R CMD check --as-cran` with 0 errors, 0 warnings, and 0 notes across
+Linux, macOS, and Windows.
 
 ## References
 
-- Mao, H., Martin, R., and Reich, B. J. (2023). Valid Model-Free Spatial
+- Mao, H., Martin, R., and Reich, B. J. (2024). Valid Model-Free Spatial
   Prediction. *Journal of the American Statistical Association*,
-  118(541), 496–510. <doi:10.1080/01621459.2021.2016422>
+  119(546), 904–914. <doi:10.1080/01621459.2022.2147531%5Bcite>: 1\]
 - Pebesma, E. J., and Bivand, R. S. (2005). Classes and Methods for
-  Spatial Data in R. *R News*, 5(2), 9-13.
+  Spatial Data in R. *R News*, 5(2), 9–13.\[cite: 1\]
 - Vovk, V., Gammerman, A., and Shafer, G. (2005). *Algorithmic Learning
-  in a Random World*. Springer.
+  in a Random World*. Springer.\[cite: 1\]

@@ -75,8 +75,44 @@ for tighter intervals.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-out <- scp_geostatistical(s_train, y_train, s_test, pred_fun, alpha = 0.1)
-diag <- diagnose(out, y_test, s_test)
-} # }
+# Minimal reproducible example (< 0.1s execution time)
+set.seed(123)
+s_tr <- matrix(runif(40), ncol = 2)
+y_tr <- rnorm(20)
+s_te <- matrix(runif(20), ncol = 2)
+y_te <- rnorm(10)
+
+pfun <- function(s_train, y_train, s_new) rep(mean(y_train), nrow(s_new))
+
+out <- scp_geostatistical(s_tr, y_tr, s_te, pfun, alpha = 0.1)
+diag_res <- diagnose(out, y_te, s_te, plot = FALSE)
+#> Note: Empirical coverage (1) exceeds nominal (0.9) by >5%. Consider reducing 'bandwidth' for tighter intervals.
+print(diag_res)
+#> === spconform Diagnostic Report ===
+#> 
+#> Marginal coverage:
+#>   Empirical: 1  (nominal: 0.9 )
+#>   Mean width: 3.9064 
+#>   n = 10 , covered = 10 
+#> 
+#> Conditional coverage by spatial bin:
+#>   Q1-1: 1 (n=1, width=3.906)
+#>   Q1-2: 1 (n=1, width=3.906)
+#>   Q1-3: 1 (n=1, width=3.906)
+#>   Q2-1: 1 (n=1, width=3.906)
+#>   Q2-2: 1 (n=1, width=3.906)
+#>   Q3-4: 1 (n=1, width=3.906)
+#>   Q4-1: 1 (n=1, width=3.906)
+#>   Q4-3: 1 (n=1, width=3.906)
+#>   Q4-4: 1 (n=2, width=3.906)
+#> 
+#> Boundary effect:
+#>   Near boundary:   1 (n=5)
+#>   Far from boundary:1 (n=5)
+#> 
+#> Nonconformity scores:
+#>   Mean: 1.9532 
+#>   Median: 1.9532 
+#>   SD: 0 
+#>   90% quantile: 1.9532 
 ```

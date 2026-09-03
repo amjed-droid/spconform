@@ -26,8 +26,13 @@ areal_neighbor_weights(i0, adjacency, decay = 1)
   `i0`; larger values down-weight distant neighbours more aggressively.
   Defaults to 1.
 
-## Value
+## Examples
 
-A numeric vector of length `nrow(adjacency)` with weights based on graph
-distance from `i0` (self-weight is 0, i.e. the target unit is excluded
-from its own calibration set).
+``` r
+adj <- matrix(c(0, 1, 0,
+                1, 0, 1,
+                0, 1, 0), nrow = 3, byrow = TRUE)
+w <- areal_neighbor_weights(1, adj, decay = 0.5)
+print(w)
+#> [1] 0.0000000 0.6065307 0.3678794
+```
