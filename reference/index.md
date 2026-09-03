@@ -18,8 +18,8 @@ evaluation
 - [`diagnose()`](https://amjed-droid.github.io/spconform/reference/diagnose.md)
   : Comprehensive Diagnostic Report for spconform Objects
 - [`coverage_report()`](https://amjed-droid.github.io/spconform/reference/coverage_report.md)
-  : Empirical coverage and average interval width for an spconform
-  object
+  : Empirical Coverage and Average Interval Width for an spconform
+  Object
 
 ## Helper functions
 
@@ -34,3 +34,10 @@ Kernel weights and graph-distance utilities
 ## S3 methods
 
 Print, summary, and plot methods for spconform and diagnose objects
+
+- [`plot(`*`<spconform>`*`)`](https://amjed-droid.github.io/spconform/reference/plot.spconform.md)
+  : Plot Prediction Intervals for spconform Objects
+- [`print(`*`<spconform>`*`)`](https://amjed-droid.github.io/spconform/reference/print.spconform.md)
+  : Print Method for spconform Objects
+- [`summary(`*`<spconform>`*`)`](https://amjed-droid.github.io/spconform/reference/summary.spconform.md)
+  : Summary Method for spconform Objects

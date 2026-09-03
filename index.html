@@ -41,6 +41,7 @@
 <li><a class="dropdown-item" href="articles/spconform-intro.html">Introduction to spconform</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
 <li class="nav-item"><a class="nav-link" href="articles/getting-help.html">Help</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -58,7 +59,7 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="spconform">spconform<a class="anchor" aria-label="anchor" href="#spconform"></a>
 </h1></div>
-<p><a href="https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://www.gnu.org/licenses/gpl-3.0" class="external-link"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a> <a href="https://doi.org/10.5281/zenodo.21862025" class="external-link"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21862025.svg" alt="DOI"></a></p>
+<p><a href="https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://www.gnu.org/licenses/gpl-3.0.html" class="external-link"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a> <a href="https://doi.org/10.5281/zenodo.21862024" class="external-link"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21862024.svg" alt="DOI"></a></p>
 <p><strong>Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R</strong></p>
 <p><code>spconform</code> provides distribution-free prediction intervals with finite-sample coverage properties for spatial and spatio-temporal data. It relaxes the exchangeability assumption of standard conformal prediction by using spatial-distance and graph-neighbourhood kernel weights, offering a unified framework for both <strong>geostatistical (point-referenced)</strong> and <strong>areal (lattice)</strong> data structures.</p>
 <hr>
@@ -193,18 +194,33 @@
 <div class="section level3">
 <h3 id="id_2-comprehensive-spatial-diagnostics">2. Comprehensive Spatial Diagnostics<a class="anchor" aria-label="anchor" href="#id_2-comprehensive-spatial-diagnostics"></a>
 </h3>
-<p>‘spconform’ includes a multi-panel diagnostic suite (diagnose()) to evaluate marginal coverage, conditional coverage across spatial strata, boundary effects, and the distribution of nonconformity scores: # Run diagnostics and produce publication-quality multi-panel plot diag &lt;- diagnose(out, y_true = y[-idx], s_test = s[-idx], plot = TRUE)</p>
-</div>
-</div>
-</div>
-<div class="section level1">
-<h1 id="view-textual-diagnostic-summary">View textual diagnostic summary<a class="anchor" aria-label="anchor" href="#view-textual-diagnostic-summary"></a>
-</h1>
-<p>print(diag) === spconform Diagnostic Report ===</p>
-<p>Marginal coverage: Empirical: 0.9574 (nominal: 0.9) Mean width: 2.2105 n = 47 , covered = 45</p>
-<p>Conditional coverage by spatial bin: Q1-1: 1.0000 (n=7, width=3.529) Q1-2: 1.0000 (n=6, width=2.975) Q4-4: 0.8889 (n=9, width=1.930)</p>
-<p>Boundary effect: Near boundary: 0.9583 (n=24) Far from boundary: 0.9565 (n=23) ### 3. Areal / lattice data</p>
+<p><code>spconform</code> includes a multi-panel diagnostic suite (<code><a href="reference/diagnose.html">diagnose()</a></code>) to evaluate marginal coverage, conditional coverage across spatial strata, boundary effects, and the distribution of nonconformity scores:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Run diagnostics and produce publication-quality multi-panel plot</span></span>
+<span><span class="va">diag</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/diagnose.html">diagnose</a></span><span class="op">(</span><span class="va">out</span>, y_true <span class="op">=</span> <span class="va">y</span><span class="op">[</span><span class="op">-</span><span class="va">idx</span><span class="op">]</span>, s_test <span class="op">=</span> <span class="va">s</span><span class="op">[</span><span class="op">-</span><span class="va">idx</span><span class="op">]</span>, plot <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># View textual diagnostic summary</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diag</span><span class="op">)</span></span>
+<span><span class="co">#&gt; === spconform Diagnostic Report ===</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Marginal coverage:</span></span>
+<span><span class="co">#&gt;   Empirical: 0.9574 (nominal: 0.9)</span></span>
+<span><span class="co">#&gt;   Mean width: 2.2105 </span></span>
+<span><span class="co">#&gt;   n = 47 , covered = 45 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Conditional coverage by spatial bin:</span></span>
+<span><span class="co">#&gt;   Q1-1: 1.0000 (n=7, width=3.529)</span></span>
+<span><span class="co">#&gt;   Q1-2: 1.0000 (n=6, width=2.975)</span></span>
+<span><span class="co">#&gt;   Q4-4: 0.8889 (n=9, width=1.930)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Boundary effect:</span></span>
+<span><span class="co">#&gt;   Near boundary:    0.9583 (n=24)</span></span>
+<span><span class="co">#&gt;   Far from boundary: 0.9565 (n=23)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="id_3-areal--lattice-data">3. Areal / lattice data<a class="anchor" aria-label="anchor" href="#id_3-areal--lattice-data"></a>
+</h3>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Aggregate Meuse to a 6x6 grid (21 occupied cells)</span></span>
 <span><span class="va">xbreaks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">meuse</span><span class="op">$</span><span class="va">x</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">meuse</span><span class="op">$</span><span class="va">x</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span>
 <span><span class="va">ybreaks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">meuse</span><span class="op">$</span><span class="va">y</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">meuse</span><span class="op">$</span><span class="va">y</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span>
@@ -238,10 +254,11 @@
 <span><span class="co">#&gt; [1] 0.81</span></span>
 <span><span class="co">#&gt; $mean_width</span></span>
 <span><span class="co">#&gt; [1] 1.79</span></span></code></pre></div>
+</div>
 <div class="section level3">
 <h3 id="id_4-spatio-temporal-data">4. Spatio-temporal data<a class="anchor" aria-label="anchor" href="#id_4-spatio-temporal-data"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">mgcv</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.sujitsahu.com" class="external-link">bmstdr</a></span><span class="op">)</span></span>
 <span></span>
@@ -283,6 +300,7 @@
 <span><span class="co">#&gt; [1] 0.909</span></span>
 <span><span class="co">#&gt; $mean_width</span></span>
 <span><span class="co">#&gt; [1] 41.7</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="quality-assurance">Quality Assurance<a class="anchor" aria-label="anchor" href="#quality-assurance"></a>
@@ -338,7 +356,7 @@
 <p>Jabbar, A. S. (2026). spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R (Version 0.1.0) [Computer software]. Zenodo. <a href="https://doi.org/10.5281/zenodo.21862025" class="external-link uri">https://doi.org/10.5281/zenodo.21862025</a></p>
 <p><em>A companion manuscript describing the package methodology is currently submitted to the Journal of Statistical Software and will be cited here upon acceptance.</em></p>
 </blockquote>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"spconform"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
@@ -363,7 +381,6 @@
 <p>This package is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.</p>
 </div>
 </div>
-
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
