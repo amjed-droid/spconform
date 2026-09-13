@@ -55,7 +55,7 @@ Statistical Software*.
 
 ``` r
 
-# Once accepted on CRAN:
+#  accepted on CRAN:
 install.packages("spconform")
 ```
 
