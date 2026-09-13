@@ -27,8 +27,7 @@ Standard conformal prediction assumes exchangeable data — an assumption routin
 
 &gt; **Status:** `spconform` has passed `R CMD check --as-cran` with 0 errors,
 &gt; 0 warnings, and 0 notes on Windows 11 (R 4.6.1), win-builder (R-devel),
-&gt; and R-hub v2 (Linux, Windows, macOS, donttest). The package is CRAN-ready
-&gt; and will be submitted to CRAN as soon as the submission form re-opens.
+&gt; and R-hub v2 (Linux, Windows, macOS, donttest). The package is on CRAN
 &gt; A permanent, citable snapshot of version 0.1.0 is archived on Zenodo
 &gt; (DOI above). The accompanying manuscript is currently in preparation
 &gt; for submission to the *Journal of Statistical Software*.
@@ -38,11 +37,8 @@ Standard conformal prediction assumes exchangeable data — an assumption routin
 ## Installation
 
 ```r
-# Install the development version from GitHub
-remotes::install_github("amjed-droid/spconform")
-
 # Once accepted on CRAN:
-# install.packages("spconform")
+install.packages("spconform")
 ```
 
 **Dependencies: The package imports only stats (base R). Suggested
