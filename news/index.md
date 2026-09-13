@@ -2,6 +2,8 @@
 
 ## spconform 0.1.0
 
+CRAN release: 2026-09-12
+
 - Initial release of `spconform` on CRAN.
 - Implemented locally weighted split conformal prediction for
   geostatistical (point-referenced) data
