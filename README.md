@@ -37,7 +37,7 @@ Standard conformal prediction assumes exchangeable data — an assumption routin
 ## Installation
 
 ```r
-# Once accepted on CRAN:
+#  accepted on CRAN:
 install.packages("spconform")
 ```
 
