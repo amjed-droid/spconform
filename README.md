@@ -232,7 +232,7 @@ If you use `spconform` in your research, please cite:
 
 > Jabbar, A. S. (2026). spconform: Conformal Prediction for Spatially and
 > Spatio-Temporally Dependent Data in R (Version 0.1.0) [Computer software].
-> Zenodo. https://doi.org/10.5281/zenodo.21862025
+> Zenodo. https://doi.org/10.5281/zenodo.21862024
 >
 > *A companion manuscript describing the package methodology is currently
 > submitted to the Journal of Statistical Software and will be cited here
