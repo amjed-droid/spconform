@@ -152,7 +152,7 @@ print(diag)
 #> === spconform Diagnostic Report ===
 #> 
 #> Marginal coverage:
-#>   Empirical: 0.9574 (nominal: 0.9 )
+#>   Empirical: 0.9574  (nominal: 0.9 )
 #>   Mean width: 2.2105 
 #>   n = 47 , covered = 45 
 #> 
@@ -169,7 +169,7 @@ print(diag)
 #>   Q4-4: 1 (n=10, width=1.865)
 #> 
 #> Boundary effect:
-#>   Near boundary:  0.9167 (n=24)
+#>   Near boundary:   0.9167 (n=24)
 #>   Far from boundary:1 (n=23)
 #> 
 #> Nonconformity scores:

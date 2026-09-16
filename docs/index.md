@@ -2,8 +2,8 @@
 
 [![R-CMD-check](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml)
 [![License: GPL
-v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862025.svg)](https://doi.org/10.5281/zenodo.21862025)
+v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862024.svg)](https://doi.org/10.5281/zenodo.21862024)
 
 **Conformal Prediction for Spatially and Spatio-Temporally Dependent
 Data in R**
@@ -35,20 +35,20 @@ CRAN.
 | Areal (lattice) | — | — | — | — | **✓** |
 | Spatio-temporal | — | — (temp. only) | — | — | **✓ (opt.)** |
 | Model-agnostic | ✓ | ✓ | ✓ | ✓ | **✓** |
-| Unit-tested / CRAN-ready | ✓ | ✓ | — | — | **✓** |
+| Unit-tested / CRAN | ✓ | ✓ | — | — | **✓** |
 
 `spconform` is, to our knowledge, the first R package to offer conformal
 prediction spanning both major spatial data structures with optional
 spatio-temporal extension.
 
-\> **Status:** `spconform` has passed `R CMD check --as-cran` with 0
-errors, \> 0 warnings, and 0 notes on Windows 11 (R 4.6.1), win-builder
-(R-devel), \> and R-hub v2 (Linux, Windows, macOS, donttest). The
-package is CRAN-ready \> and will be submitted to CRAN as soon as the
-submission form re-opens. \> A permanent, citable snapshot of version
-0.1.0 is archived on Zenodo \> (DOI above). The accompanying manuscript
-is currently in preparation \> for submission to the *Journal of
-Statistical Software*.
+\> **Status:** `spconform` is available on CRAN (published 2026-09-12)
+and has \> passed `R CMD check --as-cran` with 0 errors, 0 warnings, and
+0 notes on \> Windows 11 (R 4.6.1), win-builder (R-devel), and R-hub v2
+(Linux, Windows, \> macOS, donttest). Windows and macOS binaries are
+available for both \> r-release and r-oldrel. A permanent, citable
+snapshot of version 0.1.0 is \> archived on Zenodo (DOI above). The
+accompanying manuscript is currently \> in preparation for submission to
+the *Journal of Statistical Software*.
 
 ------------------------------------------------------------------------
 
@@ -56,11 +56,11 @@ Statistical Software*.
 
 ``` r
 
-# Install the development version from GitHub
-remotes::install_github("amjed-droid/spconform")
+# Install release version from CRAN:
+install.packages("spconform")
 
-# Once accepted on CRAN:
-# install.packages("spconform")
+# Or the development version from GitHub:
+remotes::install_github("amjed-droid/spconform")
 ```
 
 \*\*Dependencies: The package imports only stats (base R). Suggested
@@ -111,24 +111,36 @@ coverage_report(out, y[-idx])
 
 ### 2. Comprehensive Spatial Diagnostics
 
-‘spconform’ includes a multi-panel diagnostic suite (diagnose()) to
-evaluate marginal coverage, conditional coverage across spatial strata,
-boundary effects, and the distribution of nonconformity scores: \# Run
-diagnostics and produce publication-quality multi-panel plot diag \<-
-diagnose(out, y_true = y\[-idx\], s_test = s\[-idx\], plot = TRUE)
+`spconform` includes a multi-panel diagnostic suite
+([`diagnose()`](https://amjed-droid.github.io/spconform/reference/diagnose.md))
+to evaluate marginal coverage, conditional coverage across spatial
+strata, boundary effects, and the distribution of nonconformity scores:
+
+``` r
+
+# Run diagnostics and produce publication-quality multi-panel plot
+diag <- diagnose(out, y_true = y[-idx], s_test = s[-idx], plot = TRUE)
 
 # View textual diagnostic summary
+print(diag)
+#> === spconform Diagnostic Report ===
+#> 
+#> Marginal coverage:
+#>   Empirical: 0.9574 (nominal: 0.9)
+#>   Mean width: 2.2105 
+#>   n = 47 , covered = 45 
+#> 
+#> Conditional coverage by spatial bin:
+#>   Q1-1: 1.0000 (n=7, width=3.529)
+#>   Q1-2: 1.0000 (n=6, width=2.975)
+#>   Q4-4: 0.8889 (n=9, width=1.930)
+#> 
+#> Boundary effect:
+#>   Near boundary:    0.9583 (n=24)
+#>   Far from boundary: 0.9565 (n=23)
+```
 
-print(diag) === spconform Diagnostic Report ===
-
-Marginal coverage: Empirical: 0.9574 (nominal: 0.9) Mean width: 2.2105 n
-= 47 , covered = 45
-
-Conditional coverage by spatial bin: Q1-1: 1.0000 (n=7, width=3.529)
-Q1-2: 1.0000 (n=6, width=2.975) Q4-4: 0.8889 (n=9, width=1.930)
-
-Boundary effect: Near boundary: 0.9583 (n=24) Far from boundary: 0.9565
-(n=23) \### 3. Areal / lattice data
+### 3. Areal / lattice data
 
 ``` r
 
@@ -217,7 +229,7 @@ coverage_report(out_st, y[-train_idx])
 ## Quality Assurance
 
 `spconform` has been rigorously tested across all major platforms to
-ensure CRAN-readiness:
+ensure CRAN readiness:
 
 | Platform        | R Version | Status  |
 |-----------------|-----------|---------|
@@ -251,7 +263,7 @@ If you use `spconform` in your research, please cite:
 
 > Jabbar, A. S. (2026). spconform: Conformal Prediction for Spatially
 > and Spatio-Temporally Dependent Data in R (Version 0.1.0) \[Computer
-> software\]. Zenodo. <https://doi.org/10.5281/zenodo.21862025>
+> software\]. Zenodo. <https://doi.org/10.5281/zenodo.21862024>
 >
 > *A companion manuscript describing the package methodology is
 > currently submitted to the Journal of Statistical Software and will be

@@ -13,8 +13,8 @@
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Conformal Prediction for Spatially and Spatio-Temporally Dependent Data">
-<meta name="description" content="Provides distribution-free, model-agnostic prediction intervals for spatially and spatio-temporally dependent data using localized conformal calibration. Implements locally weighted split conformal prediction for geostatistical (point-referenced) data based on spatial-distance kernels, and a neighbourhood-weighted conformal procedure for areal (lattice) data based on graph adjacency structures. Relaxes the standard exchangeability assumption using spatial proximity, following the localized conformal framework of Mao, Martin and Reich (2024) &lt;doi:10.1080/01621459.2022.2147531&gt;. Includes comprehensive spatial diagnostic tools to audit empirical coverage, conditional spatial strata, and boundary proximity effects.">
-<meta property="og:description" content="Provides distribution-free, model-agnostic prediction intervals for spatially and spatio-temporally dependent data using localized conformal calibration. Implements locally weighted split conformal prediction for geostatistical (point-referenced) data based on spatial-distance kernels, and a neighbourhood-weighted conformal procedure for areal (lattice) data based on graph adjacency structures. Relaxes the standard exchangeability assumption using spatial proximity, following the localized conformal framework of Mao, Martin and Reich (2024) &lt;doi:10.1080/01621459.2022.2147531&gt;. Includes comprehensive spatial diagnostic tools to audit empirical coverage, conditional spatial strata, and boundary proximity effects.">
+<meta name="description" content="Provides distribution-free, model-agnostic prediction intervals for spatially and spatio-temporally dependent data using localized conformal calibration. Implements locally weighted split conformal prediction for geostatistical (point-referenced) data based on spatial-distance kernels, and a neighbourhood-weighted conformal procedure for areal (lattice) data based on graph adjacency structures. Relaxes the standard exchangeability assumption using spatial proximity, following the localized conformal framework of Mao, Martin and Reich (2023) &lt;doi:10.1080/01621459.2022.2147531&gt;. Includes comprehensive spatial diagnostic tools to audit empirical coverage, conditional spatial strata, and boundary proximity effects.">
+<meta property="og:description" content="Provides distribution-free, model-agnostic prediction intervals for spatially and spatio-temporally dependent data using localized conformal calibration. Implements locally weighted split conformal prediction for geostatistical (point-referenced) data based on spatial-distance kernels, and a neighbourhood-weighted conformal procedure for areal (lattice) data based on graph adjacency structures. Relaxes the standard exchangeability assumption using spatial proximity, following the localized conformal framework of Mao, Martin and Reich (2023) &lt;doi:10.1080/01621459.2022.2147531&gt;. Includes comprehensive spatial diagnostic tools to audit empirical coverage, conditional spatial strata, and boundary proximity effects.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -39,8 +39,10 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/spconform-intro.html">Introduction to spconform</a></li>
+    <li><a class="dropdown-item" href="articles/getting-help.html">Getting Help</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
 <li class="nav-item"><a class="nav-link" href="articles/getting-help.html">Help</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -58,7 +60,7 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="spconform">spconform<a class="anchor" aria-label="anchor" href="#spconform"></a>
 </h1></div>
-<p><a href="https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://www.gnu.org/licenses/gpl-3.0" class="external-link"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a> <a href="https://doi.org/10.5281/zenodo.21862025" class="external-link"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21862025.svg" alt="DOI"></a></p>
+<p><a href="https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://www.gnu.org/licenses/gpl-3.0.html" class="external-link"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a> <a href="https://doi.org/10.5281/zenodo.21862024" class="external-link"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21862024.svg" alt="DOI"></a></p>
 <p><strong>Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R</strong></p>
 <p><code>spconform</code> provides distribution-free prediction intervals with finite-sample coverage properties for spatial and spatio-temporal data. It relaxes the exchangeability assumption of standard conformal prediction by using spatial-distance and graph-neighbourhood kernel weights, offering a unified framework for both <strong>geostatistical (point-referenced)</strong> and <strong>areal (lattice)</strong> data structures.</p>
 <hr>
@@ -127,7 +129,7 @@
 <td align="center"><strong>✓</strong></td>
 </tr>
 <tr>
-<td align="left">Unit-tested / CRAN-ready</td>
+<td align="left">Unit-tested / CRAN</td>
 <td align="center">✓</td>
 <td align="center">✓</td>
 <td align="center">—</td>
@@ -137,18 +139,18 @@
 </tbody>
 </table>
 <p><code>spconform</code> is, to our knowledge, the first R package to offer conformal prediction spanning both major spatial data structures with optional spatio-temporal extension.</p>
-<p>&gt; <strong>Status:</strong> <code>spconform</code> has passed <code>R CMD check --as-cran</code> with 0 errors, &gt; 0 warnings, and 0 notes on Windows 11 (R 4.6.1), win-builder (R-devel), &gt; and R-hub v2 (Linux, Windows, macOS, donttest). The package is CRAN-ready &gt; and will be submitted to CRAN as soon as the submission form re-opens. &gt; A permanent, citable snapshot of version 0.1.0 is archived on Zenodo &gt; (DOI above). The accompanying manuscript is currently in preparation &gt; for submission to the <em>Journal of Statistical Software</em>.</p>
+<p>&gt; <strong>Status:</strong> <code>spconform</code> is available on CRAN (published 2026-09-12) and has &gt; passed <code>R CMD check --as-cran</code> with 0 errors, 0 warnings, and 0 notes on &gt; Windows 11 (R 4.6.1), win-builder (R-devel), and R-hub v2 (Linux, Windows, &gt; macOS, donttest). Windows and macOS binaries are available for both &gt; r-release and r-oldrel. A permanent, citable snapshot of version 0.1.0 is &gt; archived on Zenodo (DOI above). The accompanying manuscript is currently &gt; in preparation for submission to the <em>Journal of Statistical Software</em>.</p>
 <hr>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Install the development version from GitHub</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"amjed-droid/spconform"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Install release version from CRAN:</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"spconform"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Once accepted on CRAN:</span></span>
-<span><span class="co"># install.packages("spconform")</span></span></code></pre></div>
+<span><span class="co"># Or the development version from GitHub:</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"amjed-droid/spconform"</span><span class="op">)</span></span></code></pre></div>
 <p>**Dependencies: The package imports only stats (base R). Suggested packages (‘sp’, ‘knitr’, ‘rmarkdown’) are used to build and run the vignette; ‘mgcv’, ‘ranger’, and ‘bmstdr’ are only needed to reproduce the extended examples shown in the accompanying paper and are not required for core package functionality.</p>
 <hr>
 </div>
@@ -193,18 +195,33 @@
 <div class="section level3">
 <h3 id="id_2-comprehensive-spatial-diagnostics">2. Comprehensive Spatial Diagnostics<a class="anchor" aria-label="anchor" href="#id_2-comprehensive-spatial-diagnostics"></a>
 </h3>
-<p>‘spconform’ includes a multi-panel diagnostic suite (diagnose()) to evaluate marginal coverage, conditional coverage across spatial strata, boundary effects, and the distribution of nonconformity scores: # Run diagnostics and produce publication-quality multi-panel plot diag &lt;- diagnose(out, y_true = y[-idx], s_test = s[-idx], plot = TRUE)</p>
-</div>
-</div>
-</div>
-<div class="section level1">
-<h1 id="view-textual-diagnostic-summary">View textual diagnostic summary<a class="anchor" aria-label="anchor" href="#view-textual-diagnostic-summary"></a>
-</h1>
-<p>print(diag) === spconform Diagnostic Report ===</p>
-<p>Marginal coverage: Empirical: 0.9574 (nominal: 0.9) Mean width: 2.2105 n = 47 , covered = 45</p>
-<p>Conditional coverage by spatial bin: Q1-1: 1.0000 (n=7, width=3.529) Q1-2: 1.0000 (n=6, width=2.975) Q4-4: 0.8889 (n=9, width=1.930)</p>
-<p>Boundary effect: Near boundary: 0.9583 (n=24) Far from boundary: 0.9565 (n=23) ### 3. Areal / lattice data</p>
+<p><code>spconform</code> includes a multi-panel diagnostic suite (<code><a href="reference/diagnose.html">diagnose()</a></code>) to evaluate marginal coverage, conditional coverage across spatial strata, boundary effects, and the distribution of nonconformity scores:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Run diagnostics and produce publication-quality multi-panel plot</span></span>
+<span><span class="va">diag</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/diagnose.html">diagnose</a></span><span class="op">(</span><span class="va">out</span>, y_true <span class="op">=</span> <span class="va">y</span><span class="op">[</span><span class="op">-</span><span class="va">idx</span><span class="op">]</span>, s_test <span class="op">=</span> <span class="va">s</span><span class="op">[</span><span class="op">-</span><span class="va">idx</span><span class="op">]</span>, plot <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># View textual diagnostic summary</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diag</span><span class="op">)</span></span>
+<span><span class="co">#&gt; === spconform Diagnostic Report ===</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Marginal coverage:</span></span>
+<span><span class="co">#&gt;   Empirical: 0.9574 (nominal: 0.9)</span></span>
+<span><span class="co">#&gt;   Mean width: 2.2105 </span></span>
+<span><span class="co">#&gt;   n = 47 , covered = 45 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Conditional coverage by spatial bin:</span></span>
+<span><span class="co">#&gt;   Q1-1: 1.0000 (n=7, width=3.529)</span></span>
+<span><span class="co">#&gt;   Q1-2: 1.0000 (n=6, width=2.975)</span></span>
+<span><span class="co">#&gt;   Q4-4: 0.8889 (n=9, width=1.930)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Boundary effect:</span></span>
+<span><span class="co">#&gt;   Near boundary:    0.9583 (n=24)</span></span>
+<span><span class="co">#&gt;   Far from boundary: 0.9565 (n=23)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="id_3-areal--lattice-data">3. Areal / lattice data<a class="anchor" aria-label="anchor" href="#id_3-areal--lattice-data"></a>
+</h3>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Aggregate Meuse to a 6x6 grid (21 occupied cells)</span></span>
 <span><span class="va">xbreaks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">meuse</span><span class="op">$</span><span class="va">x</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">meuse</span><span class="op">$</span><span class="va">x</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span>
 <span><span class="va">ybreaks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">meuse</span><span class="op">$</span><span class="va">y</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">meuse</span><span class="op">$</span><span class="va">y</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span>
@@ -238,10 +255,11 @@
 <span><span class="co">#&gt; [1] 0.81</span></span>
 <span><span class="co">#&gt; $mean_width</span></span>
 <span><span class="co">#&gt; [1] 1.79</span></span></code></pre></div>
+</div>
 <div class="section level3">
 <h3 id="id_4-spatio-temporal-data">4. Spatio-temporal data<a class="anchor" aria-label="anchor" href="#id_4-spatio-temporal-data"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">mgcv</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.sujitsahu.com" class="external-link">bmstdr</a></span><span class="op">)</span></span>
 <span></span>
@@ -284,10 +302,11 @@
 <span><span class="co">#&gt; $mean_width</span></span>
 <span><span class="co">#&gt; [1] 41.7</span></span></code></pre></div>
 </div>
+</div>
 <div class="section level2">
 <h2 id="quality-assurance">Quality Assurance<a class="anchor" aria-label="anchor" href="#quality-assurance"></a>
 </h2>
-<p><code>spconform</code> has been rigorously tested across all major platforms to ensure CRAN-readiness:</p>
+<p><code>spconform</code> has been rigorously tested across all major platforms to ensure CRAN readiness:</p>
 <table class="table">
 <thead><tr>
 <th>Platform</th>
@@ -335,10 +354,10 @@
 </h2>
 <p>If you use <code>spconform</code> in your research, please cite:</p>
 <blockquote>
-<p>Jabbar, A. S. (2026). spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R (Version 0.1.0) [Computer software]. Zenodo. <a href="https://doi.org/10.5281/zenodo.21862025" class="external-link uri">https://doi.org/10.5281/zenodo.21862025</a></p>
+<p>Jabbar, A. S. (2026). spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R (Version 0.1.0) [Computer software]. Zenodo. <a href="https://doi.org/10.5281/zenodo.21862024" class="external-link uri">https://doi.org/10.5281/zenodo.21862024</a></p>
 <p><em>A companion manuscript describing the package methodology is currently submitted to the Journal of Statistical Software and will be cited here upon acceptance.</em></p>
 </blockquote>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"spconform"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
@@ -363,14 +382,16 @@
 <p>This package is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.</p>
 </div>
 </div>
-
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
+<li><a href="https://cloud.r-project.org/package=spconform" class="external-link">View on CRAN</a></li>
 <li><a href="https://github.com/amjed-droid/spconform/" class="external-link">Browse source code</a></li>
 <li><a href="https://github.com/amjed-droid/spconform/issues" class="external-link">Report a bug</a></li>
+<li><a href="https://CRAN.R-project.org/package=spconform" class="external-link">CRAN (v0.1.0)</a></li>
+<li><a href="https://github.com/amjed-droid/spconform/blob/main/paper/article.pdf" class="external-link">JSS Manuscript (PDF)</a></li>
+<li><a href="https://github.com/amjed-droid/spconform/blob/main/inst/scripts/code.html" class="external-link">Replication Report (HTML)</a></li>
 <li><a href="https://github.com/amjed-droid/spconform/issues" class="external-link">Report a bug</a></li>
-<li><a href="https://cran.r-project.org/package=spconform" class="external-link">CRAN (coming soon)</a></li>
 </ul>
 </div>
 
@@ -404,7 +425,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by <strong>Ahmed Sattar Jabbar</strong> · <a href="https://doi.org/10.5281/zenodo.21862025" class="external-link">Zenodo</a></p>
+  <p>Developed by <strong>Ahmed Sattar Jabbar</strong> · <a href="https://doi.org/10.32614/CRAN.package.spconform" class="external-link">CRAN DOI</a> · <a href="https://doi.org/10.5281/zenodo.21862024" class="external-link">Zenodo</a></p>
 </div>
 
 <div class="pkgdown-footer-right">
