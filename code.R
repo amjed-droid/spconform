@@ -55,7 +55,6 @@ suppressPackageStartupMessages({
   library(sp)
   library(mgcv)
   library(ranger)
-  library(bmstdr)
 })
 
 #' # Part 1: Geostatistical (Point-Referenced) Analysis
