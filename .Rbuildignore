@@ -21,3 +21,5 @@
 ^spatio_temporal_results\.csv$
 ^CRAN-SUBMISSION$
 ^CRAN_PACKAGE$
+^submission_jss$
+^spconform_JSS_submission\.zip$
