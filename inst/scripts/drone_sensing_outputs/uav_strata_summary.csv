@@ -1,0 +1,5 @@
+"Spatial_Zone","Cell_Count","Area_Share","spconform_Cov","spconform_Width","Unw_Cov","Unw_Width","Kriging_Cov","Kriging_Width"
+"Under Flight Transect (Dense, <= 12m)",1214,"48.6%","91.76%","0.1435","92.26%","0.1288","92.67%","0.1014"
+"Moderate Flight Gap (12m - 22m)",1048,"41.9%","91.41%","0.1436","89.50%","0.1288","95.13%","0.1026"
+"Deep Flight Gap & Periphery (> 22m)",238,"9.5%","90.76%","0.1435","84.45%","0.1288","92.44%","0.1034"
+"Overall Field Grid (Total Area)",2500,"100.0%","91.52%","0.1435","90.36%","0.1288","93.68%","0.1021"

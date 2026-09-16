@@ -1,0 +1,21 @@
+\begin{table}[t!]
+\centering
+\caption{Coverage and interval width in the Sentinel-2 NDVI cloud-gap-filling experiment (100 Monte Carlo bootstrap replications). Zones are defined by distance from clear-sky pixels. Values are means; parentheses give standard deviations across replications and brackets give mean interval widths on the NDVI scale. The final column reports paired $t$-tests, Wilcoxon signed-rank tests, and 5,000-sample bootstrap percentile CIs for $\Delta = \text{\pkg{spconform}} - \text{Unweighted}$.}
+\label{tab:sentinel}
+\begin{tabular}{lcccccc}
+\hline
+Cloud zone & $n$ & \pkg{spconform} & Unweighted & Kriging & $\Delta$ & Tests \\
+\hline
+Perimeter ($\leq 5$~km) & 572
+  & 96.52 ($\pm$0.69) [0.2231] & 96.06 ($\pm$0.75) [0.2234] & 97.22 ($\pm$0.68) [0.2226]
+  & $+0.46$ & $t$: $<0.0001$; W: $<0.0001$; B: $[+0.37, +0.56]$ \\
+Deep core ($> 5$~km) & 563
+  & 94.15 ($\pm$0.98) [0.2226] & 93.37 ($\pm$0.99) [0.2234] & 95.80 ($\pm$0.88) [0.2248]
+  & $+0.79$ & $t$: $<0.0001$; W: $<0.0001$; B: $[+0.72, +0.86]$ \\
+\hline
+All cloud deck & 1{,}135
+  & 95.35 ($\pm$0.55) [0.2229] & 94.73 ($\pm$0.58) [0.2234] & 96.51 ($\pm$0.51) [0.2237]
+  & $+0.62$ & $t$: $<0.0001$; W: $<0.0001$; B: $[+0.56, +0.69]$ \\
+\hline
+\end{tabular}
+\end{table}

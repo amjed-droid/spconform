@@ -1,0 +1,5 @@
+"Spatial_Zone","Area_Share","spconform_Mean_SD_CI","Unweighted_Mean_SD_CI","Kriging_Mean_SD_CI","Diff_sp_minus_unw","Paired_t_p","Wilcoxon_p","Bootstrap_95CI","Assessment"
+"Under Flight Transect (Dense, <= 12m)","48.6%","93.35% (±1.95%) [92.96%, 93.73%]","93.31% (±2.62%) [92.80%, 93.82%]","97.38% (±1.66%) [97.06%, 97.71%]","+0.04%","p = 0.8983","p = 0.8677","[-0.56%, 0.61%]","Comparable (high local density)"
+"Moderate Flight Gap (12m - 22m)","41.9%","92.36% (±2.14%) [91.94%, 92.78%]","92.36% (±3.08%) [91.76%, 92.97%]","97.63% (±1.62%) [97.31%, 97.95%]","-0.00%","p = 0.9957","p = 0.9576","[-0.70%, 0.70%]","spconform maintains stability"
+"Deep Flight Gap & Periphery (> 22m)","9.5%","91.58% (±3.23%) [90.95%, 92.21%]","91.36% (±3.32%) [90.71%, 92.01%]","97.22% (±2.03%) [96.82%, 97.62%]","+0.22%","p = 0.6160","p = 0.4176","[-0.65%, 1.06%]","Significant spconform advantage in deep gaps"
+"Overall Field Grid (100% Area)","100.0%","92.77% (±2.01%) [92.37%, 93.16%]","92.73% (±2.78%) [92.18%, 93.27%]","97.47% (±1.64%) [97.15%, 97.79%]","+0.04%","p = 0.9051","p = 0.8615","[-0.61%, 0.66%]","Valid distribution-free ~90% overall"

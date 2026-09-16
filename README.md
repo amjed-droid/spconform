@@ -21,24 +21,28 @@ Standard conformal prediction assumes exchangeable data — an assumption routin
 | Areal (lattice) | — | — | — | — | **✓** |
 | Spatio-temporal | — | — (temp. only) | — | — | **✓ (opt.)** |
 | Model-agnostic | ✓ | ✓ | ✓ | ✓ | **✓** |
-| Unit-tested / CRAN-ready | ✓ | ✓ | — | — | **✓** |
+| Unit-tested / CRAN | ✓ | ✓ | — | — | **✓** |
 
 `spconform` is, to our knowledge, the first R package to offer conformal prediction spanning both major spatial data structures with optional spatio-temporal extension.
 
-&gt; **Status:** `spconform` has passed `R CMD check --as-cran` with 0 errors,
-&gt; 0 warnings, and 0 notes on Windows 11 (R 4.6.1), win-builder (R-devel),
-&gt; and R-hub v2 (Linux, Windows, macOS, donttest). The package is on CRAN
-&gt; A permanent, citable snapshot of version 0.1.0 is archived on Zenodo
-&gt; (DOI above). The accompanying manuscript is currently in preparation
-&gt; for submission to the *Journal of Statistical Software*.
+&gt; **Status:** `spconform` is available on CRAN (published 2026-09-12) and has
+&gt; passed `R CMD check --as-cran` with 0 errors, 0 warnings, and 0 notes on
+&gt; Windows 11 (R 4.6.1), win-builder (R-devel), and R-hub v2 (Linux, Windows,
+&gt; macOS, donttest). Windows and macOS binaries are available for both
+&gt; r-release and r-oldrel. A permanent, citable snapshot of version 0.1.0 is
+&gt; archived on Zenodo (DOI above). The accompanying manuscript is currently
+&gt; in preparation for submission to the *Journal of Statistical Software*.
 
 ---
 
 ## Installation
 
 ```r
-#  accepted on CRAN:
+# Install release version from CRAN:
 install.packages("spconform")
+
+# Or the development version from GitHub:
+remotes::install_github("amjed-droid/spconform")
 ```
 
 **Dependencies: The package imports only stats (base R). Suggested
@@ -200,7 +204,7 @@ coverage_report(out_st, y[-train_idx])
 ## Quality Assurance
 
 `spconform` has been rigorously tested across all major platforms to ensure 
-CRAN-readiness:
+CRAN readiness:
 
 | Platform | R Version | Status |
 |----------|-----------|--------|

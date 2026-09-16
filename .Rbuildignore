@@ -14,6 +14,10 @@
 ^pkgdown$
 ^code\.html$
 ^code\.R$
+^code\.Rmd$
+^code\.md$
+^figures_html$
+^paper$
 ^spatio_temporal_results\.csv$
 ^CRAN-SUBMISSION$
 ^CRAN_PACKAGE$

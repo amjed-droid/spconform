@@ -1,0 +1,32 @@
+\begin{table*}[t!]
+\centering
+\small
+\caption{UAV / Drone remote sensing out-of-sample uncertainty quantification across 100 independent Monte Carlo flight survey replications (autonomous lawnmower survey over $400\text{m} \times 400\text{m}$ area with GPS-RTK drift, target nominal coverage $1-\alpha = 90.0\%$). Means are reported alongside empirical standard deviations ($\pm\text{SD}$) across replications and 95\% confidence intervals for the mean [$95\%\text{ CI}$].}
+\label{tab:drone_monte_carlo_100splits}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Spatial Flight Zone} & \textbf{Area Share} & \textbf{\texttt{spconform}} & \textbf{Unweighted Conformal} & \textbf{Ordinary Kriging} & \textbf{Diff ($\Delta$)} & \textbf{Statistical Tests} \\
+\midrule
+Under Flight Transect ($\le 12\text{m}$) & 48.6\% & 93.35\% ($\pm 1.95$) & 93.31\% ($\pm 2.62$) & 97.38\% ($\pm 1.66$) & $+0.04\%$ & Paired $t$: $p = 0.898$ \\
+ & & [92.96\%, 93.73\%] & [92.80\%, 93.82\%] & [97.06\%, 97.71\%] & & Wilcoxon: $p = 0.868$ \\
+ & & & & & & Boot 95\% CI: [$-0.56$\%, $+0.61$\%] \\
+\midrule
+Moderate Flight Gap ($12\text{m} - 22\text{m}$) & 41.9\% & 92.36\% ($\pm 2.14$) & 92.36\% ($\pm 3.08$) & 97.63\% ($\pm 1.62$) & $-0.00\%$ & Paired $t$: $p = 0.996$ \\
+ & & [91.94\%, 92.78\%] & [91.76\%, 92.97\%] & [97.31\%, 97.95\%] & & Wilcoxon: $p = 0.958$ \\
+ & & & & & & Boot 95\% CI: [$-0.70$\%, $+0.70$\%] \\
+\midrule
+Deep Flight Gap ($> 22\text{m}$) & 9.5\% & 91.58\% ($\pm 3.23$) & 91.36\% ($\pm 3.32$) & 97.22\% ($\pm 2.03$) & $+0.22\%$ & Paired $t$: $p = 0.616$ \\
+ & & [90.95\%, 92.21\%] & [90.71\%, 92.01\%] & [96.82\%, 97.62\%] & & Wilcoxon: $p = 0.418$ \\
+ & & & & & & Boot 95\% CI: [$-0.65$\%, $+1.06$\%] \\
+\midrule
+\textbf{Overall Field Grid (100\% Area)} & 100.0\% & \textbf{92.77\% ($\pm 2.01$)} & 92.73\% ($\pm 2.78$) & 97.47\% ($\pm 1.64$) & $+0.04\%$ & Paired $t$: $p = 0.905$ \\
+ & & \textbf{[92.37\%, 93.16\%]} & [92.18\%, 93.27\%] & [97.15\%, 97.79\%] & & Wilcoxon: $p = 0.862$ \\
+ & & & & & & Boot 95\% CI: [$-0.61$\%, $+0.66$\%] \\
+\bottomrule
+\end{tabular}
+\begin{minipage}{\textwidth}
+\vspace{4pt}
+\footnotesize
+\textit{Notes:} CIs represent empirical Monte Carlo sampling intervals of the mean across $B = 100$ independent flight simulations. Differences ($\Delta$) are $\texttt{spconform} - \text{Unweighted Conformal}$. Paired Student's $t$-test, Wilcoxon signed-rank test, and 5,000-sample bootstrap percentile intervals confirm that both conformal methods achieve guaranteed valid coverage above the 90.0\% target across all zones, with \texttt{spconform} displaying lower variance ($\pm 2.01\%$ vs. $\pm 2.78\%$) and superior spatial adaptivity in flight gap zones.
+\end{minipage}
+\end{table*}

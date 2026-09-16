@@ -1,0 +1,428 @@
+\documentclass[article]{jss}
+
+%% -- LaTeX packages and custom commands ---------------------------------------
+\usepackage{orcidlink,thumbpdf,lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+\newcommand{\class}[1]{`\code{#1}'}
+\newcommand{\fct}[1]{\code{#1()}}
+
+%% -- Article metainformation ---------------------------------------------------
+
+\author{Ahmed Sattar Jabbar~\orcidlink{0009-0006-4614-735X}\\Department of Statistics\\College of Administration and Economics, Al-Mustansiriya University}
+\Plainauthor{Ahmed Sattar Jabbar}
+
+\title{\pkg{spconform}: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in \proglang{R}}
+\Plaintitle{spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R}
+\Shorttitle{\pkg{spconform}: Conformal Prediction for Spatial Data in \proglang{R}}
+
+\Keywords{conformal prediction, spatial statistics, geostatistics, areal data, prediction intervals, uncertainty quantification, \proglang{R}}
+\Plainkeywords{conformal prediction, spatial statistics, geostatistics, areal data, prediction intervals, uncertainty quantification, R}
+
+\Abstract{
+  The \proglang{R} package \pkg{spconform} provides distribution-free, finite-sample
+  prediction intervals for spatial and spatio-temporal data under the GPL-3 license.
+  Standard conformal prediction assumes exchangeability, an assumption violated by spatial
+  autocorrelation where proximate locations are more informative than distant ones.
+  \pkg{spconform} relaxes exchangeability by weighting calibration scores according to
+  spatial proximity. The package implements \code{scp\_geostatistical()} for point-referenced
+  coordinates using Gaussian distance kernels (with optional spatio-temporal weighting)
+  and \code{scp\_areal()} for lattice data using shortest-path graph decay on contiguity
+  matrices. Both functions are model-agnostic, accepting arbitrary point predictors such as
+  linear models, generalized additive models, or random forests. Calibration is audited
+  via \code{diagnose()} for spatial grid strata and boundary proximity effects, the
+  evaluation routine \code{coverage\_report()}, and standard S3 methods (\code{print()},
+  \code{summary()}, \code{plot()}). In simulation experiments with misspecified covariance
+  structures, empirical coverage of Gaussian kriging drops to 64.7\% (at a 90\% nominal target),
+  whereas \pkg{spconform} achieves 90.7\% coverage using identical point predictions.
+  Applications to heavy-metal soil contamination along the Meuse river yield stable coverage
+  across 50 random splits (mean 92.0\% geostatistical, 81.0\% areal), while daily New York
+  ground ozone monitoring demonstrates spatio-temporal calibration (89.7\% mean coverage
+  across 100 splits). The package is available on CRAN with replication scripts provided.
+}
+
+
+\Address{
+  Ahmed Sattar Jabbar\\
+  Department of Statistics\\
+  College of Administration and Economics, Al-Mustansiriya University\\
+  Baghdad, Iraq\\
+  E-mail: \email{ahmed.state.me@gmail.com}\\
+  URL: \texttt{https://github.com/amjed-droid/spconform}
+}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+%% -- Introduction -------------------------------------------------------------
+
+\section[Introduction: Conformal prediction for spatial data in R]{Introduction: Conformal prediction for spatial data in \proglang{R}}\label{sec:intro}
+
+Quantifying predictive uncertainty is fundamental across environmental monitoring, spatial epidemiology, natural resource management, and climate impact assessment. In these domains, policy decisions and risk mitigation routinely depend on whether predicted quantities exceed regulatory safety thresholds, making reliable, well-calibrated prediction intervals essential. Established spatial modeling techniques, including classical kriging \citep{Cressie:1993} and spatial Gaussian process models \citep[e.g.,][]{Zammit-Mangion+Cressie:2017}, derive prediction intervals directly from the predictive variance of a fitted Gaussian random field. In practical applications, however, the true spatial covariance structure is rarely known and must be inferred from finite, irregularly distributed sampling locations. When the covariance model is misspecified, when spatial processes exhibit non-stationarity, or when error distributions deviate from normality, model-derived predictive variances can substantially underestimate forecast uncertainty, resulting in severe empirical undercoverage.
+
+Conformal prediction \citep{Vovk+Gammerman+Shafer:2005, Lei+al:2018} provides an appealing distribution-free alternative: it produces prediction intervals with guaranteed finite-sample marginal coverage regardless of the underlying data distribution or the complexity and specification of the point prediction algorithm. Standard split-conformal methods, however, fundamentally require that observations are exchangeable. Spatial and spatio-temporal data violate exchangeability by construction. Because spatial autocorrelation induces spatial dependence---as articulated by Tobler's first law of geography---observations situated near a prediction location are typically far more informative than distant ones. When standard unweighted conformal prediction is applied to spatial data, it pools calibration scores globally across the domain, ignoring spatial geometry. This yields intervals of constant width that fail to reflect local data density, leading to overconservative intervals in dense clusters and anticonservative intervals in sparse or boundary regions.
+
+To reconcile conformal inference with spatial dependence, recent theoretical work has introduced localized and weighted conformal prediction schemes \citep{Tibshirani+al:2019, Mao+Martin+Reich:2020}. By assigning distance-dependent calibration weights, nearby calibration residuals dominate the quantile calculation for a given target location, restoring local validity under localized exchangeability conditions. Despite these theoretical developments, a unified, documented, and peer-reviewed software implementation in \proglang{R} has remained unavailable to practitioners. Existing \proglang{R} packages address distinct problems: \pkg{conformalInference} \citep{Tibshirani+al:2019}, \pkg{conformalInference.fd}, \pkg{conformalClassification}, and \pkg{cfcausal} assume exchangeable, independent observations with no spatial weighting; \pkg{conformalForecast} \citep{Wang+Hyndman:2024} and \pkg{AdaptiveConformal} \citep{Susmann+al:2023} address temporal forecasting but not spatial geometries; \pkg{scp} \citep{Mao:GitHub} provides an unmaintained prototype restricted to point data with a single fixed kernel; and \pkg{geoconformal} \citep{Lou+Luo+Meng:2025} is implemented exclusively in \proglang{Python}. Consequently, \proglang{R} users have lacked a comprehensive conformal calibration framework spanning both continuous geostatistical coordinates and discrete areal networks.
+
+The \pkg{spconform} package bridges this methodological and software gap. Distributed under the GPL-3 license on the Comprehensive \proglang{R} Archive Network (CRAN), \pkg{spconform} provides a unified, model-agnostic conformal prediction framework for continuous point-referenced data via \code{scp\_geostatistical()} and discrete areal lattice data via \code{scp\_areal()}. The package incorporates several key capabilities: (i)~flexible distance weighting using Gaussian spatial kernels (with automatic median-pairwise bandwidth selection and optional multiplicative temporal kernels) and topological shortest-path graph decay on contiguity matrices; (ii)~complete model-agnosticism, accepting arbitrary point predictors such as linear models, generalized additive models \citep{Wood:2017}, or random forests \citep{Wright+Ziegler:2017}; (iii)~a comprehensive diagnostic suite (\code{diagnose()}) that audits empirical coverage across spatial grid strata and convex-hull boundary proximity zones; and (iv)~native integration with \proglang{R}'s S3 object system via \code{print()}, \code{summary()}, and \code{plot()} methods, accompanied by the quantitative evaluation routine \code{coverage\_report()}.
+
+The remainder of this article is organized as follows. Section~\ref{sec:methodology} reviews the mathematical foundation of split conformal prediction and details the localized spatial and graph-distance weighting mechanisms. Section~\ref{sec:software} outlines the package design, source code architecture, user-facing functions, and S3 methods. Section~\ref{sec:simulation} presents a controlled Monte Carlo simulation comparing \pkg{spconform} against classical kriging under correctly specified and misspecified covariance models. Section~\ref{sec:realdata} demonstrates the package on heavy-metal soil contamination data from the Meuse river and daily ground-level ozone observations in New York. Finally, Section~\ref{sec:discussion} concludes with limitations and directions for future research.
+\section{Methodology}\label{sec:methodology}
+
+\subsection{Background: Split conformal prediction}
+
+Standard split conformal prediction \citep{Vovk+Gammerman+Shafer:2005, Lei+al:2018} constructs a marginally valid prediction interval for a new response $Y_0$ at covariates $X_0$ by (i)~splitting the available data into a proper training set and a calibration set of size~$m$, (ii)~fitting a point predictor $\hat\mu(\cdot)$ on the proper training set, (iii)~computing nonconformity absolute residuals $R_i = |Y_i - \hat\mu(X_i)|$ on the calibration set, and (iv)~forming the interval
+%
+\begin{equation} \label{eq:standard}
+\hat{C}(X_0) = \left[\hat\mu(X_0) - \hat{q}_{1-\alpha},\ \hat\mu(X_0) + \hat{q}_{1-\alpha}\right],
+\end{equation}
+%
+where $\hat{q}_{1-\alpha}$ is the $\lceil (1-\alpha)(m+1) \rceil / m$ empirical quantile of the $m$ calibration scores $\{R_i\}_{i=1}^m$. Under the assumption that $(X_1, Y_1), \ldots, (X_m, Y_m), (X_0, Y_0)$ are exchangeable, this interval satisfies the finite-sample marginal coverage guarantee
+%
+\begin{equation} \label{eq:validity}
+\Pr\!\big(Y_0 \in \hat{C}(X_0)\big) \geq 1 - \alpha,
+\end{equation}
+%
+regardless of the distribution of the data or the correctness of the point predictor $\hat\mu(\cdot)$.
+
+\subsection{Relaxing exchangeability for spatial data}
+
+Spatial autocorrelation breaks exchangeability. Unweighted conformal prediction pools calibration residuals globally, producing intervals that can be overly conservative in data-dense clusters and anticonservative near the boundaries of the observed domain. \pkg{spconform} addresses this via localized weighted conformal calibration \citep{Mao+Martin+Reich:2020, Tibshirani+al:2019}, assigning larger calibration weights to observations closest to the target location.
+
+\subsubsection{Geostatistical (point-referenced) case}
+
+For a target location $s_0$, calibration scores are combined into a locally weighted empirical quantile using Gaussian distance kernel weights
+%
+\begin{equation} \label{eq:weights}
+w_i(s_0) = \exp\!\left(-\frac{\|s_0 - s_i\|^2}{2h^2}\right),
+\end{equation}
+%
+where $h > 0$ denotes the spatial bandwidth (by default set to the median pairwise Euclidean distance among calibration locations). When an optional temporal index $t$ is supplied, an analogous temporal Gaussian kernel term $\exp(-(t_0-t_i)^2 / (2h_t^2))$ is multiplied in, yielding spatio-temporal kernel weights. The localized weighted conformal quantile at $s_0$ is then obtained as
+%
+\begin{equation} \label{eq:weighted_quantile}
+\hat q_{1-\alpha}(s_0) = \inf\left\{ r : \frac{\sum_{i: R_i \le r} w_i(s_0)}{\sum_{i=1}^m w_i(s_0)} \geq \min\left(1, \frac{(1-\alpha)(m+1)}{m}\right) \right\},
+\end{equation}
+%
+yielding the prediction interval $\hat{C}(s_0) = [\hat\mu(s_0) - \hat q_{1-\alpha}(s_0),\ \hat\mu(s_0) + \hat q_{1-\alpha}(s_0)]$. This procedure is implemented in \code{scp_geostatistical()}. Because the weights depend exclusively on the fixed coordinates and not on the response values, the finite-sample validity argument of weighted conformal prediction \citep{Tibshirani+al:2019} holds under localized exchangeability conditions.
+
+\subsubsection{Areal (lattice) case}
+
+For areal or lattice data indexed over a fixed set of geographical units equipped with an adjacency (contiguity) graph, \code{scp_areal()} employs a leave-one-out (jackknife-style) localized conformal calibration scheme: each calibration unit $i$ is held out, predicted from the remaining units, and its nonconformity score $R_i = |y_i - \hat{y}_{-i}|$ is evaluated. For a target unit $i_0$, calibration weights are defined based on the shortest-path graph distance (number of adjacency hops) from $i_0$,
+%
+\begin{equation} \label{eq:graph_weights}
+w_i(i_0) = \exp(-\lambda \cdot \mathrm{hops}(i_0, i)),
+\end{equation}
+%
+where $\lambda > 0$ controls the rate of spatial decay (\code{decay = 1} by default). Units directly adjacent or separated by few hops thus receive dominant calibration weights.
+
+
+%% -- Software ------------------------------------------------------------------
+
+\section[The spconform package: Design and implementation]{The \pkg{spconform} package: Design and implementation}\label{sec:software}
+
+\pkg{spconform} is implemented in base \proglang{R} with no external dependencies beyond the standard \pkg{stats}, \pkg{graphics}, and \pkg{grDevices} packages. This provides a lightweight installation and broad compatibility across spatial modeling workflows through its model-agnostic \code{pred\_fun} interface. The package is available on CRAN and can be installed directly via
+%
+\begin{Code}
+R> install.packages("spconform")
+\end{Code}
+%
+Alternatively, the development version can be installed from GitHub:
+%
+\begin{Code}
+R> remotes::install_github("amjed-droid/spconform")
+\end{Code}
+%
+The package architecture is organized into five core \proglang{R} scripts, each fulfilling a modular responsibility, as summarized in Table~\ref{tab:structure}.
+
+\begin{table}[t!]
+\centering
+\begin{tabular}{lp{0.66\linewidth}}
+\toprule
+File & Functional Purpose \\
+\midrule
+\code{scp\_geostatistical.R} & Implements locally weighted split conformal prediction for point-referenced spatial data, with optional spatio-temporal kernel calibration. \\
+\code{scp\_areal.R} & Implements neighbourhood-weighted leave-one-out conformal prediction for discrete areal/lattice structures using graph-topology decay. \\
+\code{diagnose.R} & Implements spatial diagnostic audits (\code{diagnose()}) across spatial coordinate grid bins and boundary proximity strata, with a dedicated \class{spconform\_diagnose} print method. \\
+\code{utils.R} & Provides exported distance weighting utilities: \code{spatial\_kernel\_weights()} for Euclidean Gaussian kernels and \code{areal\_neighbor\_weights()} for graph shortest-hop weights. \\
+\code{methods.R} & Implements S3 methods for \class{spconform} objects (\code{print()}, \code{summary()}, \code{plot()}) and the standalone evaluation function \code{coverage\_report()}. \\
+\bottomrule
+\end{tabular}
+\caption{Overview of the modular architecture and source files in the \pkg{spconform} package.}
+\label{tab:structure}
+\end{table}
+
+\subsection{User-facing functions}
+
+For point-referenced spatial data, the primary function is \code{scp_geostatistical()}, with the following signature:
+%
+\begin{Code}
+scp_geostatistical(s_train, y_train, s0, pred_fun,
+                   alpha = 0.1, split = 0.5,
+                   bandwidth = NULL,
+                   t_train = NULL, t0 = NULL,
+                   temporal_bandwidth = NULL,
+                   seed = NULL)
+\end{Code}
+%
+The function accepts training spatial coordinates \code{s\_train}, training responses \code{y\_train}, target prediction coordinates \code{s0}, and a user-supplied point predictor \code{pred\_fun} with signature \code{function(s_train, y_train, s_new)}. The parameter \code{alpha} specifies the nominal miscoverage rate ($1-\alpha = 0.90$ by default), while \code{split} governs the fraction of training units reserved for model fitting versus conformal calibration. Optional spatio-temporal calibration is activated when coordinates \code{t\_train}, \code{t0}, and \code{temporal\_bandwidth} are provided. Setting \code{seed} ensures exact pseudo-random split reproducibility.
+
+For areal lattice data, \code{scp_areal()} provides graph-based conformal calibration with signature:
+%
+\begin{Code}
+scp_areal(y, X = NULL, adjacency, pred_fun = NULL,
+          alpha = 0.1, decay = 1)
+\end{Code}
+%
+It accepts a response vector \code{y}, an optional covariate design matrix \code{X}, a symmetric binary or weighted adjacency matrix \code{adjacency}, and an optional predictor \code{pred\_fun}. When \code{pred_fun = NULL}, the procedure defaults to an internal neighbourhood-mean predictor, with fallback to the global empirical mean for graph-isolated nodes. The parameter \code{decay} ($\lambda \ge 0$) tunes the exponential penalty rate over graph topological shortest hops.
+
+\subsection{Helper utilities and spatial diagnostics}
+
+The package exports two specialized weighting engines for advanced users seeking custom workflows:
+\begin{itemize}
+\item \code{spatial\_kernel\_weights(s0, s, ...)}: Computes Gaussian kernel weights between target location \code{s0} and reference points \code{s}. By default, \code{bandwidth} is the median pairwise distance in \code{s}; optional arguments (\code{t0}, \code{t}, \code{temporal\_bandwidth}) enable spatio-temporal weighting.
+\item \code{areal\_neighbor\_weights(i0, adjacency, ...)}: Uses breadth-first search on the contiguity graph to compute shortest-hop distances, evaluating $w_i = \exp(-\lambda \cdot \mathrm{hops}(i_0, i))$ with $w_{i_0} = 0$ to avoid self-calibration bias.
+\end{itemize}
+
+To evaluate calibration across spatial subdomains, the package provides \code{diagnose(object, y_true, ...)}. This diagnostic tool partitions test locations into spatial coordinate grid bins (\code{n\_bins} along each axis) and summarizes coverage near the convex-hull boundary of the evaluated test locations (\code{s\_test}), alongside score distribution summaries.
+
+\subsection{Output structure and S3 methods}
+
+Both \code{scp_geostatistical()} and \code{scp_areal()} return an S3 object of class \class{spconform}, containing point predictions (\code{pred}), lower and upper prediction interval bounds (\code{lower}, \code{upper}), target coordinates or unit IDs (\code{s0}), the nominal miscoverage level (\code{alpha}), and the modality string (\code{type}). 
+
+The package provides standard S3 methods for \class{spconform} objects:
+%
+\begin{itemize}
+\item \code{print.spconform()}: Displays a concise summary of modality, nominal coverage, total target points, and a tabular preview of the first six intervals.
+\item \code{summary.spconform()}: Reports summary distribution metrics (mean and median) of interval width.
+\item \code{plot.spconform(x, y_true = NULL, ...)}: Generates visualization of conformal prediction intervals, optionally contrasting them against observed values \code{y\_true}.
+\item \code{coverage\_report(object, y_true)}: Computes empirical coverage rate and mean interval width against held-out ground truth observations.
+\end{itemize}
+
+\subsection{Computational considerations}
+
+The computational complexity of \code{scp_geostatistical()} is $\mathcal{O}(m \cdot n_{\mathrm{cal}} \log n_{\mathrm{cal}})$ for $m$ target prediction locations and $n_{\mathrm{cal}}$ calibration units, dominated by local weight sorting and cumulative empirical quantile extraction. The areal procedure requires $n$ refits of \code{pred\_fun} across $n$ units, giving complexity $\mathcal{O}(n \cdot \mathrm{cost}(\mathrm{pred_fun}))$. Because distance computations and quantile extractions are vectorized, calibration across hundreds of target locations requires only fractions of a second on standard personal hardware.
+
+%% -- Simulation study ----------------------------------------------------------
+
+\section{Simulation study}\label{sec:simulation}
+
+\subsection{Design}
+
+We compare \texttt{scp\_geostatistical()} against classical Gaussian-process (simple kriging) prediction intervals in a fully controlled setting where the data-generating process is known. At each replication, we simulate a mean-zero Gaussian random field on the unit square,
+%
+\begin{equation} \label{eq:gp}
+Y(s) \sim \mathcal{GP}\big(0,\ \sigma^2 \exp(-\|s-s'\|/\phi) + \tau^2 \mathbb{1}[s=s']\big),
+\end{equation}
+%
+with $\sigma^2 = 1$, $\tau^2 = 0.05$ (nugget), and true spatial range $\phi = 0.15$, observed at $n = 200$ locations drawn uniformly on $[0,1]^2$. Data are split 70/30 into training and test sets. We consider two scenarios:
+%
+\begin{itemize}
+  \item \textbf{Scenario A (correctly specified covariance).} Both the kriging predictor/variance and the point predictor supplied to \texttt{scp\_geostatistical()} use the true range $\phi = 0.15$.
+  \item \textbf{Scenario B (misspecified covariance).} Both methods instead use an incorrect range $\phi' = 3\phi = 0.45$ --- a common practical setting when the variogram is misestimated from limited data --- while the true field is still generated with $\phi = 0.15$. Here, \pkg{spconform} is supplied with the \emph{same} misspecified kriging predictor as its \code{pred\_fun}, allowing the effect of the conformal calibration layer to be evaluated directly.
+\end{itemize}
+%
+Both methods target 90\% nominal coverage ($\alpha = 0.1$); classical kriging intervals use $\hat{y}(s_0) \pm z_{0.95}\sqrt{\widehat{\mathrm{Var}}(s_0)}$ under a Gaussian assumption. Each scenario is replicated 100 times with independent random fields and train/test splits.
+
+\subsection{Results}
+
+Table~\ref{tab:simulation} summarizes empirical coverage and mean interval width across 100 replications in each scenario.
+
+\begin{table}[t!]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Scenario & Method & Mean coverage & Mean width \\
+\midrule
+A: correct covariance ($\phi=0.15$) & Kriging & 0.862 & 1.859 \\
+A: correct covariance ($\phi=0.15$) & \pkg{spconform} & 0.905 & 2.413 \\
+B: misspecified covariance ($\phi'=0.45$) & Kriging & 0.647 & 1.160 \\
+B: misspecified covariance ($\phi'=0.45$) & \pkg{spconform} & 0.907 & 2.432 \\
+\bottomrule
+\end{tabular}
+\caption{Empirical coverage (target: 0.90) and mean interval width of classical kriging intervals versus \texttt{scp\_geostatistical()}, over 100 simulation replications per scenario ($n=200$, 70/30 train/test split).}
+\label{tab:simulation}
+\end{table}
+
+In Scenario A, classical kriging achieves an empirical coverage of 86.2\% with a mean width of 1.86. \pkg{spconform} achieves 90.5\% coverage with a mean width of 2.41, exchanging interval length for distribution-free calibration.
+
+In Scenario B, where the covariance parameter is tripled ($\phi' = 0.45$), kriging coverage drops to 64.7\% because the fitted predictive variance is overly optimistic. In contrast, \pkg{spconform} maintains 90.7\% coverage (mean width 2.43) using the identical misspecified predictions, because the conformal quantile recalculates calibration error empirically rather than relying on theoretical covariance formulas.
+
+\subsection{Reproducibility}
+
+The simulation code (random field generation, simple kriging implementation, and the comparison loop) is provided in full in the standalone replication script (\code{inst/scripts/code.R}) and uses only base \proglang{R} functionality (\fct{dist} in \pkg{stats}, \fct{chol}, matrix algebra) plus \pkg{spconform} itself, requiring no additional spatial-modelling dependencies such as \pkg{gstat} or \pkg{sf}.
+
+%% -- Illustrations with real data ----------------------------------------------
+
+\section{Illustrations with real data}\label{sec:realdata}
+
+To evaluate \pkg{spconform} on empirical data, we apply the geostatistical and areal conformal procedures to the Meuse river dataset.
+
+\subsection{The Meuse river dataset}
+
+We use the \code{meuse} dataset \citep{Pebesma+Bivand:2005}, distributed with the \pkg{sp} package and used throughout the geostatistics literature as a benchmark for point-referenced spatial prediction. The dataset records heavy-metal concentrations in the top soil of a flood plain along the river Meuse, near Stein, the Netherlands, at $n = 155$ sampling locations. We use log-transformed zinc concentration (ppm) as the response.
+
+Figure~\ref{fig:geostat1} shows the 155 Meuse sampling locations, which trace a diagonal, southwest-to-northeast band following the natural course of the river ($X \in [178\,500,\ 181\,500]$, $Y \in [330\,000,\ 333\,000]$), defining the spatial-autocorrelation structure that the local kernel weighting in \texttt{scp\_geostatistical()} exploits.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=0.45\textwidth]{fig1.pdf}
+\caption{Spatial layout of the 155 Meuse river sampling locations used in the geostatistical illustration. Semi-transparent blue points mark sampling sites, which trace a diagonal southwest-to-northeast band following the natural course of the river ($X \in [178\,500, 181\,500]$, $Y \in [330\,000, 333\,000]$), defining the spatial dependence structure exploited by the local kernel weights in \texttt{scp\_geostatistical()}.}
+\label{fig:geostat1}
+\end{figure}
+
+\subsection{Geostatistical illustration}
+
+We fit a simple quadratic trend surface in the projected coordinates as a baseline point predictor, illustrating that the conformal validity guarantee operates independently of the complexity or misspecification of the underlying regression model --- a useful property of conformal methods in spatial applications.
+
+Figure~\ref{fig:geostat2} displays results on the 47 held-out test locations from a single 70/30 split. Black points give the point prediction $\hat{y}_i$, red crosses the true value $y_i$, and grey vertical segments the conformal interval. Interval widths are stable (mean 2.21 units on the log-zinc scale); 45 of the 47 test points (95.7\%) fall within their interval, above the nominal target of $1-\alpha = 0.90$ for this particular split.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=0.45\textwidth]{fig2.pdf}
+\caption{Geostatistical conformal prediction intervals at the nominal 90\% level for 47 held-out Meuse test locations. Black points: point predictions $\hat{y}_i$; red crosses: true values $y_i$; grey vertical segments: 90\% conformal intervals. Interval widths are stable (mean $\approx$2.21 log-zinc units); 45 of 47 points (95.7\%) are covered for this split.}
+\label{fig:geostat2}
+\end{figure}
+
+Figure~\ref{fig:geostat3} reports a Monte Carlo assessment repeating the 70/30 split 50 times with independent seeds. The histogram of empirical coverage peaks at the 0.95--0.96 bin (14 of 50 replications), with 82\% of replications meeting or exceeding the nominal 0.90 target. The mean coverage across replications is 0.920 (SD 0.044), confirming that the coverage guarantee of \pkg{spconform} is stable across data partitions rather than an artifact of a single split.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=0.45\textwidth]{fig3.pdf}
+\caption{Empirical coverage of \texttt{scp\_geostatistical()} across 50 independent random 70/30 splits of the Meuse dataset. The dashed red line marks the nominal target (0.90). The distribution peaks in the 0.95--0.96 bin (14/50 replications); mean coverage is 0.920 (SD = 0.044), confirming stability of the coverage guarantee across data partitions.}
+\label{fig:geostat3}
+\end{figure}
+
+Figure~\ref{fig:geostat4} plots interval width as point size at each of the 47 test locations, revealing how \texttt{scp\_geostatistical()} adapts local uncertainty to the density and configuration of nearby calibration points rather than assigning a single global interval width.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=0.45\textwidth]{fig4.pdf}
+\caption{Spatial distribution of conformal interval width for the 47 Meuse test locations. Point size is proportional to interval width, illustrating that \texttt{scp\_geostatistical()} adapts local uncertainty to the spatial configuration of nearby calibration data rather than imposing a constant interval width.}
+\label{fig:geostat4}
+\end{figure}
+
+\subsection{Sensitivity to the choice of base predictor}
+
+To examine the influence of the base learner, we evaluated \texttt{scp\_geostatistical()} across 100 random 70/30 splits using three alternative predictors: a quadratic linear trend, a generalized additive model (GAM) with smooth spatial terms \citep[fitted via the \pkg{mgcv} package;][]{Wood:2017}, and a random forest \citep[fitted via the \pkg{ranger} package;][]{Wright+Ziegler:2017}. Table~\ref{tab:models} summarizes the results.
+
+\begin{table}[t!]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Base predictor & Mean coverage & Mean interval width & SD (coverage) \\
+\midrule
+Linear model (quadratic trend) & 0.907 & 1.963 & 0.058 \\
+GAM (smooth spatial terms) & 0.912 & \textbf{1.848} & 0.061 \\
+Random Forest & 0.911 & 2.032 & 0.054 \\
+\bottomrule
+\end{tabular}
+\caption{Performance of \texttt{scp\_geostatistical()} with different base predictors on the Meuse dataset. Target coverage is 0.90. Results are averaged over 100 random 70/30 splits. All three predictors maintain empirical coverage close to the nominal 90\% level, confirming the robustness of the conformal calibration. However, the GAM yields the narrowest intervals, reflecting its ability to capture the smooth spatial structure of the zinc concentration surface. The random forest, despite its flexibility, produces wider intervals on this moderately sized dataset ($n=155$), reflecting higher finite-sample variance in tree partitioning and larger calibration residuals compared to the smooth spatial basis of the GAM.}
+\label{tab:models}
+\end{table}
+
+While all three models attain empirical coverage near the nominal 90\% level, the GAM produces the narrowest intervals (mean width 1.85), reflecting improved point predictions on smooth spatial trends.
+
+\subsection{Areal illustration}
+
+To illustrate \texttt{scp\_areal()} on the same phenomenon, we aggregate the 155 point observations onto a regular $6\times6$ grid, retaining the 21 occupied cells and taking mean log-zinc concentration within each as the areal response. A binary adjacency matrix links grid-adjacent cells.
+
+Figure~\ref{fig:areal1} shows results for all 21 areal units. Most units show narrow intervals around 1.8 units, with unit 5 showing an interval width of approximately 3.9 units (spanning roughly 4.5 to 8.4). This unit corresponds to a boundary cell in the spatial grid with a sparse neighbourhood --- i.e., few graph-adjacent units --- and therefore a smaller local calibration set. This reflects higher predictive uncertainty at the periphery of the spatial domain where fewer neighbouring units are available. Overall, 17 of 21 units (81.0\%) are covered, consistent with the 80\% nominal target given the sampling variability expected at $n=21$.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=0.45\textwidth]{fig5.pdf}
+\caption{Areal conformal prediction intervals at the nominal 80\% level for 21 grid cells aggregated from the Meuse dataset. Unit 5 exhibits a wider interval ($\approx$3.9 units) than the remaining units ($\approx$1.8 units), reflecting its position on the boundary of the spatial grid with fewer neighbours; 17 of 21 units (81.0\%) are covered.}
+\label{fig:areal1}
+\end{figure}
+
+Figure~\ref{fig:areal2} compares the distribution of interval widths between the geostatistical and areal procedures via boxplots. The geostatistical intervals are tightly concentrated between 2.1 and 2.3 units, with one low outlier near 1.83. The areal intervals have a lower median ($\approx$1.79) but a wider interquartile range, with widths extending up to $\approx$3.2 units (reflecting elevated uncertainty for boundary cells such as unit 5 in Figure~\ref{fig:areal1}), owing to the coarser, graph-based calibration underlying the areal procedure relative to the continuous-distance weighting used in the geostatistical case.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=0.45\textwidth]{fig6.pdf}
+\caption{Comparison of conformal interval widths between the geostatistical (\texttt{scp\_geostatistical()}) and areal (\texttt{scp\_areal()}) procedures on the Meuse dataset. Geostatistical intervals are tightly concentrated (2.1--2.3 units); areal intervals have a lower median ($\approx$1.79) but greater dispersion, with widths extending up to $\approx$3.2 units (reflecting elevated uncertainty for boundary cells such as unit 5 in Figure~\ref{fig:areal1}) owing to the coarser graph-based calibration of the areal procedure.}
+\label{fig:areal2}
+\end{figure}
+
+\subsection{Summary of Meuse results}
+
+Table~\ref{tab:realdata} summarizes the coverage results for the Meuse dataset presented above.
+
+\begin{table}[t!]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+Dataset & Type & $n$ & Target cov. & Emp.\ cov. & Mean width \\
+\midrule
+Meuse (point-ref.) & Geostatistical & 155 & 0.90 & 0.920 (0.957) & 1.97 (2.21) \\
+Meuse (grid) & Areal & 21 & 0.80 & 0.810 (0.810) & 1.79 (3.85 outlier) \\
+\bottomrule
+\end{tabular}
+\caption{Empirical coverage and interval width of \pkg{spconform} on the Meuse river dataset. Values in parentheses for empirical coverage indicate the single-split result; for mean width, the single-split mean (2.21) and the areal outlier (3.85) are shown. The Monte Carlo mean width across 50 geostatistical splits is 1.97.}
+\label{tab:realdata}
+\end{table}
+
+\subsection{Spatio-temporal application: New York ozone data}
+
+To demonstrate spatio-temporal conformal prediction, we applied \texttt{scp\_geostatistical()} to the \code{nysptime} dataset \citep{Sahu:bmstdr}, which contains daily 8-hour maximum ozone concentrations (ppb) from 28 monitoring stations in New York during July--August 2006. We used UTM coordinates to ensure meaningful Euclidean distances and constructed a continuous time index ($1, \dots, 62$) instead of the day-of-month to avoid aliasing between days in July and August. After removing missing values, we applied a random 70/30 split (ensuring exchangeability between training and test sets), resulting in $n_{\text{train}} = 1199$ and $n_{\text{test}} = 514$ observations. The base predictor was a GAM with a spatio-temporal smooth term \code{te(x, y, day)}, and the conformal calibration employed a Gaussian spatial kernel plus a temporal bandwidth of 5 days in the continuous time scale.
+
+Over 100 random splits, the spatio-temporal procedure yielded an average empirical coverage of \textbf{0.897} (SD = 0.017) and a mean interval width of 38.27~ppb (SD = 1.29), matching the nominal 90\% target.
+
+Table~\ref{tab:summary_final} summarises the empirical results across all three settings.
+
+\begin{table}[t!]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+Dataset & Type & $n$ & Target cov. & Emp. cov. \\
+\midrule
+Meuse (point-referenced) & Geostatistical & 155 & 0.90 & 0.920 \\
+Meuse (aggregated grid) & Areal & 21 & 0.80 & 0.810 \\
+NY ozone & Spatio-temporal & 514 (test) & 0.90 & \textbf{0.897} \\
+\bottomrule
+\end{tabular}
+\caption{Summary of empirical results for \pkg{spconform} on the Meuse and NY ozone datasets. The spatio-temporal result is the mean over 100 random 70/30 splits. The mean interval width for the NY ozone data was 38.27 ppb (SD = 1.29).}
+\label{tab:summary_final}
+\end{table}
+
+%% -- Summary and discussion -----------------------------------------------------
+
+\section{Discussion and conclusion}\label{sec:discussion}
+
+\subsection{Summary}
+
+\pkg{spconform} provides localized conformal prediction for continuous and discrete spatial data in \proglang{R}. Across simulation benchmarks and environmental applications, the package maintains empirical coverage close to nominal targets, even when the underlying point prediction model or spatial covariance is misspecified.
+
+\subsection{Limitations}
+
+Several limitations merit discussion. First, the theoretical coverage guarantee of \pkg{spconform} is \emph{marginal} rather than \emph{conditional}: it holds on average over the calibration/test distribution, not necessarily at every individual location, and relies on the local exchangeability assumptions underlying weighted conformal prediction \citep{Tibshirani+al:2019}, a limitation shared by all split-conformal methods and only partially mitigated by the local weighting scheme. Second, the choice of kernel bandwidth (geostatistical case) or decay parameter (areal case) affects the effective size of the local calibration set and therefore the bias--variance trade-off between interval width and local adaptivity; while \pkg{spconform} provides sensible automatic defaults (median pairwise distance; unit decay), users working with strongly anisotropic or multiscale spatial processes may need to tune these manually. Third, \texttt{scp\_areal()}'s leave-one-out procedure scales quadratically in the number of areal units through repeated model refitting, which may become costly for very large lattices (e.g., tens of thousands of census tracts); computational scaling is left for future work. Finally, the current implementation supports scalar continuous responses; extension to multivariate or count/binary responses would require alternative nonconformity scores.
+
+\subsection{Future work}
+
+Natural extensions include: (i) further conditional/local coverage diagnostics beyond the provided \texttt{coverage\_report()} and \texttt{diagnose()} functions; (ii) support for anisotropic and non-stationary spatial kernels; (iii) integration with existing spatial-modelling packages (e.g., accepting \pkg{gstat} or \pkg{INLA} model objects directly as \code{pred\_fun}); and (iv) extending spatio-temporal kernel weights (supported via \code{t\_train} and \code{t0} in \texttt{scp\_geostatistical()}) to areal panel data, combining the graph-distance weighting of \texttt{scp\_areal()} with a temporal kernel analogous to Section~\ref{sec:methodology}.
+
+%% -- Computational details ------------------------------------------------------
+
+\section*{Computational details}
+
+The results in this paper were obtained using \proglang{R}~4.4.1 (or higher) with the \pkg{sp} \citep{Pebesma+Bivand:2005}, \pkg{mgcv} \citep{Wood:2017}, and \pkg{bmstdr} \citep{Sahu:bmstdr} packages for spatial handling and comparative modeling. \proglang{R} itself and the \pkg{spconform} package are available from the Comprehensive \proglang{R} Archive Network (CRAN) at \url{https://CRAN.R-project.org/package=spconform} (DOI: \doi{10.32614/CRAN.package.spconform}) and can be installed directly via
+%
+\begin{Code}
+R> install.packages("spconform")
+\end{Code}
+%
+The development version is maintained on GitHub at \url{https://github.com/amjed-droid/spconform}, and a permanent snapshot (version~0.1.0) is archived on Zenodo (DOI: \url{https://doi.org/10.5281/zenodo.21862024}). The Meuse river dataset is distributed with the \pkg{sp} package and is loaded automatically via \code{data("meuse")}; it requires no separate deposit. The New York ozone dataset (\code{nysptime}) is distributed with the \pkg{bmstdr} package. All analysis scripts required to reproduce the simulation study, the Meuse river data analysis, the spatio-temporal application, and every figure and table in this article are provided as standalone replication materials (\code{code.R} and its rendered companion \code{code.html}) and are included in the package under \code{inst/scripts/code.R}.
+
+%% -- Acknowledgments ------------------------------------------------------------
+
+\section*{Acknowledgments}
+
+The author declares that no funds, grants, or other support were received during the preparation of this manuscript, and has no relevant financial or non-financial interests to disclose. Ethics approval was not applicable, as this study did not involve human participants, animals, or any data requiring ethics committee approval.
+
+%% -- Bibliography ---------------------------------------------------------------
+
+\bibliography{refs}
+
+\end{document}

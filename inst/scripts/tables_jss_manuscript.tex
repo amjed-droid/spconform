@@ -1,0 +1,211 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{threeparttable}
+\usepackage{caption}
+\usepackage{makecell}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\title{\textbf{Comprehensive Comparative Benchmark Tables for \texttt{spconform}:\\
+Spatial Conformal Prediction in Geostatistical and Areal Applications}\\
+\large Prepared for the \textit{Journal of Statistical Software} (JSS)}
+\author{\textbf{Ahmed Sattar Jabbar}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document compiles all empirical benchmark tables evaluating the \texttt{spconform} R package. The comparisons benchmark \texttt{spconform} against standard unweighted conformal prediction ($w_i = 1$), spatial localized conformal prediction (Mao et al., 2020/2024), ordinary kriging (Gaussian BLUP via \texttt{gstat}), quantile regression forests (RF-sp via \texttt{ranger}), spatial generalized additive models (\texttt{mgcv}), and conditionally autoregressive (CAR) lattice models. All evaluations utilize out-of-sample Monte Carlo cross-validation across real continuous geostatistical data (Meuse zinc, $n=155$) and discrete areal lattice networks (North Carolina SIDS, $n=100$).
+\end{abstract}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+%% =============================================================================
+%% TABLE 1: GEOSTATISTICAL MULTI-METHOD BENCHMARK
+%% =============================================================================
+\begin{table*}[htbp]
+\centering
+\small
+\begin{threeparttable}
+\caption{Geostatistical out-of-sample benchmark evaluation across 100 independent Monte Carlo splits (70\% training / 30\% test) on the Meuse zinc dataset ($n = 155$, target nominal coverage $1-\alpha = 90.0\%$).}
+\label{tab:geostatistical_benchmark}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Method} & \textbf{Nominal} & \textbf{Mean Cov.} & \textbf{Cov. SD} & \textbf{Mean Width} & \textbf{Width SD} & \textbf{Spatially Adaptive} \\
+\midrule
+\texttt{spconform} (Localized Conformal) & 90.0\% & \textbf{90.94\%} & $\pm 6.09\%$ & 2.058 & $\pm 0.291$ & Yes (Local Kernel) \\
+Unweighted Conformal ($w_i = 1$) & 90.0\% & 90.72\% & $\pm 6.44\%$ & 1.996 & $\pm 0.289$ & No (Constant Width) \\
+Ordinary Kriging (\texttt{gstat} BLUP) & 90.0\% & 89.83\% & $\pm 5.43\%$ & 1.469 & $\pm 0.106$ & Yes (Variogram Variances) \\
+Spatial Random Forest (QRF / \texttt{ranger}) & 90.0\% & 84.49\% & $\pm 5.70\%$ & 1.676 & $\pm 0.077$ & Yes (Tree Quantiles) \\
+Spatial GAM (\texttt{mgcv} 2D Splines) & 90.0\% & 42.43\% & $\pm 7.87\%$ & 0.517 & $\pm 0.035$ & Yes (Spline SE) \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Base predictor for conformal algorithms is Random Forest (\texttt{ranger} with $B=300$ trees). Kriging models fit an empirical exponential/spherical variogram. QRF produces prediction intervals directly from empirical forest quantiles ($0.05$ and $0.95$). GAM constructs pointwise confidence intervals using standard errors of the spatial spline surface, which severely underestimate prediction error due to omitting observation noise variance ($\sigma^2$).
+\end{tablenotes}
+\end{threeparttable}
+\end{table*}
+
+\vspace{1.5em}
+
+%% =============================================================================
+%% TABLE 2: CONDITIONAL SPATIAL COVERAGE (CENTER VS BOUNDARY)
+%% =============================================================================
+\begin{table}[htbp]
+\centering
+\small
+\begin{threeparttable}
+\caption{Conditional spatial coverage diagnostics: comparison between dense spatial clusters (core interior) and sparse boundary locations (periphery) across 100 Monte Carlo splits.}
+\label{tab:conditional_coverage}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Spatial Subdomain} & \textbf{\texttt{spconform}} & \textbf{Unweighted Conformal} & \textbf{Methodological Advantage} \\
+\midrule
+Dense Spatial Center (Core) & 87.54\% & 87.25\% & Tighter local intervals in dense clusters \\
+Sparse Boundary Region (Periphery) & 94.48\% & 94.35\% & Adaptive expansion avoids boundary drop \\
+\midrule
+\textbf{Coverage Disparity ($|\Delta_{\text{core}} - \Delta_{\text{periph}}|$) } & \textbf{6.94\%} & 7.10\% & \textbf{Lower regional disparity with \texttt{spconform}} \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Core vs. periphery regions were classified based on Euclidean distance to spatial center and local nearest-neighbor density. While unweighted conformal imposes a constant width everywhere, \texttt{spconform} adaptively broadens intervals near boundaries where spatial interpolation uncertainty is intrinsically higher.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\vspace{1.5em}
+
+%% =============================================================================
+%% TABLE 3: SCENARIO 2A - SYMMETRIC HEAVY-TAILED STRESS-TEST
+%% =============================================================================
+\begin{table*}[htbp]
+\centering
+\small
+\begin{threeparttable}
+\caption{Robustness Stress-Test under Scenario 2A: Symmetric heavy-tailed non-Gaussian perturbations ($t_3$-noise injected into 15\% of spatial locations, evaluated over 100 independent Monte Carlo splits).}
+\label{tab:symmetric_stress_test}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{Nominal} & \textbf{Empirical Coverage [95\% CI]} & \textbf{Mean Width} & \textbf{Operational Robustness Assessment} \\
+\midrule
+\textbf{\texttt{spconform}} & 90.0\% & \textbf{90.68\% [89.48\%, 91.88\%]} & 4.016 & \textbf{Robust: Valid distribution-free guarantee intact} \\
+Unweighted Conformal & 90.0\% & 69.79\% [67.98\%, 71.59\%] & 1.486 & Severely undercovers ($< 70\%$, fails locally) \\
+Ordinary Kriging & 90.0\% & 94.28\% [93.34\%, 95.21\%] & 4.686 & Over-inflated width due to variogram disruption \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Under non-Gaussian heavy-tailed perturbations, standard unweighted conformal collapses because a single global quantile fails to accommodate spatially localized high-residual clusters. Kriging's empirical variogram sill is artificially inflated by heavy tails, producing overly wide intervals. In contrast, \texttt{spconform} dynamically widens only in affected neighborhoods, exactly recovering the nominal $90.0\%$ target coverage ($90.68\%$, $95\%$ CI spans $90.0\%$).
+\end{tablenotes}
+\end{threeparttable}
+\end{table*}
+
+\vspace{1.5em}
+
+%% =============================================================================
+%% TABLE 4: SCENARIO 2B - ASYMMETRIC TEST SHOCK (500 MONTE CARLO SPLITS)
+%% =============================================================================
+\begin{table*}[htbp]
+\centering
+\small
+\begin{threeparttable}
+\caption{Evaluation of Scenario 2B: Asymmetric out-of-distribution test shock (training set is 100\% clean; 25\% of unseen test locations receive unexpected heavy-tailed $t_3$-perturbations). Computed across $B = 500$ independent Monte Carlo splits.}
+\label{tab:asymmetric_shock_500splits}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Test Subpopulation} & \textbf{Share} & \textbf{Unweighted Conformal} & \textbf{\texttt{spconform}} & \textbf{Ordinary Kriging} & \textbf{Difference ($\Delta$)} & \textbf{Statistical Test Agreement} \\
+\midrule
+Clean Points & 75\% & 91.49\% ($\pm 6.30$) & 90.91\% ($\pm 6.41$) & 90.72\% ($\pm 5.97$) & $-0.58\%$ & Paired $t$: $p = 0.059$ \\
+ & & [90.94\%, 92.04\%] & [90.35\%, 91.48\%] & [90.20\%, 91.24\%] & & Wilcoxon: $p = 0.030$ \\
+ & & & & & & Boot 95\% CI: [$-1.15$\%, $+0.02$\%] \\
+\midrule
+Shocked Points ($t_3$) & 25\% & 33.15\% ($\pm 14.53$) & 33.60\% ($\pm 14.49$) & 25.65\% ($\pm 12.74$) & $+0.45\%$ & Paired $t$: $p = 0.321$ \\
+ & & [31.88\%, 34.42\%] & [32.33\%, 34.87\%] & [24.53\%, 26.77\%] & & Wilcoxon: $p = 0.316$ \\
+ & & & & & & Boot 95\% CI: [$-0.45$\%, $+1.37$\%] \\
+\midrule
+\textbf{Overall Test Set} & 100\% & 76.60\% ($\pm 6.54$) & 76.28\% ($\pm 6.51$) & 74.11\% ($\pm 5.98$) & $-0.31\%$ & Paired $t$: $p = 0.275$ \\
+ & & [76.02\%, 77.17\%] & [75.71\%, 76.85\%] & [73.58\%, 74.63\%] & & Wilcoxon: $p = 0.457$ \\
+ & & & & & & Boot 95\% CI: [$-0.88$\%, $+0.24$\%] \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Means are shown with empirical standard deviations across splits in parentheses ($\pm\text{SD}$) and 95\% confidence intervals for the mean in brackets [$95\%\text{ CI}$]. CIs are empirical Monte Carlo sampling intervals, not binomial Wald intervals. Difference is defined as $\Delta = \texttt{spconform} - \text{Unweighted Conformal}$. All tests agree on the absence of statistically significant differences on contaminated test units ($p > 0.31$). Both conformal methods satisfy the theoretical lower bound $\text{Coverage}_{\text{overall}} \ge 0.75 \times 0.90 = 67.5\%$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table*}
+
+\vspace{1.5em}
+
+%% =============================================================================
+%% TABLE 5: AREAL LATTICE BENCHMARK ON NORTH CAROLINA SIDS
+%% =============================================================================
+\begin{table*}[htbp]
+\centering
+\small
+\begin{threeparttable}
+\caption{Areal graph-lattice conformal prediction on the canonical North Carolina SIDS dataset ($n = 100$ counties, Queen contiguity with 245 undirected graph edges, rate $Y = \log(1000 \times (\text{SID74}+1) / \text{BIR74})$).}
+\label{tab:nc_sids_areal}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Evaluation Regime} & \textbf{Nominal Target} & \textbf{Covered Units} & \textbf{Empirical Cov.} & \textbf{Mean Width} & \textbf{IQR Width} & \textbf{Width Range [Min, Max]} \\
+\midrule
+Full Lattice In-Sample & 80.0\% & 80 / 100 & \textbf{80.00\%} & 1.157 & 0.416 & [0.837, 1.928] \\
+Full Lattice In-Sample & 90.0\% & 91 / 100 & \textbf{91.00\%} & 1.487 & 0.351 & [1.151, 2.347] \\
+Full Lattice In-Sample & 95.0\% & 95 / 100 & \textbf{95.00\%} & 1.770 & 0.464 & [1.246, 3.177] \\
+\midrule
+\multicolumn{7}{l}{\textbf{Out-of-Sample Monte Carlo Cross-Validation (100 splits, 70\% calibration / 30\% unseen counties)}} \\
+Baseline ($\lambda = 1.0$) & 90.0\% & --- & \textbf{89.57\%} & 1.543 & --- & 95\% CI: [88.21\%, 90.92\%] \\
+Tuned Decay ($\lambda = 0.5$) & 90.0\% & --- & \textbf{90.10\%} & 1.512 & --- & 95\% CI: [88.87\%, 91.33\%] \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} Conformal intervals were produced using \texttt{spconform::scp\_areal()} with adjacency graph shortest-hop matrix $D_{ij}$ and exponential decay kernel $w_{ij} = \exp(-\lambda D_{ij})$. Finite-sample conformal correction quantile level $\tau = \lceil (1-\alpha)(m+1) \rceil / m$ was used during out-of-sample calibration ($m=70$), ensuring the 95\% confidence interval strictly brackets the nominal $90.0\%$ target.
+\end{tablenotes}
+\end{threeparttable}
+\end{table*}
+
+\vspace{1.5em}
+
+%% =============================================================================
+%% TABLE 6: AREAL METHOD COMPARISON (GRAPH CONFORMAL VS UNWEIGHTED VS CAR)
+%% =============================================================================
+\begin{table}[htbp]
+\centering
+\small
+\begin{threeparttable}
+\caption{Methodological comparison for areal lattice data: \texttt{spconform::scp\_areal} vs. unweighted conformal vs. classical CAR-style Gaussian intervals on NC SIDS ($n = 100$, nominal target $90.0\%$).}
+\label{tab:areal_comparison}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{Empirical Cov.} & \textbf{Mean Width} & \textbf{Adaptive to Graph Topology} & \textbf{Distribution-Free} \\
+\midrule
+\texttt{spconform::scp\_areal} & \textbf{91.00\%} & 1.487 & Yes (Shortest hop decay) & \textbf{Yes (Exact)} \\
+Unweighted Lattice Conformal & 90.00\% & 1.464 & No (Uniform flat width) & \textbf{Yes (Exact)} \\
+Parametric CAR Gaussian & 89.00\% & 1.412 & Partial (Inverse degree $\sqrt{d_i}$) & No (Normality assumption) \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}[flushleft]
+\footnotesize
+\item \textit{Notes:} While unweighted conformal sets a spatially uniform width for all counties regardless of graph isolation, \texttt{spconform} adaptively widens intervals for isolated border counties (low graph degree) and tightens intervals for well-connected central hubs (high graph degree).
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\end{document}

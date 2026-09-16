@@ -14,7 +14,7 @@ Description: Provides distribution-free, model-agnostic prediction intervals
     spatial-distance kernels, and a neighbourhood-weighted conformal procedure
     for areal (lattice) data based on graph adjacency structures. Relaxes the
     standard exchangeability assumption using spatial proximity, following
-    the localized conformal framework of Mao, Martin and Reich (2024)
+    the localized conformal framework of Mao, Martin and Reich (2023)
     <doi:10.1080/01621459.2022.2147531>. Includes comprehensive spatial
     diagnostic tools to audit empirical coverage, conditional spatial
     strata, and boundary proximity effects.

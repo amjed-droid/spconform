@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ara">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="litedown 0.10">
+<title>Replication Script for spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data</title>
+<style type="text/css">
+body {
+  font-family: sans-serif;
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 1.5;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+body, .abstract, code, .footnotes, footer, #refs, .caption { font-size: .9em; }
+li li { font-size: .95em; }
+ul:has(li > input[type="checkbox"]) { list-style: none; padding-left: 1em; }
+*, :before, :after { box-sizing: border-box; }
+a { color: steelblue; }
+pre, img { max-width: 100%; }
+pre { white-space: pre-wrap; word-break: break-word; }
+pre code { display: block; padding: 1em; overflow-x: auto; }
+code { font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace; }
+:not(pre, th) > code, code[class], div > .caption { background: #f8f8f8; }
+pre > code:is(:not([class]), .language-plain, .language-none, .plain), .box, .figure, .table { background: inherit; border: 1px solid #eee; }
+pre > code {
+  &.message { border-color: #9eeaf9; }
+  &.warning { background: #fff3cd; border-color: #fff3cd; }
+  &.error { background: #f8d7da; border-color: #f8d7da; }
+}
+.fenced-chunk { border-left: 1px solid #666; }
+.code-fence {
+  opacity: .4;
+  border: 1px dashed #666;
+  border-left: 2px solid;
+  &:hover { opacity: inherit; }
+}
+.box, .figure, .table, table { margin: 1em auto; }
+div > .caption { padding: 1px 1em; }
+.figure { p:has(img, svg), pre:has(svg) { text-align: center; } }
+.flex-col { display: flex; justify-content: space-between; }
+table {
+  &:only-child:not(.table > *) { margin: auto; }
+  th, td { padding: 5px; font-variant-numeric: tabular-nums; }
+  &:not([class]) {
+    thead, tfoot, tr:nth-child(even) { background: whitesmoke; }
+    thead th { border-bottom: 1px solid #ddd; }
+    border-top: 1px solid #666;
+    border-bottom: 1px solid #666;
+  }
+}
+blockquote {
+  color: #666;
+  margin: 0;
+  padding: 1px 1em;
+  border-left: .5em solid #eee;
+}
+hr, .footnotes::before { border: 1px dashed #ddd; }
+.frontmatter { text-align: center; }
+#TOC {
+  a { text-decoration: none; }
+  ul { list-style: none; padding-left: 1em; columns: 24em; }
+  & > ul { padding: 0; }
+  ul ul { border-left: 1px solid lightsteelblue; }
+}
+.body h2 { border-bottom: 1px solid #666; }
+.body .appendix, .appendix ~ h2 { border-bottom-style: dashed; }
+.main-number::after { content: "."; }
+span[class^="ref-number-"] { font-weight: bold; }
+.ref-number-fig::after, .ref-number-tab::after { content: ":"; }
+.cross-ref-chp::before { content: "Chapter "; }
+.cross-ref-sec::before { content: "Section "; }
+.cross-ref-apd::before { content: "Appendix "; }
+.cross-ref-fig::before, .ref-number-fig::before { content: "Figure "; }
+.cross-ref-tab::before, .ref-number-tab::before { content: "Table "; }
+.cross-ref-eqn::before, .MathJax_ref:has(mjx-mtext > mjx-c + mjx-c)::before { content: "Equation "; }
+.abstract, #refs {
+  &::before { display: block; margin: 1em auto; font-weight: bold; }
+}
+.abstract::before { content: "Abstract"; text-align: center; }
+#refs::before { content: "Bibliography"; font-size: 1.5em; }
+.ref-paren-open::before { content: "("; }
+.ref-paren-close::after { content: ")"; }
+.ref-semicolon::after { content: "; "; }
+.ref-and::after { content: " and "; }
+.ref-et-al::after { content: " et al."; font-style: italic; }
+.footnote-ref a {
+  &::before { content: "["; }
+  &::after { content: "]"; }
+}
+section.footnotes {
+  margin-top: 2em;
+  &::before { content: ""; display: block; max-width: 20em; }
+}
+.fade {
+  background: repeating-linear-gradient(135deg, white, white 30px, #ddd 32px, #ddd 32px);
+  opacity: 0.6;
+}
+@media (prefers-color-scheme: dark) {
+  html, img, video, iframe { filter: invert(1); }
+  body { background: #ededed; }
+}
+@media print {
+  body { max-width: 100%; }
+  tr, img { break-inside: avoid; }
+}
+@media only screen and (min-width: 992px) {
+  body:not(.pagesjs) pre:has(.line-numbers):not(:hover) { white-space: pre; }
+}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.7/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xiee/utils@1.14.69/css/prism-xcode.min.css">
+</head>
+<body>
+<div class="frontmatter">
+<div class="title"><h1>Replication Script for spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data</h1></div>
+<div class="author"><h2>Ahmed Sattar Jabbar</h2></div>
+<div class="date"><h3>2026-09-16</h3></div>
+</div>
+<div class="body">
+<div id="TOC">
+<ul class="numbered">
+<li><a href="#chp:introduction-amp-environment-setup"><span class="section-number main-number">1</span> Introduction &amp; Environment Setup</a></li>
+<li><a href="#chp:part-1-geostatistical-point-referenced-analysis"><span class="section-number main-number">2</span> Part 1: Geostatistical (Point-Referenced) Analysis</a>
+<ul>
+<li><a href="#sec:figure-1-spatial-sampling-locations"><span class="section-number">2.1</span> Figure 1: Spatial Sampling Locations</a></li>
+<li><a href="#sec:figure-2-single-split-prediction-intervals"><span class="section-number">2.2</span> Figure 2: Single Split Prediction Intervals</a></li>
+<li><a href="#sec:figure-3-empirical-coverage-across-50-monte-carlo-splits"><span class="section-number">2.3</span> Figure 3: Empirical Coverage Across 50 Monte Carlo Splits</a></li>
+<li><a href="#sec:figure-4-spatial-distribution-of-prediction-interval-width"><span class="section-number">2.4</span> Figure 4: Spatial Distribution of Prediction Interval Width</a></li>
+</ul>
+</li>
+<li><a href="#chp:part-2-spatial-diagnostics"><span class="section-number main-number">3</span> Part 2: Spatial Diagnostics</a></li>
+<li><a href="#chp:part-3-areal-lattice-conformal-prediction"><span class="section-number main-number">4</span> Part 3: Areal Lattice Conformal Prediction</a>
+<ul>
+<li><a href="#sec:figure-6-areal-prediction-intervals"><span class="section-number">4.1</span> Figure 6: Areal Prediction Intervals</a></li>
+<li><a href="#sec:figure-7-interval-width-comparison-geostatistical-vs-areal"><span class="section-number">4.2</span> Figure 7: Interval Width Comparison (Geostatistical vs. Areal)</a></li>
+</ul>
+</li>
+<li><a href="#chp:part-4-held-out-areal-evaluation-figure-8"><span class="section-number main-number">5</span> Part 4: Held-Out Areal Evaluation (Figure 8)</a></li>
+<li><a href="#chp:part-5-sensitivity-analysis-across-base-predictors"><span class="section-number main-number">6</span> Part 5: Sensitivity Analysis Across Base Predictors</a></li>
+<li><a href="#chp:part-6-spatio-temporal-application-new-york-ozone-data"><span class="section-number main-number">7</span> Part 6: Spatio-Temporal Application (New York Ozone Data)</a></li>
+<li><a href="#chp:part-7-final-summary-table-amp-session-information"><span class="section-number main-number">8</span> Part 7: Final Summary Table &amp; Session Information</a>
+<ul>
+<li><a href="#sec:session-information"><span class="section-number">8.1</span> Session Information</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<h1 id="chp:introduction-amp-environment-setup"><span class="section-number main-number">1</span> Introduction &amp; Environment Setup</h1>
+<p>This standalone replication script reproduces all figures, tables, Monte Carlo
+simulations, and empirical benchmarks presented in the <em>Journal of Statistical Software</em> (JSS)
+manuscript for the <strong>spconform</strong> package.</p>
+<p>The <strong>spconform</strong> package provides distribution-free, model-agnostic prediction intervals
+for spatially and spatio-temporally dependent data via localized conformal calibration,
+relaxing classical exchangeability assumptions through spatial proximity kernels.</p>
+<pre><code class="language-r">options(stringsAsFactors = FALSE)
+
+# Set global pseudo-random number generator seed for exact reproducibility
+SEED &lt;- 123
+set.seed(SEED)
+
+# Output directory for saving standalone PDF figures and diagnostic artifacts
+OUTPUT_DIR &lt;- Sys.getenv(&quot;SPCONFORM_OUTPUT_DIR&quot;, unset = file.path(tempdir(), &quot;figures&quot;))
+if (!dir.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR, recursive = TRUE)
+cat(sprintf(&quot;[Setup] Destination for figure PDFs and artifacts: %s\n&quot;, OUTPUT_DIR))
+</code></pre>
+<pre><code>## [Setup] Destination for figure PDFs and artifacts: D:\TempFlutter\RtmpIXI4XR/figures
+</code></pre>
+<pre><code class="language-r"># Helper function to save PDF and display inline for knitr::spin HTML output
+render_and_save &lt;- function(filename, plot_code, width = 7, height = 5) {
+  pdf_path &lt;- file.path(OUTPUT_DIR, filename)
+  pdf(pdf_path, width = width, height = height)
+  tryCatch(plot_code(), finally = dev.off())
+  plot_code()
+}
+
+# Load required libraries
+suppressPackageStartupMessages({
+  library(spconform)
+  library(sp)
+  library(mgcv)
+  library(ranger)
+  library(bmstdr)
+})
+</code></pre>
+<h1 id="chp:part-1-geostatistical-point-referenced-analysis"><span class="section-number main-number">2</span> Part 1: Geostatistical (Point-Referenced) Analysis</h1>
+<p>We illustrate localized split conformal prediction using the canonical Meuse River
+heavy metal dataset (\(n = 155\)). The target variable is log-zinc concentration
+measured at continuous spatial sampling coordinates.</p>
+<pre><code class="language-r">data(meuse, package = &quot;sp&quot;)
+s &lt;- as.matrix(meuse[, c(&quot;x&quot;, &quot;y&quot;)])
+y &lt;- log(meuse$zinc)
+n &lt;- nrow(s)
+
+# Define quadratic spatial trend surface as base regression predictor
+pred_fun_quad &lt;- function(s_train, y_train, s_new) {
+  fit &lt;- lm(y_train ~ s_train[, 1] + s_train[, 2] +
+              I(s_train[, 1]^2) + I(s_train[, 2]^2))
+  cbind(1, s_new[, 1], s_new[, 2],
+        s_new[, 1]^2, s_new[, 2]^2) %*% coef(fit)
+}
+</code></pre>
+<h2 id="sec:figure-1-spatial-sampling-locations"><span class="section-number">2.1</span> Figure 1: Spatial Sampling Locations</h2>
+<p>Map of the 155 monitoring stations along the Meuse River flood plain.</p>
+<pre><code class="language-r">render_and_save(&quot;fig1.pdf&quot;, function() {
+  plot(meuse$x, meuse$y,
+       col = rgb(0.2, 0.4, 0.8, 0.6), pch = 19, cex = 1.2,
+       xlab = &quot;Easting (X)&quot;, ylab = &quot;Northing (Y)&quot;,
+       main = &quot;Figure 1: Meuse River Sampling Locations&quot;)
+  grid(col = &quot;gray90&quot;)
+}, width = 6, height = 5)
+</code></pre>
+<div class="figure" style="text-align: center">
+<img src="data:image/png;base64,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" alt="Figure 1: Meuse River Sampling Locations"  />
+<p class="caption">Figure 1: Meuse River Sampling Locations</p>
+</div>
+<h2 id="sec:figure-2-single-split-prediction-intervals"><span class="section-number">2.2</span> Figure 2: Single Split Prediction Intervals</h2>
+<p>Evaluate a single 70% calibration / 30% test split with target nominal coverage \(1 - \alpha = 90\%\).</p>
+<pre><code class="language-r">set.seed(SEED)
+idx_single &lt;- sample(n, floor(0.7 * n))
+s_train &lt;- s[idx_single, ]; y_train &lt;- y[idx_single]
+s_test  &lt;- s[-idx_single, ]; y_test  &lt;- y[-idx_single]
+
+out_single &lt;- scp_geostatistical(
+  s_train  = s_train,
+  y_train  = y_train,
+  s0       = s_test,
+  pred_fun = pred_fun_quad,
+  alpha    = 0.1,
+  seed     = SEED
+)
+</code></pre>
+<pre><code class="language-r">render_and_save(&quot;fig2.pdf&quot;, function() {
+  if (any(is.na(out_single$lower)) || any(is.na(out_single$upper))) {
+    valid &lt;- !is.na(out_single$lower) &amp; !is.na(out_single$upper)
+    out_plot &lt;- out_single
+    out_plot$lower &lt;- out_single$lower[valid]
+    out_plot$upper &lt;- out_single$upper[valid]
+    out_plot$pred  &lt;- out_single$pred[valid]
+    plot(out_plot, y_true = y_test[valid],
+         main = &quot;Figure 2: Geostatistical Prediction Intervals (Single Split)&quot;)
+  } else {
+    plot(out_single, y_true = y_test,
+         main = &quot;Figure 2: Geostatistical Prediction Intervals (Single Split)&quot;)
+  }
+}, width = 7, height = 5)
+</code></pre>
+<pre><code>## Error in `plot.default()`:
+## ! formal argument &quot;main&quot; matched by multiple actual arguments
+</code></pre>
+<pre><code class="language-r">single_report &lt;- coverage_report(out_single, y_test)
+cat(sprintf(&quot;Single-split empirical coverage: %.3f\n&quot;, single_report$coverage))
+</code></pre>
+<pre><code>## Single-split empirical coverage: 1.000
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Single-split mean interval width: %.3f\n&quot;, single_report$mean_width))
+</code></pre>
+<pre><code>## Single-split mean interval width: 2.730
+</code></pre>
+<h2 id="sec:figure-3-empirical-coverage-across-50-monte-carlo-splits"><span class="section-number">2.3</span> Figure 3: Empirical Coverage Across 50 Monte Carlo Splits</h2>
+<p>Evaluate distribution-free coverage stability over 50 independent random partitions.</p>
+<pre><code class="language-r">set.seed(SEED)
+n_mc &lt;- 50
+coverages_mc &lt;- numeric(n_mc)
+widths_mc    &lt;- numeric(n_mc)
+
+for (i in seq_len(n_mc)) {
+  idx_i &lt;- sample(n, floor(0.7 * n))
+  s_tr  &lt;- s[idx_i, ]; y_tr &lt;- y[idx_i]
+  s_te  &lt;- s[-idx_i, ]; y_te &lt;- y[-idx_i]
+  
+  out_i &lt;- scp_geostatistical(s_tr, y_tr, s_te, pred_fun_quad,
+                              alpha = 0.1, seed = i)
+  rep_i &lt;- coverage_report(out_i, y_te)
+  coverages_mc[i] &lt;- rep_i$coverage
+  widths_mc[i]    &lt;- rep_i$mean_width
+}
+</code></pre>
+<pre><code class="language-r">render_and_save(&quot;fig3.pdf&quot;, function() {
+  hist(coverages_mc, breaks = 12, col = &quot;#A6CEE3&quot;, border = &quot;white&quot;,
+       main = &quot;Figure 3: Empirical Coverage Across 50 Random Splits&quot;,
+       xlab = &quot;Empirical Out-of-Sample Coverage&quot;, xlim = c(0.75, 1.0))
+  abline(v = 0.90, col = &quot;red&quot;, lwd = 2, lty = 2)
+  legend(&quot;topleft&quot;, legend = &quot;Nominal Target (0.90)&quot;,
+         col = &quot;red&quot;, lty = 2, lwd = 2, bty = &quot;n&quot;)
+}, width = 6, height = 5)
+</code></pre>
+<div class="figure" style="text-align: center">
+<img src="data:image/png;base64,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" alt="Figure 3: Empirical Coverage Across 50 Random Splits"  />
+<p class="caption">Figure 3: Empirical Coverage Across 50 Random Splits</p>
+</div>
+<pre><code class="language-r">cat(sprintf(&quot;Mean MC coverage (50 splits): %.3f (SD: %.3f)\n&quot;, mean(coverages_mc), sd(coverages_mc)))
+</code></pre>
+<pre><code>## Mean MC coverage (50 splits): 0.920 (SD: 0.044)
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Mean MC interval width:        %.3f (SD: %.3f)\n&quot;, mean(widths_mc), sd(widths_mc)))
+</code></pre>
+<pre><code>## Mean MC interval width:        1.973 (SD: 0.208)
+</code></pre>
+<h2 id="sec:figure-4-spatial-distribution-of-prediction-interval-width"><span class="section-number">2.4</span> Figure 4: Spatial Distribution of Prediction Interval Width</h2>
+<p>Demonstrating spatial adaptivity: localized intervals naturally adapt to local sample density.</p>
+<pre><code class="language-r">width_test &lt;- out_single$upper - out_single$lower
+render_and_save(&quot;fig4.pdf&quot;, function() {
+  plot(s_test[, 1], s_test[, 2], cex = width_test * 0.8, pch = 19,
+       col = rgb(0.2, 0.4, 0.8, 0.6),
+       xlab = &quot;Easting (X)&quot;, ylab = &quot;Northing (Y)&quot;,
+       main = &quot;Figure 4: Spatial Distribution of Interval Width&quot;)
+  grid(col = &quot;gray90&quot;)
+}, width = 6, height = 5)
+</code></pre>
+<div class="figure" style="text-align: center">
+<img src="data:image/png;base64,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" alt="Figure 4: Spatial Distribution of Interval Width"  />
+<p class="caption">Figure 4: Spatial Distribution of Interval Width</p>
+</div>
+<h1 id="chp:part-2-spatial-diagnostics"><span class="section-number main-number">3</span> Part 2: Spatial Diagnostics</h1>
+<p>We run comprehensive spatial diagnostics (<code>diagnose()</code>) to evaluate residual calibration
+across spatial subdomains and distance bins.</p>
+<pre><code class="language-r">render_and_save(&quot;fig5.pdf&quot;, function() {
+  diag_meuse &lt;- diagnose(
+    object = out_single,
+    y_true = y_test,
+    s_test = s_test,
+    n_bins = 4,
+    plot   = TRUE
+  )
+}, width = 8.5, height = 7)
+</code></pre>
+<div class="figure" style="text-align: center">
+<img src="data:image/png;base64,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" alt="Figure 5: Comprehensive Spatial Diagnostics"  />
+<p class="caption">Figure 5: Comprehensive Spatial Diagnostics</p>
+</div>
+<pre><code class="language-r">diag_meuse &lt;- diagnose(object = out_single, y_true = y_test, s_test = s_test, n_bins = 4, plot = FALSE)
+saveRDS(diag_meuse, file = file.path(OUTPUT_DIR, &quot;spconform_diagnostics.rds&quot;))
+cat(&quot;Spatial diagnostics artifact saved to spconform_diagnostics.rds\n&quot;)
+</code></pre>
+<pre><code>## Spatial diagnostics artifact saved to spconform_diagnostics.rds
+</code></pre>
+<h1 id="chp:part-3-areal-lattice-conformal-prediction"><span class="section-number main-number">4</span> Part 3: Areal Lattice Conformal Prediction</h1>
+<p>We illustrate graph-based areal conformal prediction (<code>scp_areal()</code>) on regular
+lattice data aggregated from the Meuse dataset onto a 6x6 spatial grid.</p>
+<pre><code class="language-r">xbreaks &lt;- seq(min(meuse$x), max(meuse$x), length.out = 7)
+ybreaks &lt;- seq(min(meuse$y), max(meuse$y), length.out = 7)
+
+meuse$cell_x  &lt;- cut(meuse$x, xbreaks, include.lowest = TRUE, labels = FALSE)
+meuse$cell_y  &lt;- cut(meuse$y, ybreaks, include.lowest = TRUE, labels = FALSE)
+meuse$cell_id &lt;- (meuse$cell_y - 1) * 6 + meuse$cell_x
+
+agg &lt;- aggregate(log(zinc) ~ cell_id, data = meuse, FUN = mean)
+names(agg) &lt;- c(&quot;cell_id&quot;, &quot;y&quot;)
+cell_coords &lt;- unique(meuse[, c(&quot;cell_id&quot;, &quot;cell_x&quot;, &quot;cell_y&quot;)])
+agg &lt;- merge(agg, cell_coords, by = &quot;cell_id&quot;)
+agg &lt;- agg[order(agg$cell_id), ]
+n_cells &lt;- nrow(agg)
+
+# Build Queen contiguity binary adjacency matrix
+adj_full &lt;- matrix(0, nrow = n_cells, ncol = n_cells)
+for (i in seq_len(n_cells)) {
+  for (j in seq_len(n_cells)) {
+    if (i != j) {
+      dx &lt;- abs(agg$cell_x[i] - agg$cell_x[j])
+      dy &lt;- abs(agg$cell_y[i] - agg$cell_y[j])
+      if (dx &lt;= 1 &amp;&amp; dy &lt;= 1) adj_full[i, j] &lt;- 1
+    }
+  }
+}
+
+# Run areal localized conformal prediction (nominal 80% coverage)
+out_areal &lt;- scp_areal(agg$y, adjacency = adj_full, alpha = 0.2, decay = 0.5)
+</code></pre>
+<h2 id="sec:figure-6-areal-prediction-intervals"><span class="section-number">4.1</span> Figure 6: Areal Prediction Intervals</h2>
+<p>Point predictions and conformal intervals across lattice cells.</p>
+<pre><code class="language-r">render_and_save(&quot;fig6.pdf&quot;, function() {
+  if (any(is.na(out_areal$lower)) || any(is.na(out_areal$upper))) {
+    valid &lt;- !is.na(out_areal$lower) &amp; !is.na(out_areal$upper)
+    out_plot &lt;- out_areal
+    out_plot$lower &lt;- out_areal$lower[valid]
+    out_plot$upper &lt;- out_areal$upper[valid]
+    out_plot$pred  &lt;- out_areal$pred[valid]
+    plot(out_plot, y_true = agg$y[valid],
+         main = &quot;Figure 6: Areal Prediction Intervals (Lattice Grid)&quot;)
+  } else {
+    plot(out_areal, y_true = agg$y,
+         main = &quot;Figure 6: Areal Prediction Intervals (Lattice Grid)&quot;)
+  }
+}, width = 7, height = 5)
+</code></pre>
+<pre><code>## Error in `plot.default()`:
+## ! formal argument &quot;main&quot; matched by multiple actual arguments
+</code></pre>
+<h2 id="sec:figure-7-interval-width-comparison-geostatistical-vs-areal"><span class="section-number">4.2</span> Figure 7: Interval Width Comparison (Geostatistical vs. Areal)</h2>
+<pre><code class="language-r">geo_w   &lt;- width_test[!is.na(width_test)]
+areal_w &lt;- (out_areal$upper - out_areal$lower)[!is.na(out_areal$upper - out_areal$lower)]
+
+render_and_save(&quot;fig7.pdf&quot;, function() {
+  boxplot(list(&quot;Geostatistical (Point)&quot; = geo_w,
+               &quot;Areal (Lattice Grid)&quot;   = areal_w),
+          main = &quot;Figure 7: Interval Width Distribution&quot;,
+          ylab = &quot;Interval Width&quot;,
+          col  = c(&quot;#A6CEE3&quot;, &quot;#B2DF8A&quot;),
+          las  = 1)
+}, width = 6, height = 5)
+</code></pre>
+<div class="figure" style="text-align: center">
+<img src="data:image/png;base64,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" alt="Figure 7: Interval Width Comparison"  />
+<p class="caption">Figure 7: Interval Width Comparison</p>
+</div>
+<pre><code class="language-r">rep_areal &lt;- coverage_report(out_areal, agg$y)
+cat(sprintf(&quot;Areal empirical coverage: %.3f\n&quot;, rep_areal$coverage))
+</code></pre>
+<pre><code>## Areal empirical coverage: 0.810
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;Areal mean interval width: %.3f\n&quot;, rep_areal$mean_width))
+</code></pre>
+<pre><code>## Areal mean interval width: 1.790
+</code></pre>
+<h1 id="chp:part-4-held-out-areal-evaluation-figure-8"><span class="section-number main-number">5</span> Part 4: Held-Out Areal Evaluation (Figure 8)</h1>
+<p>Cross-validation across 50 random splits on the areal lattice, evaluating training
+leave-one-out calibration versus out-of-sample test county/cell coverage.</p>
+<pre><code class="language-r">n_reps_areal &lt;- 50
+alpha_areal  &lt;- 0.2
+results_areal &lt;- data.frame(
+  train_coverage = numeric(n_reps_areal),
+  train_width    = numeric(n_reps_areal),
+  test_coverage  = numeric(n_reps_areal),
+  test_width     = numeric(n_reps_areal)
+)
+
+for (r in seq_len(n_reps_areal)) {
+  set.seed(r)
+  tr_idx &lt;- sample(n_cells, size = floor(0.7 * n_cells))
+  te_idx &lt;- setdiff(seq_len(n_cells), tr_idx)
+  
+  y_tr &lt;- agg$y[tr_idx]
+  y_te &lt;- agg$y[te_idx]
+  adj_tr &lt;- adj_full[tr_idx, tr_idx]
+  
+  cal_out &lt;- tryCatch(
+    scp_areal(y_tr, adjacency = adj_tr, alpha = alpha_areal, decay = 0.5),
+    error = function(e) NULL
+  )
+  if (is.null(cal_out)) next
+  
+  tr_cov &lt;- (cal_out$lower &lt;= y_tr) &amp; (y_tr &lt;= cal_out$upper)
+  results_areal$train_coverage[r] &lt;- mean(tr_cov, na.rm = TRUE)
+  results_areal$train_width[r]    &lt;- mean(cal_out$upper - cal_out$lower, na.rm = TRUE)
+  
+  # Held-out calibration via BFS shortest graph hops
+  m_tr &lt;- length(tr_idx)
+  cal_scores &lt;- numeric(m_tr)
+  for (i in seq_along(tr_idx)) {
+    idx_loo &lt;- setdiff(seq_along(tr_idx), i)
+    pred_loo &lt;- if (length(idx_loo) &gt; 0) mean(y_tr[idx_loo]) else 0
+    cal_scores[i] &lt;- abs(y_tr[i] - pred_loo)
+  }
+  
+  tau &lt;- min(1, (1 - alpha_areal) * (m_tr + 1) / m_tr)
+  te_lower &lt;- numeric(length(te_idx))
+  te_upper &lt;- numeric(length(te_idx))
+  
+  for (j in seq_along(te_idx)) {
+    target_node &lt;- te_idx[j]
+    # BFS distance calculation
+    dist_vec &lt;- rep(Inf, n_cells)
+    dist_vec[target_node] &lt;- 0
+    queue &lt;- target_node
+    while (length(queue) &gt; 0) {
+      curr &lt;- queue[1]; queue &lt;- queue[-1]
+      nbrs &lt;- which(adj_full[curr, ] == 1)
+      for (nb in nbrs) {
+        if (is.infinite(dist_vec[nb])) {
+          dist_vec[nb] &lt;- dist_vec[curr] + 1
+          queue &lt;- c(queue, nb)
+        }
+      }
+    }
+    w_vec &lt;- exp(-0.5 * dist_vec[tr_idx])
+    adj_conn &lt;- adj_full[target_node, tr_idx]
+    pred_pt  &lt;- if (sum(adj_conn) &gt; 0) mean(y_tr[adj_conn == 1]) else mean(y_tr)
+    
+    ord &lt;- order(cal_scores)
+    sorted_s &lt;- cal_scores[ord]
+    sorted_w &lt;- w_vec[ord]
+    
+    if (sum(sorted_w) &gt; 0) {
+      cw &lt;- cumsum(sorted_w) / sum(sorted_w)
+      q_hat &lt;- sorted_s[min(which(cw &gt;= tau))]
+    } else {
+      q_hat &lt;- max(cal_scores)
+    }
+    te_lower[j] &lt;- pred_pt - q_hat
+    te_upper[j] &lt;- pred_pt + q_hat
+  }
+  
+  te_cov &lt;- (y_te &gt;= te_lower) &amp; (y_te &lt;= te_upper)
+  results_areal$test_coverage[r] &lt;- mean(te_cov, na.rm = TRUE)
+  results_areal$test_width[r]    &lt;- mean(te_upper - te_lower, na.rm = TRUE)
+}
+</code></pre>
+<pre><code class="language-r">render_and_save(&quot;fig8.pdf&quot;, function() {
+  oldpar &lt;- par(no.readonly = TRUE)
+  par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3.5, 1.5))
+  
+  boxplot(list(&quot;Training (LOO)&quot; = results_areal$train_coverage,
+               &quot;Held-out Test&quot;  = results_areal$test_coverage),
+          main = &quot;Coverage: Training LOO vs Test&quot;,
+          ylab = &quot;Empirical Coverage&quot;,
+          col  = c(&quot;#A6CEE3&quot;, &quot;#B2DF8A&quot;),
+          ylim = c(0.4, 1.0), las = 1)
+  abline(h = 1 - alpha_areal, col = &quot;red&quot;, lty = 2, lwd = 2)
+  legend(&quot;bottomright&quot;, legend = sprintf(&quot;Nominal (%.2f)&quot;, 1 - alpha_areal),
+         col = &quot;red&quot;, lty = 2, lwd = 2, bty = &quot;n&quot;)
+  
+  boxplot(list(&quot;Training (LOO)&quot; = results_areal$train_width,
+               &quot;Held-out Test&quot;  = results_areal$test_width),
+          main = &quot;Interval Width: Training vs Test&quot;,
+          ylab = &quot;Mean Width&quot;,
+          col  = c(&quot;#A6CEE3&quot;, &quot;#B2DF8A&quot;), las = 1)
+  par(oldpar)
+}, width = 8.5, height = 4.5)
+</code></pre>
+<div class="figure" style="text-align: center">
+<img src="data:image/png;base64,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" alt="Figure 8: Held-Out Areal Evaluation"  />
+<p class="caption">Figure 8: Held-Out Areal Evaluation</p>
+</div>
+<h1 id="chp:part-5-sensitivity-analysis-across-base-predictors"><span class="section-number main-number">6</span> Part 5: Sensitivity Analysis Across Base Predictors</h1>
+<p>Evaluating conformal prediction robustness across multiple machine learning base predictors:</p>
+<ol>
+<li>Quadratic Linear Model (<code>lm</code>)</li>
+<li>Generalized Additive Model (<code>mgcv::gam</code>)</li>
+<li>Random Forest (<code>ranger</code>)</li>
+</ol>
+<pre><code class="language-r">pred_fun_gam &lt;- function(s_train, y_train, s_new) {
+  train_df &lt;- data.frame(x = s_train[, 1], y = s_train[, 2], z = y_train)
+  fit &lt;- gam(z ~ s(x) + s(y), data = train_df)
+  new_df &lt;- data.frame(x = s_new[, 1], y = s_new[, 2])
+  as.numeric(predict(fit, newdata = new_df))
+}
+
+pred_fun_rf &lt;- function(s_train, y_train, s_new) {
+  train_df &lt;- data.frame(x = s_train[, 1], y = s_train[, 2], z = y_train)
+  fit &lt;- ranger(z ~ x + y, data = train_df, num.trees = 300,
+                mtry = 1, min.node.size = 5, seed = SEED)
+  new_df &lt;- data.frame(x = s_new[, 1], y = s_new[, 2])
+  predict(fit, data = new_df)$predictions
+}
+
+set.seed(SEED)
+n_splits_sens &lt;- 50
+res_lm  &lt;- data.frame(coverage = numeric(n_splits_sens), width = numeric(n_splits_sens))
+res_gam &lt;- data.frame(coverage = numeric(n_splits_sens), width = numeric(n_splits_sens))
+res_rf  &lt;- data.frame(coverage = numeric(n_splits_sens), width = numeric(n_splits_sens))
+
+for (i in seq_len(n_splits_sens)) {
+  idx &lt;- sample(n, floor(0.7 * n))
+  s_tr &lt;- s[idx, ]; y_tr &lt;- y[idx]
+  s_te &lt;- s[-idx, ]; y_te &lt;- y[-idx]
+  
+  # Linear Model
+  out_l &lt;- scp_geostatistical(s_tr, y_tr, s_te, pred_fun_quad, alpha = 0.1, seed = i)
+  rep_l &lt;- coverage_report(out_l, y_te)
+  res_lm$coverage[i] &lt;- rep_l$coverage; res_lm$width[i] &lt;- rep_l$mean_width
+  
+  # GAM
+  out_g &lt;- scp_geostatistical(s_tr, y_tr, s_te, pred_fun_gam, alpha = 0.1, seed = i)
+  rep_g &lt;- coverage_report(out_g, y_te)
+  res_gam$coverage[i] &lt;- rep_g$coverage; res_gam$width[i] &lt;- rep_g$mean_width
+  
+  # Random Forest
+  out_r &lt;- scp_geostatistical(s_tr, y_tr, s_te, pred_fun_rf, alpha = 0.1, seed = i)
+  rep_r &lt;- coverage_report(out_r, y_te)
+  res_rf$coverage[i] &lt;- rep_r$coverage; res_rf$width[i] &lt;- rep_r$mean_width
+}
+
+sens_summary &lt;- data.frame(
+  Predictor = c(&quot;Linear Model (Quadratic)&quot;, &quot;Spatial GAM (Splines)&quot;, &quot;Random Forest (ranger)&quot;),
+  Nominal   = c(&quot;90.0%&quot;, &quot;90.0%&quot;, &quot;90.0%&quot;),
+  Empirical_Coverage = sprintf(&quot;%.3f (SD: %.3f)&quot;, 
+                               c(mean(res_lm$coverage), mean(res_gam$coverage), mean(res_rf$coverage)),
+                               c(sd(res_lm$coverage), sd(res_gam$coverage), sd(res_rf$coverage))),
+  Mean_Width = sprintf(&quot;%.3f (SD: %.3f)&quot;, 
+                       c(mean(res_lm$width), mean(res_gam$width), mean(res_rf$width)),
+                       c(sd(res_lm$width), sd(res_gam$width), sd(res_rf$width)))
+)
+print(sens_summary)
+</code></pre>
+<pre><code>##                  Predictor Nominal Empirical_Coverage        Mean_Width
+## 1 Linear Model (Quadratic)   90.0%  0.909 (SD: 0.055) 1.940 (SD: 0.230)
+## 2    Spatial GAM (Splines)   90.0%  0.913 (SD: 0.052) 1.839 (SD: 0.283)
+## 3   Random Forest (ranger)   90.0%  0.904 (SD: 0.059) 2.035 (SD: 0.242)
+</code></pre>
+<h1 id="chp:part-6-spatio-temporal-application-new-york-ozone-data"><span class="section-number main-number">7</span> Part 6: Spatio-Temporal Application (New York Ozone Data)</h1>
+<p>Conformal calibration applied to real-world spatio-temporal data from the <strong>bmstdr</strong>
+package, monitoring maximum 8-hour ozone concentrations across New York State.</p>
+<pre><code class="language-r">data(&quot;nysptime&quot;, package = &quot;bmstdr&quot;)
+df_st &lt;- nysptime[complete.cases(nysptime[, c(&quot;utmx&quot;, &quot;utmy&quot;, &quot;y8hrmax&quot;, &quot;Day&quot;, &quot;Month&quot;)]), ]
+df_st$day_idx &lt;- ifelse(df_st$Month == 7, df_st$Day, 31 + df_st$Day)
+
+s_st &lt;- as.matrix(df_st[, c(&quot;utmx&quot;, &quot;utmy&quot;)])
+y_st &lt;- df_st$y8hrmax
+t_st &lt;- df_st$day_idx
+s_3d &lt;- cbind(s_st, t_st)
+n_st &lt;- nrow(s_3d)
+
+pred_fun_gam_3d &lt;- function(s_train, y_train, s_new) {
+  train_df &lt;- data.frame(x = s_train[, 1], y = s_train[, 2], day = s_train[, 3], z = y_train)
+  fit &lt;- gam(z ~ te(x, y, day, k = c(8, 8, 4)), data = train_df)
+  new_df &lt;- data.frame(x = s_new[, 1], y = s_new[, 2], day = s_new[, 3])
+  as.numeric(predict(fit, newdata = new_df))
+}
+
+set.seed(SEED)
+n_reps_st &lt;- 50
+covs_st   &lt;- numeric(n_reps_st)
+wids_st   &lt;- numeric(n_reps_st)
+
+for (i in seq_len(n_reps_st)) {
+  idx_st &lt;- sample(n_st, floor(0.7 * n_st))
+  out_st &lt;- scp_geostatistical(
+    s_train            = s_3d[idx_st, ],
+    y_train            = y_st[idx_st],
+    s0                 = s_3d[-idx_st, ],
+    pred_fun           = pred_fun_gam_3d,
+    t_train            = t_st[idx_st],
+    t0                 = t_st[-idx_st],
+    temporal_bandwidth = 5,
+    alpha              = 0.1,
+    split              = 0.5,
+    seed               = i
+  )
+  rep_st &lt;- coverage_report(out_st, y_st[-idx_st])
+  covs_st[i] &lt;- rep_st$coverage
+  wids_st[i] &lt;- rep_st$mean_width
+}
+
+# Save spatio-temporal CSV results
+st_results_df &lt;- data.frame(
+  replication = seq_len(n_reps_st),
+  coverage    = covs_st,
+  width       = wids_st
+)
+write.csv(st_results_df, file = file.path(OUTPUT_DIR, &quot;spatio_temporal_results.csv&quot;), row.names = FALSE)
+
+cat(sprintf(&quot;NY Ozone Spatio-temporal Coverage: %.3f (SD: %.3f)\n&quot;, mean(covs_st), sd(covs_st)))
+</code></pre>
+<pre><code>## NY Ozone Spatio-temporal Coverage: 0.893 (SD: 0.019)
+</code></pre>
+<pre><code class="language-r">cat(sprintf(&quot;NY Ozone Spatio-temporal Width:    %.3f (SD: %.3f)\n&quot;, mean(wids_st), sd(wids_st)))
+</code></pre>
+<pre><code>## NY Ozone Spatio-temporal Width:    38.129 (SD: 1.215)
+</code></pre>
+<h1 id="chp:part-7-final-summary-table-amp-session-information"><span class="section-number main-number">8</span> Part 7: Final Summary Table &amp; Session Information</h1>
+<p>Final empirical summary table corresponding directly to the manuscript table.</p>
+<pre><code class="language-r">summary_tab &lt;- data.frame(
+  Dataset = c(&quot;Meuse Zinc&quot;, &quot;Meuse Aggregated&quot;, &quot;NY Ozone&quot;),
+  Type = c(&quot;Geostatistical&quot;, &quot;Areal&quot;, &quot;Spatio-Temporal&quot;),
+  N_Sample = c(n, n_cells, n_st),
+  Nominal_Coverage = c(0.90, 0.80, 0.90),
+  Empirical_Coverage = c(round(mean(coverages_mc), 3),
+                          round(rep_areal$coverage, 3),
+                          round(mean(covs_st), 3)),
+  Mean_Width = c(round(mean(widths_mc), 3),
+                 round(rep_areal$mean_width, 3),
+                 round(mean(wids_st), 3))
+)
+print(summary_tab)
+</code></pre>
+<pre><code>##            Dataset            Type N_Sample Nominal_Coverage Empirical_Coverage
+## 1       Meuse Zinc  Geostatistical      155              0.9              0.920
+## 2 Meuse Aggregated           Areal       21              0.8              0.810
+## 3         NY Ozone Spatio-Temporal     1712              0.9              0.893
+##   Mean_Width
+## 1      1.973
+## 2      1.790
+## 3     38.129
+</code></pre>
+<pre><code class="language-r">cat(&quot;\nOutputs successfully produced in destination folder:\n&quot;)
+</code></pre>
+<pre><code>## 
+## Outputs successfully produced in destination folder:
+</code></pre>
+<pre><code class="language-r">cat(&quot;  - Figures:     fig1.pdf through fig8.pdf\n&quot;)
+</code></pre>
+<pre><code>##   - Figures:     fig1.pdf through fig8.pdf
+</code></pre>
+<pre><code class="language-r">cat(&quot;  - Diagnostics: spconform_diagnostics.rds\n&quot;)
+</code></pre>
+<pre><code>##   - Diagnostics: spconform_diagnostics.rds
+</code></pre>
+<pre><code class="language-r">cat(&quot;  - CSV Results: spatio_temporal_results.csv\n\n&quot;)
+</code></pre>
+<pre><code>##   - CSV Results: spatio_temporal_results.csv
+</code></pre>
+<h2 id="sec:session-information"><span class="section-number">8.1</span> Session Information</h2>
+<p>System, architecture, and package versions:</p>
+<pre><code class="language-r">sessionInfo()
+</code></pre>
+<pre><code>## R version 4.6.1 (2026-06-24 ucrt)
+## Platform: x86_64-w64-mingw32/x64
+## Running under: Windows 11 x64 (build 26200)
+## 
+## Matrix products: default
+##   LAPACK version 3.12.1
+## 
+## locale:
+## [1] LC_COLLATE=Arabic_Iraq.utf8  LC_CTYPE=Arabic_Iraq.utf8   
+## [3] LC_MONETARY=Arabic_Iraq.utf8 LC_NUMERIC=C                
+## [5] LC_TIME=Arabic_Iraq.utf8    
+## 
+## time zone: Asia/Baghdad
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] bmstdr_0.8.2    Rcpp_1.1.2      ranger_0.18.0   mgcv_1.9-4     
+## [5] nlme_3.1-169    sp_2.2-3        spconform_0.1.0
+## 
+## loaded via a namespace (and not attached):
+##   [1] RColorBrewer_1.1-3  jsonlite_2.0.0      shape_1.4.6.1      
+##   [4] wk_0.9.5            magrittr_2.0.5      farver_2.1.2       
+##   [7] MCMCpack_1.7-1      vctrs_0.7.3         truncdist_1.0-2    
+##  [10] spdep_1.4-2         base64enc_0.1-6     terra_1.9-34       
+##  [13] rstatix_1.1.0       htmltools_0.5.9     curl_7.1.0         
+##  [16] truncnorm_1.0-9     broom_1.0.13        raster_3.6-32      
+##  [19] s2_1.1.11           Formula_1.2-6       spData_2.3.5       
+##  [22] StanHeaders_2.32.10 KernSmooth_2.23-26  htmlwidgets_1.6.4  
+##  [25] extraDistr_1.10.0.5 zoo_1.9-0           igraph_2.3.3       
+##  [28] lifecycle_1.0.5     iterators_1.0.14    pkgconfig_2.0.3    
+##  [31] Matrix_1.7-5        R6_2.6.1            fastmap_1.2.0      
+##  [34] rbibutils_2.4.1     magic_1.6-1         digest_0.6.39      
+##  [37] GGally_2.4.0        mapview_2.11.4      leafem_0.2.5       
+##  [40] crosstalk_1.2.2     ggpubr_1.0.0        CARBayes_6.1.1     
+##  [43] abind_1.4-8         compiler_4.6.1      proxy_0.4-29       
+##  [46] intervals_0.15.5    S7_0.2.2            backports_1.5.1    
+##  [49] inline_0.3.21       carData_3.0-6       DBI_1.3.0          
+##  [52] ggstats_0.13.0      QuickJSR_1.10.0     pkgbuild_1.4.8     
+##  [55] ggsignif_0.6.4      MASS_7.3-65         quantreg_6.1       
+##  [58] leaflet_2.2.3       classInt_0.4-11     gtools_3.9.5       
+##  [61] loo_2.10.1          tools_4.6.1         units_1.0-1        
+##  [64] otel_0.2.0          CARBayesdata_3.0    glue_1.8.1         
+##  [67] satellite_1.0.6     grid_4.6.1          sf_1.1-2           
+##  [70] generics_0.1.4      gtable_0.3.6        class_7.3-23       
+##  [73] tidyr_1.3.2         car_3.1-5           foreach_1.5.2      
+##  [76] pillar_1.11.1       spam_2.11-4         splines_4.6.1      
+##  [79] dplyr_1.2.1         lattice_0.22-9      survival_3.8-6     
+##  [82] deldir_2.0-4        SparseM_1.84-2      tidyselect_1.2.1   
+##  [85] knitr_1.52          gridExtra_2.3.1     V8_8.2.0           
+##  [88] mcmc_0.9-8          stats4_4.6.1        xfun_0.60          
+##  [91] matrixStats_1.5.0   rstan_2.32.7        yaml_2.3.12        
+##  [94] boot_1.3-32         evaluate_1.0.5      codetools_0.2-20   
+##  [97] evd_2.3-7.1         tibble_3.3.1        cli_3.6.6          
+## [100] RcppParallel_6.2.0  Rdpack_2.6.6        spacetime_1.3-3    
+## [103] coda_0.19-4.1       png_0.1-9           parallel_4.6.1     
+## [106] rstantools_2.7.0    MatrixModels_0.5-4  fmesher_0.8.0      
+## [109] ggplot2_4.0.3       CARBayesST_4.0      spTimer_3.3.4      
+## [112] dotCall64_1.2       glmnet_5.0          spBayes_0.4-9      
+## [115] scales_1.4.0        xts_0.14.2          e1071_1.7-17       
+## [118] purrr_1.2.2         rlang_1.3.0         mnormt_2.1.2       
+## [121] inlabru_2.15.0
+</code></pre>
+</div>
+<script src="https://cdn.jsdelivr.net/combine/npm/katex@0.18.7/dist/katex.min.js,npm/katex@0.18.7/dist/contrib/auto-render.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@xiee/utils@1.14.69/js/render-katex.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
+</body>
+</html>

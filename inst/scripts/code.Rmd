@@ -1,17 +1,17 @@
-#' ---
-#' title: "Replication Script for spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data"
-#' author: "Ahmed Sattar Jabbar"
-#' date: "`r Sys.Date()`"
-#' output:
-#'   html_document:
-#'     toc: true
-#'     toc_depth: 3
-#'     number_sections: true
-#'     theme: readable
-#'     highlight: tango
-#' ---
+---
+title: "Replication Script for spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data"
+author: "Ahmed Sattar Jabbar"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    theme: readable
+    highlight: tango
+---
 
-#+ setup, include=FALSE
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   echo = TRUE,
   warning = FALSE,
@@ -19,17 +19,19 @@ knitr::opts_chunk$set(
   fig.align = "center",
   fig.path = "figures_html/"
 )
+```
 
-#' # Introduction & Environment Setup
-#' 
-#' This standalone replication script reproduces all figures, tables, Monte Carlo 
-#' simulations, and empirical benchmarks presented in the *Journal of Statistical Software* (JSS) 
-#' manuscript for the **spconform** package.
-#'
-#' The **spconform** package provides distribution-free, model-agnostic prediction intervals 
-#' for spatially and spatio-temporally dependent data via localized conformal calibration,
-#' relaxing classical exchangeability assumptions through spatial proximity kernels.
+# Introduction & Environment Setup
 
+This standalone replication script reproduces all figures, tables, Monte Carlo 
+simulations, and empirical benchmarks presented in the *Journal of Statistical Software* (JSS) 
+manuscript for the **spconform** package.
+
+The **spconform** package provides distribution-free, model-agnostic prediction intervals 
+for spatially and spatio-temporally dependent data via localized conformal calibration,
+relaxing classical exchangeability assumptions through spatial proximity kernels.
+
+```{r}
 options(stringsAsFactors = FALSE)
 
 # Set global pseudo-random number generator seed for exact reproducibility
@@ -57,13 +59,15 @@ suppressPackageStartupMessages({
   library(ranger)
   library(bmstdr)
 })
+```
 
-#' # Part 1: Geostatistical (Point-Referenced) Analysis
-#'
-#' We illustrate localized split conformal prediction using the canonical Meuse River 
-#' heavy metal dataset ($n = 155$). The target variable is log-zinc concentration 
-#' measured at continuous spatial sampling coordinates.
+# Part 1: Geostatistical (Point-Referenced) Analysis
 
+We illustrate localized split conformal prediction using the canonical Meuse River 
+heavy metal dataset ($n = 155$). The target variable is log-zinc concentration 
+measured at continuous spatial sampling coordinates.
+
+```{r}
 data(meuse, package = "sp")
 s <- as.matrix(meuse[, c("x", "y")])
 y <- log(meuse$zinc)
@@ -76,12 +80,13 @@ pred_fun_quad <- function(s_train, y_train, s_new) {
   cbind(1, s_new[, 1], s_new[, 2],
         s_new[, 1]^2, s_new[, 2]^2) %*% coef(fit)
 }
+```
 
-#' ## Figure 1: Spatial Sampling Locations
-#'
-#' Map of the 155 monitoring stations along the Meuse River flood plain.
+## Figure 1: Spatial Sampling Locations
 
-#+ fig1, fig.width=6, fig.height=5, fig.cap="Figure 1: Meuse River Sampling Locations"
+Map of the 155 monitoring stations along the Meuse River flood plain.
+
+```{r fig1, fig.width=6, fig.height=5, fig.cap="Figure 1: Meuse River Sampling Locations"}
 render_and_save("fig1.pdf", function() {
   plot(meuse$x, meuse$y,
        col = rgb(0.2, 0.4, 0.8, 0.6), pch = 19, cex = 1.2,
@@ -89,11 +94,13 @@ render_and_save("fig1.pdf", function() {
        main = "Figure 1: Meuse River Sampling Locations")
   grid(col = "gray90")
 }, width = 6, height = 5)
+```
 
-#' ## Figure 2: Single Split Prediction Intervals
-#'
-#' Evaluate a single 70% calibration / 30% test split with target nominal coverage $1 - \alpha = 90\%$.
+## Figure 2: Single Split Prediction Intervals
 
+Evaluate a single 70% calibration / 30% test split with target nominal coverage $1 - \alpha = 90\%$.
+
+```{r}
 set.seed(SEED)
 idx_single <- sample(n, floor(0.7 * n))
 s_train <- s[idx_single, ]; y_train <- y[idx_single]
@@ -108,7 +115,8 @@ out_single <- scp_geostatistical(
   seed     = SEED
 )
 
-#+ fig2, fig.width=7, fig.height=5, fig.cap="Figure 2: Prediction Intervals on Held-Out Test Set"
+```
+```{r fig2, fig.width=7, fig.height=5, fig.cap="Figure 2: Prediction Intervals on Held-Out Test Set"}
 render_and_save("fig2.pdf", function() {
   if (any(is.na(out_single$lower)) || any(is.na(out_single$upper))) {
     valid <- !is.na(out_single$lower) & !is.na(out_single$upper)
@@ -125,11 +133,13 @@ render_and_save("fig2.pdf", function() {
 single_report <- coverage_report(out_single, y_test)
 cat(sprintf("Single-split empirical coverage: %.3f\n", single_report$coverage))
 cat(sprintf("Single-split mean interval width: %.3f\n", single_report$mean_width))
+```
 
-#' ## Figure 3: Empirical Coverage Across 50 Monte Carlo Splits
-#'
-#' Evaluate distribution-free coverage stability over 50 independent random partitions.
+## Figure 3: Empirical Coverage Across 50 Monte Carlo Splits
 
+Evaluate distribution-free coverage stability over 50 independent random partitions.
+
+```{r}
 set.seed(SEED)
 n_mc <- 50
 coverages_mc <- numeric(n_mc)
@@ -147,7 +157,8 @@ for (i in seq_len(n_mc)) {
   widths_mc[i]    <- rep_i$mean_width
 }
 
-#+ fig3, fig.width=6, fig.height=5, fig.cap="Figure 3: Empirical Coverage Across 50 Random Splits"
+```
+```{r fig3, fig.width=6, fig.height=5, fig.cap="Figure 3: Empirical Coverage Across 50 Random Splits"}
 render_and_save("fig3.pdf", function() {
   hist(coverages_mc, breaks = 12, col = "#A6CEE3", border = "white",
        main = "Figure 3: Empirical Coverage Across 50 Random Splits",
@@ -159,12 +170,13 @@ render_and_save("fig3.pdf", function() {
 
 cat(sprintf("Mean MC coverage (50 splits): %.3f (SD: %.3f)\n", mean(coverages_mc), sd(coverages_mc)))
 cat(sprintf("Mean MC interval width:        %.3f (SD: %.3f)\n", mean(widths_mc), sd(widths_mc)))
+```
 
-#' ## Figure 4: Spatial Distribution of Prediction Interval Width
-#'
-#' Demonstrating spatial adaptivity: localized intervals naturally adapt to local sample density.
+## Figure 4: Spatial Distribution of Prediction Interval Width
 
-#+ fig4, fig.width=6, fig.height=5, fig.cap="Figure 4: Spatial Distribution of Interval Width"
+Demonstrating spatial adaptivity: localized intervals naturally adapt to local sample density.
+
+```{r fig4, fig.width=6, fig.height=5, fig.cap="Figure 4: Spatial Distribution of Interval Width"}
 width_test <- out_single$upper - out_single$lower
 render_and_save("fig4.pdf", function() {
   plot(s_test[, 1], s_test[, 2], cex = width_test * 0.8, pch = 19,
@@ -173,13 +185,14 @@ render_and_save("fig4.pdf", function() {
        main = "Figure 4: Spatial Distribution of Interval Width")
   grid(col = "gray90")
 }, width = 6, height = 5)
+```
 
-#' # Part 2: Spatial Diagnostics
-#'
-#' We run comprehensive spatial diagnostics (`diagnose()`) to evaluate residual calibration 
-#' across spatial subdomains and distance bins.
+# Part 2: Spatial Diagnostics
 
-#+ diagnostics, fig.width=8.5, fig.height=7, fig.cap="Comprehensive Spatial Diagnostics (diagnose)"
+We run comprehensive spatial diagnostics (`diagnose()`) to evaluate residual calibration 
+across spatial subdomains and distance bins.
+
+```{r diagnostics, fig.width=8.5, fig.height=7, fig.cap="Comprehensive Spatial Diagnostics (diagnose)"}
 render_and_save("diagnostics.pdf", function() {
   diag_meuse <- diagnose(
     object = out_single,
@@ -193,13 +206,15 @@ render_and_save("diagnostics.pdf", function() {
 diag_meuse <- diagnose(object = out_single, y_true = y_test, s_test = s_test, n_bins = 4, plot = FALSE)
 saveRDS(diag_meuse, file = file.path(OUTPUT_DIR, "spconform_diagnostics.rds"))
 cat("Spatial diagnostics artifact saved to spconform_diagnostics.rds\n")
+```
 
-#' # Part 3: Controlled Simulation Study (Table 2 in Paper)
-#'
-#' We compare `scp_geostatistical()` against classical Gaussian-process (simple kriging)
-#' prediction intervals under: (A) correctly specified covariance (phi = 0.15), and
-#' (B) misspecified covariance (phi' = 0.45), across 100 Monte Carlo replications.
+# Part 3: Controlled Simulation Study (Table 2 in Paper)
 
+We compare `scp_geostatistical()` against classical Gaussian-process (simple kriging)
+prediction intervals under: (A) correctly specified covariance (phi = 0.15), and
+(B) misspecified covariance (phi' = 0.45), across 100 Monte Carlo replications.
+
+```{r}
 sim_study_table2 <- function(n_reps = 100, seed = 123) {
   set.seed(seed)
   n <- 200
@@ -273,12 +288,14 @@ sim_study_table2 <- function(n_reps = 100, seed = 123) {
 
 table2_results <- sim_study_table2(n_reps = 100, seed = 123)
 print(table2_results)
+```
 
-#' # Part 4: Areal Lattice Conformal Prediction
-#'
-#' We illustrate graph-based areal conformal prediction (`scp_areal()`) on regular 
-#' lattice data aggregated from the Meuse dataset onto a 6x6 spatial grid.
+# Part 4: Areal Lattice Conformal Prediction
 
+We illustrate graph-based areal conformal prediction (`scp_areal()`) on regular 
+lattice data aggregated from the Meuse dataset onto a 6x6 spatial grid.
+
+```{r}
 xbreaks <- seq(min(meuse$x), max(meuse$x), length.out = 7)
 ybreaks <- seq(min(meuse$y), max(meuse$y), length.out = 7)
 
@@ -307,12 +324,13 @@ for (i in seq_len(n_cells)) {
 
 # Run areal localized conformal prediction (nominal 80% coverage)
 out_areal <- scp_areal(agg$y, adjacency = adj_full, alpha = 0.2, decay = 0.5)
+```
 
-#' ## Figure 5: Areal Prediction Intervals
-#'
-#' Point predictions and conformal intervals across lattice cells.
+## Figure 5: Areal Prediction Intervals
 
-#+ fig5, fig.width=7, fig.height=5, fig.cap="Figure 5: Areal Prediction Intervals"
+Point predictions and conformal intervals across lattice cells.
+
+```{r fig5, fig.width=7, fig.height=5, fig.cap="Figure 5: Areal Prediction Intervals"}
 render_and_save("fig5.pdf", function() {
   if (any(is.na(out_areal$lower)) || any(is.na(out_areal$upper))) {
     valid <- !is.na(out_areal$lower) & !is.na(out_areal$upper)
@@ -325,10 +343,11 @@ render_and_save("fig5.pdf", function() {
     plot(out_areal, y_true = agg$y)
   }
 }, width = 7, height = 5)
+```
 
-#' ## Figure 6: Interval Width Comparison (Geostatistical vs. Areal)
+## Figure 6: Interval Width Comparison (Geostatistical vs. Areal)
 
-#+ fig6, fig.width=6, fig.height=5, fig.cap="Figure 6: Interval Width Comparison"
+```{r fig6, fig.width=6, fig.height=5, fig.cap="Figure 6: Interval Width Comparison"}
 geo_w   <- width_test[!is.na(width_test)]
 areal_w <- (out_areal$upper - out_areal$lower)[!is.na(out_areal$upper - out_areal$lower)]
 
@@ -344,12 +363,14 @@ render_and_save("fig6.pdf", function() {
 rep_areal <- coverage_report(out_areal, agg$y)
 cat(sprintf("Areal empirical coverage: %.3f\n", rep_areal$coverage))
 cat(sprintf("Areal mean interval width: %.3f\n", rep_areal$mean_width))
+```
 
-#' # Part 5: Held-Out Areal Evaluation (Figure 8)
-#'
-#' Cross-validation across 50 random splits on the areal lattice, evaluating training 
-#' leave-one-out calibration versus out-of-sample test county/cell coverage.
+# Part 5: Held-Out Areal Evaluation (Figure 8)
 
+Cross-validation across 50 random splits on the areal lattice, evaluating training 
+leave-one-out calibration versus out-of-sample test county/cell coverage.
+
+```{r}
 n_reps_areal <- 50
 alpha_areal  <- 0.2
 results_areal <- data.frame(
@@ -430,7 +451,8 @@ for (r in seq_len(n_reps_areal)) {
   results_areal$test_width[r]    <- mean(te_upper - te_lower, na.rm = TRUE)
 }
 
-#+ areal_eval, fig.width=8.5, fig.height=4.5, fig.cap="Held-Out Areal Evaluation (Cross-Validation)"
+```
+```{r areal_eval, fig.width=8.5, fig.height=4.5, fig.cap="Held-Out Areal Evaluation (Cross-Validation)"}
 render_and_save("areal_eval.pdf", function() {
   oldpar <- par(no.readonly = TRUE)
   par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3.5, 1.5))
@@ -452,14 +474,16 @@ render_and_save("areal_eval.pdf", function() {
           col  = c("#A6CEE3", "#B2DF8A"), las = 1)
   par(oldpar)
 }, width = 8.5, height = 4.5)
+```
 
-#' # Part 6: Sensitivity Analysis Across Base Predictors
-#'
-#' Evaluating conformal prediction robustness across multiple machine learning base predictors:
-#' 1. Quadratic Linear Model (`lm`)
-#' 2. Generalized Additive Model (`mgcv::gam`)
-#' 3. Random Forest (`ranger`)
+# Part 6: Sensitivity Analysis Across Base Predictors
 
+Evaluating conformal prediction robustness across multiple machine learning base predictors:
+1. Quadratic Linear Model (`lm`)
+2. Generalized Additive Model (`mgcv::gam`)
+3. Random Forest (`ranger`)
+
+```{r}
 pred_fun_gam <- function(s_train, y_train, s_new) {
   train_df <- data.frame(x = s_train[, 1], y = s_train[, 2], z = y_train)
   fit <- gam(z ~ s(x) + s(y), data = train_df)
@@ -513,12 +537,14 @@ sens_summary <- data.frame(
                        c(sd(res_lm$width), sd(res_gam$width), sd(res_rf$width)))
 )
 print(sens_summary)
+```
 
-#' # Part 7: Spatio-Temporal Application (New York Ozone Data)
-#'
-#' Conformal calibration applied to real-world spatio-temporal data from the **bmstdr** 
-#' package, monitoring maximum 8-hour ozone concentrations across New York State.
+# Part 7: Spatio-Temporal Application (New York Ozone Data)
 
+Conformal calibration applied to real-world spatio-temporal data from the **bmstdr** 
+package, monitoring maximum 8-hour ozone concentrations across New York State.
+
+```{r}
 data("nysptime", package = "bmstdr")
 df_st <- nysptime[complete.cases(nysptime[, c("utmx", "utmy", "y8hrmax", "Day", "Month")]), ]
 df_st$day_idx <- ifelse(df_st$Month == 7, df_st$Day, 31 + df_st$Day)
@@ -570,11 +596,13 @@ write.csv(st_results_df, file = file.path(OUTPUT_DIR, "spatio_temporal_results.c
 
 cat(sprintf("NY Ozone Spatio-temporal Coverage: %.3f (SD: %.3f)\n", mean(covs_st), sd(covs_st)))
 cat(sprintf("NY Ozone Spatio-temporal Width:    %.3f (SD: %.3f)\n", mean(wids_st), sd(wids_st)))
+```
 
-#' # Part 8: Final Summary Table & Session Information
-#'
-#' Final empirical summary table corresponding directly to the manuscript table.
+# Part 8: Final Summary Table & Session Information
 
+Final empirical summary table corresponding directly to the manuscript table.
+
+```{r}
 summary_tab <- data.frame(
   Dataset = c("Meuse Zinc", "Meuse Aggregated", "NY Ozone"),
   Type = c("Geostatistical", "Areal", "Spatio-Temporal"),
@@ -593,9 +621,13 @@ cat("\nOutputs successfully produced in destination folder:\n")
 cat("  - Figures:     fig1.pdf through fig8.pdf\n")
 cat("  - Diagnostics: spconform_diagnostics.rds\n")
 cat("  - CSV Results: spatio_temporal_results.csv\n\n")
+```
 
-#' ## Session Information
-#'
-#' System, architecture, and package versions:
+## Session Information
 
+System, architecture, and package versions:
+
+```{r}
 sessionInfo()
+```
+
