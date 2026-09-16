@@ -13,10 +13,14 @@ home:
   sidebar:
     structure: [links, license, community, citation, authors, dev]
   links:
+    - text: CRAN (v0.1.0)
+      href: https://CRAN.R-project.org/package=spconform
+    - text: JSS Manuscript (PDF)
+      href: https://github.com/amjed-droid/spconform/blob/main/paper/article.pdf
+    - text: Replication Report (HTML)
+      href: https://github.com/amjed-droid/spconform/blob/main/inst/scripts/code.html
     - text: Report a bug
       href: https://github.com/amjed-droid/spconform/issues
-    - text: CRAN (coming soon)
-      href: https://cran.r-project.org/package=spconform
 
 navbar:
   structure:
@@ -31,6 +35,8 @@ navbar:
       menu:
         - text: Introduction to spconform
           href: articles/spconform-intro.html
+        - text: Getting Help
+          href: articles/getting-help.html
     help:
       text: Help
       href: articles/getting-help.html
@@ -70,9 +76,5 @@ footer:
   components:
     developed_by: |
       Developed by **Ahmed Sattar Jabbar** · 
-      <a href="https://doi.org/10.5281/zenodo.21862025">Zenodo</a>
-      
-      
-      
-
-      
+      <a href="https://doi.org/10.32614/CRAN.package.spconform">CRAN DOI</a> · 
+      <a href="https://doi.org/10.5281/zenodo.21862024">Zenodo</a>
