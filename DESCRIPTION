@@ -1,0 +1,34 @@
+Package: spconform
+Type: Package
+Title: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data
+Version: 0.1.1
+Authors@R: person(given = "Ahmed Sattar", family = "Jabbar",
+                   email = "ahmed.state.me@gmail.com", 
+                   role = c("aut", "cre"),
+                   comment = c(ORCID = "0009-0006-4614-735X"))
+Description: Provides distribution-free, model-agnostic prediction
+    intervals for spatially and spatio-temporally dependent data using
+    localized conformal calibration. Implements locally weighted split
+    conformal prediction for geostatistical (point-referenced) data based on
+    spatial-distance kernels, and a neighbourhood-weighted conformal
+    procedure for areal (lattice) data based on graph adjacency structures.
+    Relaxes the standard exchangeability assumption using spatial proximity,
+    following the localized conformal framework of Mao, Martin and Reich
+    (2024) <doi:10.1080/01621459.2022.2147531>. Includes comprehensive
+    spatial diagnostic tools to audit empirical coverage, conditional
+    spatial strata, and boundary proximity effects.
+License: GPL-3
+URL: https://amjed-droid.github.io/spconform/, https://github.com/amjed-droid/spconform
+BugReports: https://github.com/amjed-droid/spconform/issues
+Encoding: UTF-8
+Depends: R (>= 3.6.0)
+Imports:
+    stats
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    sp
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0
