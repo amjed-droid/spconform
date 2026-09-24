@@ -8,16 +8,16 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/amjed-droid/spconform/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/amjed-droid/spconform/blob/dev-v0.2.0-bigdata/DESCRIPTION)
 
 Jabbar A (2026). *spconform: Conformal Prediction for Spatially and
-Spatio-Temporally Dependent Data*. R package version 0.1.0,
-<https://github.com/amjed-droid/spconform>.
+Spatio-Temporally Dependent Data*. R package version 0.1.1,
+<https://amjed-droid.github.io/spconform/>.
 
     @Manual{,
       title = {spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data},
       author = {Ahmed Sattar Jabbar},
       year = {2026},
-      note = {R package version 0.1.0},
-      url = {https://github.com/amjed-droid/spconform},
+      note = {R package version 0.1.1},
+      url = {https://amjed-droid.github.io/spconform/},
     }

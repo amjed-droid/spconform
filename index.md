@@ -2,8 +2,10 @@
 
 [![R-CMD-check](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml)
 [![License: GPL
-v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
+v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://cran.r-project.org/web/licenses/GPL-3)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862024.svg)](https://doi.org/10.5281/zenodo.21862024)
+[![CRAN RStudio mirror
+downloads](https://cranlogs.r-pkg.org/badges/grand-total/spconform)](https://r-pkg.org/pkg/spconform)
 
 **Conformal Prediction for Spatially and Spatio-Temporally Dependent
 Data in R**
@@ -41,14 +43,11 @@ CRAN.
 prediction spanning both major spatial data structures with optional
 spatio-temporal extension.
 
-\> **Status:** `spconform` is available on CRAN (published 2026-09-12)
-and has \> passed `R CMD check --as-cran` with 0 errors, 0 warnings, and
-0 notes on \> Windows 11 (R 4.6.1), win-builder (R-devel), and R-hub v2
-(Linux, Windows, \> macOS, donttest). Windows and macOS binaries are
-available for both \> r-release and r-oldrel. A permanent, citable
-snapshot of version 0.1.0 is \> archived on Zenodo (DOI above). The
-accompanying manuscript is currently \> in preparation for submission to
-the *Journal of Statistical Software*.
+> **Status:** `spconform` v0.1.1 is available on CRAN. It has passed
+> strict `R CMD check --as-cran` with 0 errors, 0 warnings, and 0 notes
+> across Windows, macOS, and Linux (R-devel & R-release). A permanent,
+> citable snapshot of the initial release is archived on Zenodo (DOI
+> above).
 
 ------------------------------------------------------------------------
 
@@ -63,11 +62,10 @@ install.packages("spconform")
 remotes::install_github("amjed-droid/spconform")
 ```
 
-\*\*Dependencies: The package imports only stats (base R). Suggested
-packages (‘sp’, ‘knitr’, ‘rmarkdown’) are used to build and run the
-vignette; ‘mgcv’, ‘ranger’, and ‘bmstdr’ are only needed to reproduce
-the extended examples shown in the accompanying paper and are not
-required for core package functionality.
+**Dependencies**: The package imports only `stats` (base R). Suggested
+packages (`sp`, `knitr`, `rmarkdown`) are used to build and run the
+vignettes and extended examples, and are not required for core package
+functionality.
 
 ------------------------------------------------------------------------
 
@@ -107,6 +105,15 @@ coverage_report(out, y[-idx])
 #> [1] 0.957
 #> $mean_width
 #> [1] 2.21
+
+# spconform objects support standard S3 methods:
+predict(out, interval = "prediction")
+#>   fit   lwr   upr
+#> 1 5.30  2.85  7.45
+#> 2 5.12  2.70  7.32
+
+# Extract residuals
+residuals(out, y_true = y[-idx], type = "abs")
 ```
 
 ### 2. Comprehensive Spatial Diagnostics
@@ -118,10 +125,11 @@ strata, boundary effects, and the distribution of nonconformity scores:
 
 ``` r
 
-# Run diagnostics and produce publication-quality multi-panel plot
-diag <- diagnose(out, y_true = y[-idx], s_test = s[-idx], plot = TRUE)
+# Generate a comprehensive 4-panel diagnostic plot
+diag <- diagnose(out, y_true = y[-idx], s_test = s[-idx])
+plot(diag) # S3 plot method for visual inspection
 
-# View textual diagnostic summary
+# View S3 printed summary including Moran's I
 print(diag)
 #> === spconform Diagnostic Report ===
 #> 
@@ -252,8 +260,12 @@ monitored via GitHub Actions.
   exchangeability).
 - **Lightweight**: Imports only `stats`; no heavy spatial-modelling
   dependencies.
-- **Fully documented**: S3 methods (`print`, `summary`, `plot`,
-  `coverage_report`) included, plus a full introductory vignette.
+- **Idiomatic R Design**: Seamless integration with the R ecosystem via
+  full support for standard S3 generics (`predict`, `residuals`, `plot`,
+  `print`, `summary`, `as.data.frame`).
+- **Advanced Diagnostics**: Built-in 4-panel visual diagnostics
+  including evaluation of spatial fairness and Moran’s $`I`$ test for
+  residual spatial autocorrelation.
 
 ------------------------------------------------------------------------
 
@@ -262,12 +274,8 @@ monitored via GitHub Actions.
 If you use `spconform` in your research, please cite:
 
 > Jabbar, A. S. (2026). spconform: Conformal Prediction for Spatially
-> and Spatio-Temporally Dependent Data in R (Version 0.1.0) \[Computer
+> and Spatio-Temporally Dependent Data in R (Version 0.1.1) \[Computer
 > software\]. Zenodo. <https://doi.org/10.5281/zenodo.21862024>
->
-> *A companion manuscript describing the package methodology is
-> currently submitted to the Journal of Statistical Software and will be
-> cited here upon acceptance.*
 
 ``` r
 
@@ -280,11 +288,16 @@ citation("spconform")
 
 - **Bug reports & feature requests**: [GitHub
   Issues](https://github.com/amjed-droid/spconform/issues)
-- **Documentation**:
+- **Documentation & Walkthroughs**:
   [`?scp_geostatistical`](https://amjed-droid.github.io/spconform/reference/scp_geostatistical.md),
   [`?scp_areal`](https://amjed-droid.github.io/spconform/reference/scp_areal.md),
+  [`?diagnose`](https://amjed-droid.github.io/spconform/reference/diagnose.md),
   [`vignette("spconform-intro", package = "spconform")`](https://amjed-droid.github.io/spconform/articles/spconform-intro.md)
-- **Reproducible scripts**: See `inst/scripts/` in the package source.
+- **Questions & Discussions**: [GitHub
+  Issues](https://github.com/amjed-droid/spconform/issues)
+- **Author Contact**: Ahmed Sattar Jabbar (<ahmed.state.me@gmail.com>)
+- **Reproducible scripts**: See `inst/scripts/` in the package source
+  for full replication materials.
 
 ------------------------------------------------------------------------
 
