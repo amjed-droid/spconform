@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/amjed-droid/spconform/blob/dev-v0.2.0-bigdata/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/amjed-droid/spconform/blob/main/DESCRIPTION)
 
 Jabbar A (2026). *spconform: Conformal Prediction for Spatially and
 Spatio-Temporally Dependent Data*. R package version 0.1.1,
