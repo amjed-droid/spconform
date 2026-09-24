@@ -1,5 +1,7 @@
 # spconform
 
+[![CRAN status](https://www.r-pkg.org/badges/version/spconform)](https://CRAN.R-project.org/package=spconform)
+[![CRAN DOI](https://img.shields.io/badge/DOI-10.32614%2FCRAN.package.spconform-blue.svg)](https://doi.org/10.32614/CRAN.package.spconform)
 [![R-CMD-check](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/amjed-droid/spconform/actions/workflows/R-CMD-check.yaml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://cran.r-project.org/web/licenses/GPL-3)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21862024.svg)](https://doi.org/10.5281/zenodo.21862024)
@@ -233,11 +235,12 @@ on all tested platforms. Continuous integration is monitored via GitHub Actions.
 
 ## Citation
 
-If you use `spconform` in your research, please cite:
+If you use `spconform` in your research, please cite the official CRAN package:
 
-> Jabbar, A. S. (2026). spconform: Conformal Prediction for Spatially and
-> Spatio-Temporally Dependent Data in R (Version 0.1.1) [Computer software].
-> Zenodo. https://doi.org/10.5281/zenodo.21862024
+> Jabbar, A. S. (2026). *spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data*. 
+> Comprehensive R Archive Network (CRAN). https://doi.org/10.32614/CRAN.package.spconform
+
+A permanent software release snapshot is also archived on Zenodo (DOI: [10.5281/zenodo.21862024](https://doi.org/10.5281/zenodo.21862024)).
 
 ```r
 citation("spconform")

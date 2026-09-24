@@ -1,0 +1,17 @@
+citHeader("To cite spconform in publications use:")
+
+citEntry(
+  entry    = "manual",
+  title    = "spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data",
+  author   = person(given = "Ahmed Sattar", family = "Jabbar", email = "ahmed.state.me@gmail.com", comment = c(ORCID = "0009-0006-4614-735X")),
+  year     = "2026",
+  note     = "R package version 0.1.1",
+  url      = "https://CRAN.R-project.org/package=spconform",
+  doi      = "10.32614/CRAN.package.spconform",
+  textVersion = paste(
+    "Jabbar, A. S. (2026).",
+    "spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data.",
+    "Comprehensive R Archive Network (CRAN).",
+    "https://doi.org/10.32614/CRAN.package.spconform"
+  )
+)
