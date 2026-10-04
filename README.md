@@ -261,7 +261,6 @@ All methodology, simulations, empirical benchmarks, and publication figures are 
 | [`baghdad_temperature_conformal_prediction.R`](inst/scripts/baghdad_temperature_conformal_prediction.R) | Spatio-Temporal | Daily maximum temperature monitoring across 16 urban meteorological stations in Baghdad. |
 | [`Comparison.R`](inst/scripts/Comparison.R) | Comparative Modeling | Benchmark comparing linear regression, Generalized Additive Models (GAM), and Random Forest base predictors under conformal coverage. |
 | [`eval_areal_heldout.R`](inst/scripts/eval_areal_heldout.R) | Areal Evaluation | Out-of-sample held-out validation protocol for lattice networks. |
-| [`sdss_conformal_simulation_study.R`](inst/scripts/sdss_conformal_simulation_study.R) | Spatial Simulation | Spatial Data Science & Statistics simulation experiments under spatial non-exchangeability. |
 
 ---
 
