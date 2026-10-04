@@ -1,7 +1,7 @@
 # ==============================================================================
 # SPATIO-TEMPORAL CONFORMAL PREDICTION FOR BAGHDAD TEMPERATURES USING spconform
 # Author: Ahmed Sattar Jabbar (Mustansiriyah University, Baghdad, Iraq)
-# Package: spconform (CRAN Release v0.1.0 / v0.2.0)
+# Package: spconform (CRAN Release v0.1.0)
 # ==============================================================================
 
 suppressPackageStartupMessages({
