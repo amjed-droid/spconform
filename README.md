@@ -248,13 +248,30 @@ citation("spconform")
 
 ---
 
+## Reproducibility & Empirical Case Studies
+
+All methodology, simulations, empirical benchmarks, and publication figures are fully reproducible via self-contained scripts in [`inst/scripts/`](inst/scripts/):
+
+| Script | Domain / Application | Description |
+|:---|:---|:---|
+| [`code.R`](inst/scripts/code.R) | **Master Replication** | Reproduces all core simulation studies, real-world benchmarks (Meuse, NY Ozone, Remote Sensing, NC SIDS), numerical tables, and publication figures. |
+| [`nc_sids_areal_study.R`](inst/scripts/nc_sids_areal_study.R) | Areal / Lattice | North Carolina sudden infant death syndrome (SIDS) epidemiology study on 100 counties with Queen contiguity network graph weighting. |
+| [`drone_sensing_study.R`](inst/scripts/drone_sensing_study.R) | Geostatistical / UAV | High-resolution UAV multispectral imagery and micro-spatial uncertainty quantification. |
+| [`satellite_sensing_study.R`](inst/scripts/satellite_sensing_study.R) | Geostatistical / Earth Observation | Satellite-derived surface reflectance and environmental monitoring. |
+| [`baghdad_temperature_conformal_prediction.R`](inst/scripts/baghdad_temperature_conformal_prediction.R) | Spatio-Temporal | Daily maximum temperature monitoring across 16 urban meteorological stations in Baghdad. |
+| [`Comparison.R`](inst/scripts/Comparison.R) | Comparative Modeling | Benchmark comparing linear regression, Generalized Additive Models (GAM), and Random Forest base predictors under conformal coverage. |
+| [`eval_areal_heldout.R`](inst/scripts/eval_areal_heldout.R) | Areal Evaluation | Out-of-sample held-out validation protocol for lattice networks. |
+| [`sdss_conformal_simulation_study.R`](inst/scripts/sdss_conformal_simulation_study.R) | Spatial Simulation | Spatial Data Science & Statistics simulation experiments under spatial non-exchangeability. |
+
+---
+
 ## Getting help
 
 - **Bug reports & feature requests**: [GitHub Issues](https://github.com/amjed-droid/spconform/issues)
 - **Documentation & Walkthroughs**: `?scp_geostatistical`, `?scp_areal`, `?diagnose`, `vignette("spconform-intro", package = "spconform")`
 - **Questions & Discussions**: [GitHub Issues](https://github.com/amjed-droid/spconform/issues)
 - **Author Contact**: Ahmed Sattar Jabbar ([ahmed.state.me@gmail.com](mailto:ahmed.state.me@gmail.com))
-- **Reproducible scripts**: See `inst/scripts/` in the package source for full replication materials.
+- **Reproducible scripts**: See [`inst/scripts/code.R`](inst/scripts/code.R) in the package source for the master replication workflow.
 
 ---
 
