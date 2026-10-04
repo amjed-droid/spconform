@@ -16,7 +16,7 @@
 
 ## Why spconform?
 
-Standard conformal prediction assumes exchangeable data — an assumption routinely violated in spatial settings where nearby observations are more similar than distant ones. Existing R packages address either purely **temporal** dependence (`conformalForecast`, `AdaptiveConformal`) or **i.i.d./exchangeable** data (`conformalInference`, `conformalClassification`, `cfcausal`), but none provides a documented, unit-tested, unified solution for spatial data on CRAN.
+Standard conformal prediction assumes exchangeable data — an assumption routinely violated in spatial settings where nearby observations are more similar than distant ones. Existing R packages address either purely **temporal** dependence (`conformalForecast`, `AdaptiveConformal`) or standard **exchangeable** data (`conformalInference`, `conformalClassification`, `cfcausal`), but none provides a documented, unit-tested, unified solution for spatial data on CRAN.
 
 | Feature | `conformalInference` | `conformalForecast` | `scp` (GitHub) | `geoconformal` (Python) | **`spconform`** |
 |:---|:---:|:---:|:---:|:---:|:---:|
