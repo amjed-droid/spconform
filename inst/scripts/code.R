@@ -23,7 +23,8 @@ knitr::opts_chunk$set(
 #' # Introduction & Environment Setup
 #' 
 #' This standalone replication script reproduces all figures, tables, Monte Carlo 
-#' simulations, and empirical benchmarks for the **spconform** package.
+#' simulations, and empirical benchmarks presented in the research manuscript and documentation
+#' for the **spconform** package.
 #'
 #' The **spconform** package provides distribution-free, model-agnostic prediction intervals 
 #' for spatially and spatio-temporally dependent data via localized conformal calibration,
@@ -611,7 +612,7 @@ covs_st   <- numeric(n_reps_st)
 wids_st   <- numeric(n_reps_st)
 
 for (i in seq_len(n_reps_st)) {
-  set.seed(SEED + i)          
+  set.seed(SEED + i)      
   idx_st <- sample(n_st, floor(0.7 * n_st))
   out_st <- scp_geostatistical(
     s_train            = s_3d[idx_st, ],
