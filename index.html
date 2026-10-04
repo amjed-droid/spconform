@@ -376,6 +376,66 @@
 <hr>
 </div>
 <div class="section level2">
+<h2 id="reproducibility--empirical-case-studies">Reproducibility &amp; Empirical Case Studies<a class="anchor" aria-label="anchor" href="#reproducibility--empirical-case-studies"></a>
+</h2>
+<p>All methodology, simulations, empirical benchmarks, and publication figures are fully reproducible via self-contained scripts in <a href="inst/scripts/"><code>inst/scripts/</code></a>:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr>
+<th align="left">Script</th>
+<th align="left">Domain / Application</th>
+<th align="left">Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td align="left"><a href="inst/scripts/code.R"><code>code.R</code></a></td>
+<td align="left"><strong>Master Replication</strong></td>
+<td align="left">Reproduces all core simulation studies, real-world benchmarks (Meuse, NY Ozone, Remote Sensing, NC SIDS), numerical tables, and publication figures.</td>
+</tr>
+<tr>
+<td align="left"><a href="inst/scripts/nc_sids_areal_study.R"><code>nc_sids_areal_study.R</code></a></td>
+<td align="left">Areal / Lattice</td>
+<td align="left">North Carolina sudden infant death syndrome (SIDS) epidemiology study on 100 counties with Queen contiguity network graph weighting.</td>
+</tr>
+<tr>
+<td align="left"><a href="inst/scripts/drone_sensing_study.R"><code>drone_sensing_study.R</code></a></td>
+<td align="left">Geostatistical / UAV</td>
+<td align="left">High-resolution UAV multispectral imagery and micro-spatial uncertainty quantification.</td>
+</tr>
+<tr>
+<td align="left"><a href="inst/scripts/satellite_sensing_study.R"><code>satellite_sensing_study.R</code></a></td>
+<td align="left">Geostatistical / Earth Observation</td>
+<td align="left">Satellite-derived surface reflectance and environmental monitoring.</td>
+</tr>
+<tr>
+<td align="left"><a href="inst/scripts/baghdad_temperature_conformal_prediction.R"><code>baghdad_temperature_conformal_prediction.R</code></a></td>
+<td align="left">Spatio-Temporal</td>
+<td align="left">Daily maximum temperature monitoring across 16 urban meteorological stations in Baghdad.</td>
+</tr>
+<tr>
+<td align="left"><a href="inst/scripts/Comparison.R"><code>Comparison.R</code></a></td>
+<td align="left">Comparative Modeling</td>
+<td align="left">Benchmark comparing linear regression, Generalized Additive Models (GAM), and Random Forest base predictors under conformal coverage.</td>
+</tr>
+<tr>
+<td align="left"><a href="inst/scripts/eval_areal_heldout.R"><code>eval_areal_heldout.R</code></a></td>
+<td align="left">Areal Evaluation</td>
+<td align="left">Out-of-sample held-out validation protocol for lattice networks.</td>
+</tr>
+<tr>
+<td align="left"><a href="inst/scripts/sdss_conformal_simulation_study.R"><code>sdss_conformal_simulation_study.R</code></a></td>
+<td align="left">Spatial Simulation</td>
+<td align="left">Spatial Data Science &amp; Statistics simulation experiments under spatial non-exchangeability.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</div>
+<div class="section level2">
 <h2 id="getting-help">Getting help<a class="anchor" aria-label="anchor" href="#getting-help"></a>
 </h2>
 <ul>
@@ -391,7 +451,7 @@
 <li>
 <strong>Author Contact</strong>: Ahmed Sattar Jabbar (<a href="mailto:ahmed.state.me@gmail.com">ahmed.state.me@gmail.com</a>)</li>
 <li>
-<strong>Reproducible scripts</strong>: See <code>inst/scripts/</code> in the package source for full replication materials.</li>
+<strong>Reproducible scripts</strong>: See <a href="inst/scripts/code.R"><code>inst/scripts/code.R</code></a> in the package source for the master replication workflow.</li>
 </ul>
 <hr>
 </div>
