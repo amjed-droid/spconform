@@ -37,7 +37,7 @@ SEED <- 123
 set.seed(SEED)
 
 # Output directory for saving standalone PDF figures and diagnostic artifacts
-OUTPUT_DIR <- Sys.getenv("SPCONFORM_OUTPUT_DIR", unset = file.path(tempdir(), "figures"))
+OUTPUT_DIR <- Sys.getenv("SPCONFORM_OUTPUT_DIR", unset = file.path(".", "figures"))
 if (!dir.exists(OUTPUT_DIR)) dir.create(OUTPUT_DIR, recursive = TRUE)
 cat(sprintf("[Setup] Destination for figure PDFs and artifacts: %s\n", OUTPUT_DIR))
 
