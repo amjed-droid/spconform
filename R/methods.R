@@ -57,16 +57,15 @@ summary.spconform <- function(object, ...) {
 #' @return Invisibly returns the input object \code{x}.
 #' @importFrom graphics points segments legend
 #' @export
-plot.spconform <- function(x, y_true = NULL, xlab = NULL, ylab = NULL, ...) {
+plot.spconform <- function(x, y_true = NULL, ...) {
   n <- length(x$pred)
   ord <- seq_len(n)
   
-  if (is.null(xlab)) {
-    xlab <- if (identical(x$type, "areal")) "Areal Unit Index" else "Prediction Index"
-  }
-  if (is.null(ylab)) {
-    ylab <- "Predicted / Response Value"
-  }
+  dots <- list(...)
+  xlab_val <- if (!is.null(dots$xlab)) dots$xlab else if (identical(x$type, "areal")) "Areal Unit Index" else "Prediction Index"
+  ylab_val <- if (!is.null(dots$ylab)) dots$ylab else "Predicted / Response Value"
+  dots$xlab <- NULL
+  dots$ylab <- NULL
   
   all_vals <- c(x$pred, x$lower, x$upper)
   if (!is.null(y_true)) all_vals <- c(all_vals, y_true)
@@ -76,15 +75,16 @@ plot.spconform <- function(x, y_true = NULL, xlab = NULL, ylab = NULL, ...) {
   if (pad == 0) pad <- 0.5
   ylim_val <- c(ylim_val[1] - pad, ylim_val[2] + pad)
   
-  graphics::plot(
-    ord, x$pred,
+  plot_args <- c(list(
+    x = ord, y = x$pred,
     ylim = ylim_val,
     pch  = 19,
-    xlab = xlab,
-    ylab = ylab,
-    main = paste0("spconform (", x$type, ") - ", round(100 * (1 - x$alpha)), "% Intervals"),
-    ...
-  )
+    xlab = xlab_val,
+    ylab = ylab_val,
+    main = paste0("spconform (", x$type, ") - ", round(100 * (1 - x$alpha)), "% Intervals")
+  ), dots)
+  do.call(graphics::plot, plot_args)
+  
   graphics::segments(ord, x$lower, ord, x$upper, col = "grey50", lwd = 1.2)
   graphics::points(ord, x$pred, pch = 19, col = "black")
   if (!is.null(y_true)) {
