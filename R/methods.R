@@ -57,18 +57,47 @@ summary.spconform <- function(object, ...) {
 #' @return Invisibly returns the input object \code{x}.
 #' @importFrom graphics points segments legend
 #' @export
-plot.spconform <- function(x, y_true = NULL, ...) {
+plot.spconform <- function(x, y_true = NULL, xlab = NULL, ylab = NULL, ...) {
   n <- length(x$pred)
   ord <- seq_len(n)
-  ylim <- range(c(x$lower, x$upper, x$pred, y_true))
-  plot(ord, x$pred, ylim = ylim, pch = 19, xlab = "Index", ylab = "Predicted value",
-       main = paste0("spconform (", x$type, ") - ",
-                      round(100 * (1 - x$alpha)), "% intervals"), ...)
-  segments(ord, x$lower, ord, x$upper, col = "grey50")
+  
+  if (is.null(xlab)) {
+    xlab <- if (identical(x$type, "areal")) "Areal Unit Index" else "Prediction Index"
+  }
+  if (is.null(ylab)) {
+    ylab <- "Predicted / Response Value"
+  }
+  
+  all_vals <- c(x$pred, x$lower, x$upper)
+  if (!is.null(y_true)) all_vals <- c(all_vals, y_true)
+  finite_vals <- all_vals[is.finite(all_vals)]
+  ylim_val <- if (length(finite_vals) == 0) c(0, 1) else range(finite_vals, na.rm = TRUE)
+  pad <- diff(ylim_val) * 0.05
+  if (pad == 0) pad <- 0.5
+  ylim_val <- c(ylim_val[1] - pad, ylim_val[2] + pad)
+  
+  graphics::plot(
+    ord, x$pred,
+    ylim = ylim_val,
+    pch  = 19,
+    xlab = xlab,
+    ylab = ylab,
+    main = paste0("spconform (", x$type, ") - ", round(100 * (1 - x$alpha)), "% Intervals"),
+    ...
+  )
+  graphics::segments(ord, x$lower, ord, x$upper, col = "grey50", lwd = 1.2)
+  graphics::points(ord, x$pred, pch = 19, col = "black")
   if (!is.null(y_true)) {
-    points(ord, y_true, col = "red", pch = 4)
-    legend("topright", legend = c("prediction", "truth"),
-           pch = c(19, 4), col = c("black", "red"), bty = "n")
+    graphics::points(ord, y_true, col = "red", pch = 4, lwd = 1.2)
+    graphics::legend(
+      "topright",
+      legend = c("Prediction", "Conformal Interval", "True Value"),
+      col    = c("black", "grey50", "red"),
+      pch    = c(19, NA, 4),
+      lty    = c(NA, 1, NA),
+      lwd    = c(NA, 1.2, 1.2),
+      bty    = "n"
+    )
   }
   invisible(x)
 }
