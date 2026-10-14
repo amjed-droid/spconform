@@ -5,14 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Getting Help • spconform</title>
+<title>Getting Help and Troubleshooting • spconform</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Inter-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Fira_Code-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Getting Help">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Getting Help and Troubleshooting">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -61,7 +61,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Getting Help</h1>
+      <h1>Getting Help and Troubleshooting</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/amjed-droid/spconform/blob/main/vignettes/getting-help.Rmd" class="external-link"><code>vignettes/getting-help.Rmd</code></a></small>
@@ -70,84 +70,409 @@
 
     
     
+<p>Welcome to the <strong>spconform</strong> help and troubleshooting
+guide. Whether you are fitting spatial conformal prediction intervals
+for the first time, diagnosing empirical coverage, or interfacing custom
+machine learning models, this guide provides answers to common
+questions, error diagnoses, model integration recipes, and guidelines
+for reporting issues.</p>
+<hr>
 <div class="section level2">
-<h2 id="found-a-bug">Found a Bug?<a class="anchor" aria-label="anchor" href="#found-a-bug"></a>
+<h2 id="quick-support-matrix">1. Quick Support Matrix<a class="anchor" aria-label="anchor" href="#quick-support-matrix"></a>
 </h2>
-<p>If you encounter an unexpected error, incorrect result, or crash,
-please follow these steps.</p>
-<ol style="list-style-type: decimal">
-<li>
-<p>Check that you are using the latest version of
-<strong>spconform</strong>:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Need</th>
+<th align="left">Recommended Channel</th>
+<th align="left">Details</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left"><strong>Bug Reports &amp; Crashes</strong></td>
+<td align="left"><a href="https://github.com/amjed-droid/spconform/issues" class="external-link">GitHub
+Issues</a></td>
+<td align="left">Provide a minimal reproducible example
+(<code>reprex</code>) and <code><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo()</a></code>.</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Model Advice &amp; Theory</strong></td>
+<td align="left"><a href="https://github.com/amjed-droid/spconform/discussions" class="external-link">GitHub
+Discussions</a></td>
+<td align="left">Questions on spatial exchangeability, choice of kernel,
+or sample size.</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>Feature Requests</strong></td>
+<td align="left"><a href="https://github.com/amjed-droid/spconform/issues/new" class="external-link">GitHub Issues
+(Enhancement)</a></td>
+<td align="left">Propose new diagnostic metrics, weight kernels, or
+interface integrations.</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Academic Inquiries</strong></td>
+<td align="left">Direct Email</td>
+<td align="left">Reach maintainer Ahmed Sattar Jabbar at
+<code>ahmed.state.me@gmail.com</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="frequently-asked-questions-faq">2. Frequently Asked Questions (FAQ)<a class="anchor" aria-label="anchor" href="#frequently-asked-questions-faq"></a>
+</h2>
+<div class="section level3">
+<h3 id="q1-my-empirical-coverage-is-slightly-below-1---alpha-e-g--88-5-instead-of-90--is-my-model-invalid">Q1: My empirical coverage is slightly below
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><mi>α</mi></mrow><annotation encoding="application/x-tex">1 - \alpha</annotation></semantics></math>
+(e.g. 88.5% instead of 90%). Is my model invalid?<a class="anchor" aria-label="anchor" href="#q1-my-empirical-coverage-is-slightly-below-1---alpha-e-g--88-5-instead-of-90--is-my-model-invalid"></a>
+</h3>
+<p><strong>Not necessarily.</strong> Conformal prediction guarantees
+valid marginal coverage <em>in expectation</em>:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>Y</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub><mo>∈</mo><mover><mi>C</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><msub><mi>S</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">)</mo></mrow><mo>≥</mo><mn>1</mn><mo>−</mo><mi>α</mi></mrow><annotation encoding="application/x-tex">P\left(Y_{n+1} \in \widehat{C}(S_{n+1})\right) \ge 1 - \alpha</annotation></semantics></math>
+For any finite test evaluation set of size
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>,
+the observed empirical coverage follows a Binomial distribution
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Binom</mtext><mo stretchy="false" form="prefix">(</mo><mi>m</mi><mo>,</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{Binom}(m, 1 - \alpha)</annotation></semantics></math>
+with standard error:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">SE</mtext><mo>=</mo><msqrt><mfrac><mrow><mi>α</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>α</mi><mo stretchy="false" form="postfix">)</mo></mrow><mi>m</mi></mfrac></msqrt></mrow><annotation encoding="application/x-tex">\text{SE} = \sqrt{\frac{\alpha(1 - \alpha)}{m}}</annotation></semantics></math>
+For example, with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>=</mo><mn>100</mn></mrow><annotation encoding="application/x-tex">m = 100</annotation></semantics></math>
+and nominal coverage
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>90</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">90\%</annotation></semantics></math>
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mn>0.10</mn></mrow><annotation encoding="application/x-tex">\alpha = 0.10</annotation></semantics></math>),
+the standard error is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msqrt><mrow><mn>0.1</mn><mo>×</mo><mn>0.9</mn><mi>/</mi><mn>100</mn></mrow></msqrt><mo>=</mo><mn>0.03</mn></mrow><annotation encoding="application/x-tex">\sqrt{0.1 \times 0.9 / 100} = 0.03</annotation></semantics></math>
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>3</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">3\%</annotation></semantics></math>).
+An observed coverage between
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>84</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">84\%</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>96</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">96\%</annotation></semantics></math>
+falls well within normal
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>95</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">95\%</annotation></semantics></math>
+binomial sampling variation. You can compute the exact binomial
+confidence interval via:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"amjed-droid/spconform"</span><span class="op">)</span></span></code></pre></div>
-</li>
-<li><p>Search the <a href="https://github.com/amjed-droid/spconform/issues" class="external-link">existing
-issues</a> to see if the problem has already been reported.</p></li>
-<li>
-<p>If the issue has not been reported, open a new issue and
-include:</p>
+<code class="sourceCode R"><span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/coverage_report.html">coverage_report</a></span><span class="op">(</span><span class="va">out</span>, <span class="va">y_test</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/binom.test.html" class="external-link">binom.test</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">report</span><span class="op">$</span><span class="va">coverage</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">y_test</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">y_test</span><span class="op">)</span>, p <span class="op">=</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">out</span><span class="op">$</span><span class="va">alpha</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="q2-should-i-use-scp_geostatistical-or-scp_areal">Q2: Should I use <code>scp_geostatistical()</code> or
+<code>scp_areal()</code>?<a class="anchor" aria-label="anchor" href="#q2-should-i-use-scp_geostatistical-or-scp_areal"></a>
+</h3>
 <ul>
-<li>A minimal reproducible example.</li>
-<li>Your <code><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo()</a></code> output.</li>
-<li>The exact error message.</li>
-<li>Any additional information that may help reproduce the problem.</li>
+<li>Use <code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code> when observations have
+continuous coordinates
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(x, y)</annotation></semantics></math>
+or
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mtext mathvariant="normal">lon</mtext><mo>,</mo><mtext mathvariant="normal">lat</mtext><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(\text{lon}, \text{lat})</annotation></semantics></math>,
+such as weather stations, air quality sensors, or soil core
+samples.</li>
+<li>Use <code><a href="../reference/scp_areal.html">scp_areal()</a></code> when data are aggregated over discrete
+spatial units (counties, municipalities, census tracts, or lattice grid
+cells) where relationships are defined by an adjacency matrix
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>W</mi><annotation encoding="application/x-tex">W</annotation></semantics></math>.</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="q3-how-do-spatial-bandwidth-and-k-nn-affect-interval-widths">Q3: How do spatial bandwidth and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-NN
+affect interval widths?<a class="anchor" aria-label="anchor" href="#q3-how-do-spatial-bandwidth-and-k-nn-affect-interval-widths"></a>
+</h3>
+<ul>
+<li>
+<strong>Bandwidth
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>h</mi><annotation encoding="application/x-tex">h</annotation></semantics></math>):</strong>
+In <code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code>, weights decay as
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mi>i</mi></msub><mo>=</mo><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mo stretchy="false" form="postfix">∥</mo><msub><mi>s</mi><mn>0</mn></msub><mo>−</mo><msub><mi>s</mi><mi>i</mi></msub><msup><mo stretchy="false" form="postfix">∥</mo><mn>2</mn></msup><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mn>2</mn><msup><mi>h</mi><mn>2</mn></msup><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">w_i = \exp(-\|s_0 - s_i\|^2 / (2h^2))</annotation></semantics></math>.
+<ul>
+<li>A <strong>smaller
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>h</mi><annotation encoding="application/x-tex">h</annotation></semantics></math></strong>
+restricts calibration to immediately proximate neighbors, producing
+highly localized intervals that adapt to local heteroscedasticity, but
+may be noisy if local data are sparse.</li>
+<li>A <strong>larger
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>h</mi><annotation encoding="application/x-tex">h</annotation></semantics></math></strong>
+borrows strength from more calibration points, yielding smoother, more
+stable intervals that approach standard split conformal prediction.</li>
+<li>The default (<code>bandwidth = NULL</code>) employs the median
+pairwise distance heuristic, which provides a robust balance for
+isotropic spatial domains.</li>
 </ul>
 </li>
-</ol>
+<li>
+<strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-Nearest
+Neighbors (<code>k_neighbors</code>):</strong> For large calibration
+datasets
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>&gt;</mo><mn>1000</mn></mrow><annotation encoding="application/x-tex">N &gt; 1000</annotation></semantics></math>),
+setting e.g. <code>k_neighbors = 50</code> restricts kernel weighting to
+the 50 closest calibration stations, accelerating computation up to 50x
+while preserving asymptotic validity.</li>
+</ul>
 </div>
-<div class="section level2">
-<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
-</h2>
+<div class="section level3">
+<h3 id="q4-does-spconform-support-spatio-temporal-data">Q4: Does <code>spconform</code> support spatio-temporal data?<a class="anchor" aria-label="anchor" href="#q4-does-spconform-support-spatio-temporal-data"></a>
+</h3>
+<p><strong>Yes.</strong> Supply <code>t_train</code> and <code>t0</code>
+alongside coordinates in <code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="op">?</span><span class="va">scp_geostatistical</span></span>
-<span><span class="op">?</span><span class="va">scp_areal</span></span>
-<span><span class="op">?</span><span class="va">diagnose</span></span>
-<span><span class="op">?</span><span class="va">methods.spconform</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"spconform-intro"</span>, package <span class="op">=</span> <span class="st">"spconform"</span><span class="op">)</span></span></code></pre></div>
-<p>You may also consult the introductory vignette for an in-depth
-walkthrough of the package and its S3 diagnostic suite.</p>
+<code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scp_geostatistical.html">scp_geostatistical</a></span><span class="op">(</span></span>
+<span>  s_train <span class="op">=</span> <span class="va">s_train</span>, y_train <span class="op">=</span> <span class="va">y_train</span>, s0 <span class="op">=</span> <span class="va">s_test</span>,</span>
+<span>  pred_fun <span class="op">=</span> <span class="va">my_st_predictor</span>,</span>
+<span>  t_train <span class="op">=</span> <span class="va">t_train</span>, t0 <span class="op">=</span> <span class="va">t_test</span>,</span>
+<span>  temporal_bandwidth <span class="op">=</span> <span class="fl">7</span>,  <span class="co"># e.g. 7 days</span></span>
+<span>  alpha <span class="op">=</span> <span class="fl">0.1</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<hr>
+</div>
 </div>
 <div class="section level2">
-<h2 id="github-discussions">GitHub Discussions<a class="anchor" aria-label="anchor" href="#github-discussions"></a>
+<h2 id="interpreting-the-diagnostic-suite-diagnose">3. Interpreting the Diagnostic Suite (<code>diagnose()</code>)<a class="anchor" aria-label="anchor" href="#interpreting-the-diagnostic-suite-diagnose"></a>
 </h2>
-<p>For usage questions, please open a thread in <strong>GitHub
-Discussions</strong> if it is enabled for the repository.</p>
-<p>Alternatively, you can open an issue using the <code>question</code>
-label.</p>
-</div>
-<div class="section level2">
-<h2 id="request-a-feature">Request a Feature<a class="anchor" aria-label="anchor" href="#request-a-feature"></a>
-</h2>
-<p>We welcome suggestions and feature requests.</p>
-<p>Please open an issue describing:</p>
+<p>The <code><a href="../reference/diagnose.html">diagnose()</a></code> function conducts five audits on spatial
+prediction intervals:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">diag</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/diagnose.html">diagnose</a></span><span class="op">(</span><span class="va">out</span>, y_true <span class="op">=</span> <span class="va">y_test</span>, s_test <span class="op">=</span> <span class="va">s_test</span>, plot <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diag</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="marginal-coverage-interval-width">1. Marginal Coverage &amp; Interval Width<a class="anchor" aria-label="anchor" href="#marginal-coverage-interval-width"></a>
+</h3>
 <ul>
 <li>
-<strong>What</strong> you want to achieve.</li>
+<strong><code>coverage</code></strong>: Fraction of true values
+falling within
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mi>L</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>s</mi><mn>0</mn></msub><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mi>U</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>s</mi><mn>0</mn></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[L(s_0), U(s_0)]</annotation></semantics></math>.
+Should be
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>≥</mo><mn>1</mn><mo>−</mo><mi>α</mi></mrow><annotation encoding="application/x-tex">\ge 1 - \alpha</annotation></semantics></math>.</li>
 <li>
-<strong>Why</strong> the current functionality is insufficient.</li>
-<li>A proposed API or interface, if you have one.</li>
-<li>A brief example of how you would expect the feature to work.</li>
+<strong><code>mean_width</code> vs
+<code>median_width</code></strong>: If the mean width is substantially
+larger than the median, spatial outliers or high-uncertainty boundary
+clusters are inflating interval widths.</li>
 </ul>
 </div>
-<div class="section level2">
-<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
-</h2>
-<p>If you use <strong>spconform</strong> in your research, please
-cite:</p>
-<blockquote>
-<p>Jabbar, A. S. (2026). <em>spconform: Conformal Prediction for
-Spatially and Spatio-Temporally Dependent Data in R</em> (Version 0.1.1)
-[Computer software]. Zenodo. <a href="https://doi.org/10.5281/zenodo.21862024" class="external-link uri">https://doi.org/10.5281/zenodo.21862024</a></p>
-</blockquote>
-<p>You can also obtain the citation directly from R:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"spconform"</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="winkler-interval-score-wis">2. Winkler Interval Score (WIS)<a class="anchor" aria-label="anchor" href="#winkler-interval-score-wis"></a>
+</h3>
+<p>A strictly proper scoring rule balancing interval sharpness and
+miscoverage penalties:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mtext mathvariant="normal">WIS</mtext><mi>α</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>l</mi><mo>,</mo><mi>u</mi><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>u</mi><mo>−</mo><mi>l</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mfrac><mn>2</mn><mi>α</mi></mfrac><mo stretchy="false" form="prefix">(</mo><mi>l</mi><mo>−</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo><mn>𝟏</mn><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo>&lt;</mo><mi>l</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mfrac><mn>2</mn><mi>α</mi></mfrac><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo>−</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo><mn>𝟏</mn><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo>&gt;</mo><mi>u</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{WIS}_\alpha(l, u, y) = (u - l) + \frac{2}{\alpha}(l - y)\mathbf{1}(y &lt; l) + \frac{2}{\alpha}(y - u)\mathbf{1}(y &gt; u)</annotation></semantics></math>
+Lower scores indicate superior predictive performance (narrower
+intervals with minimal violations).</p>
+</div>
+<div class="section level3">
+<h3 id="spatial-quadrant-stratification">3. Spatial Quadrant Stratification<a class="anchor" aria-label="anchor" href="#spatial-quadrant-stratification"></a>
+</h3>
+<p>Partitions the 2D spatial bounding box into
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">n \times n</annotation></semantics></math>
+quadrants (default
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>4</mn><mo>×</mo><mn>4</mn><mo>=</mo><mn>16</mn></mrow><annotation encoding="application/x-tex">4 \times 4 = 16</annotation></semantics></math>).
+* Inspect whether any specific quadrant suffers severe localized
+under-coverage (e.g. coverage
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&lt;</mo><mn>75</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">&lt; 75\%</annotation></semantics></math>).
+* Local deficits often highlight unobserved spatial covariates or sharp
+topographical transitions.</p>
+</div>
+<div class="section level3">
+<h3 id="convex-hull-boundary-proximity">4. Convex Hull Boundary Proximity<a class="anchor" aria-label="anchor" href="#convex-hull-boundary-proximity"></a>
+</h3>
+<p>Examines whether intervals near the edge of the spatial domain
+experience degraded coverage due to spatial extrapolation.
+<code><a href="../reference/diagnose.html">diagnose()</a></code> partitions test points into
+<strong>Interior</strong> vs. <strong>Boundary</strong> units.</p>
+</div>
+<div class="section level3">
+<h3 id="spatial-autocorrelation-morans-i">5. Spatial Autocorrelation (Moran’s
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>I</mi><annotation encoding="application/x-tex">I</annotation></semantics></math>)<a class="anchor" aria-label="anchor" href="#spatial-autocorrelation-morans-i"></a>
+</h3>
+<p>Computes Moran’s
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>I</mi><annotation encoding="application/x-tex">I</annotation></semantics></math>
+on absolute conformal residuals: *
+<strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>I</mi><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">I \approx 0</annotation></semantics></math>
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>&gt;</mo><mn>0.05</mn></mrow><annotation encoding="application/x-tex">p &gt; 0.05</annotation></semantics></math>):</strong>
+Nonconformity scores are spatially independent; local exchangeability
+holds well. *
+<strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>I</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">I &gt; 0</annotation></semantics></math>
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>&lt;</mo><mn>0.05</mn></mrow><annotation encoding="application/x-tex">p &lt; 0.05</annotation></semantics></math>):</strong>
+Prediction errors cluster spatially, indicating unmodeled spatial
+autocorrelation in the underlying point predictor.</p>
+<hr>
+</div>
 </div>
 <div class="section level2">
-<h2 id="contact">Contact<a class="anchor" aria-label="anchor" href="#contact"></a>
+<h2 id="model-integration-recipes-pred_fun">4. Model Integration Recipes (<code>pred_fun</code>)<a class="anchor" aria-label="anchor" href="#model-integration-recipes-pred_fun"></a>
 </h2>
-<p><strong>Author:</strong> Ahmed Sattar Jabbar<br><strong>Email:</strong> <a href="mailto:ahmed.state.me@gmail.com" class="email">ahmed.state.me@gmail.com</a><br><strong>ORCID:</strong> <a href="https://orcid.org/0009-0006-4614-735X" class="external-link">0009-0006-4614-735X</a></p>
+<p><code>spconform</code> is strictly <strong>model-agnostic</strong>.
+The <code>pred_fun</code> must have the signature:
+<code>function(s_train, y_train, s_new)</code> and return a plain 1D
+numeric vector of length <code>nrow(s_new)</code>.</p>
+<div class="section level3">
+<h3 id="recipe-1-random-forest-ranger">Recipe 1: Random Forest (<code>ranger</code>)<a class="anchor" aria-label="anchor" href="#recipe-1-random-forest-ranger"></a>
+</h3>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://imbs-hl.github.io/ranger/" class="external-link">ranger</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pred_rf</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">s_train</span>, <span class="va">y_train</span>, <span class="va">s_new</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">df_tr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">s_train</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, y <span class="op">=</span> <span class="va">s_train</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, target <span class="op">=</span> <span class="va">y_train</span><span class="op">)</span></span>
+<span>  <span class="va">df_te</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">s_new</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>,   y <span class="op">=</span> <span class="va">s_new</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">ranger</span><span class="op">(</span><span class="va">target</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">y</span>, data <span class="op">=</span> <span class="va">df_tr</span>, num.trees <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, data <span class="op">=</span> <span class="va">df_te</span><span class="op">)</span><span class="op">$</span><span class="va">predictions</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="recipe-2-generalized-additive-model-mgcvgam">Recipe 2: Generalized Additive Model (<code>mgcv::gam</code>)<a class="anchor" aria-label="anchor" href="#recipe-2-generalized-additive-model-mgcvgam"></a>
+</h3>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">mgcv</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pred_gam</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">s_train</span>, <span class="va">y_train</span>, <span class="va">s_new</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">df_tr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">s_train</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>, y <span class="op">=</span> <span class="va">s_train</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span>, target <span class="op">=</span> <span class="va">y_train</span><span class="op">)</span></span>
+<span>  <span class="va">df_te</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">s_new</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>,   y <span class="op">=</span> <span class="va">s_new</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">gam</a></span><span class="op">(</span><span class="va">target</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/mgcv/man/s.html" class="external-link">s</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, k <span class="op">=</span> <span class="fl">20</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">df_tr</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, newdata <span class="op">=</span> <span class="va">df_te</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="recipe-3-ordinary-spatial-kriging-gstat">Recipe 3: Ordinary Spatial Kriging (<code>gstat</code>)<a class="anchor" aria-label="anchor" href="#recipe-3-ordinary-spatial-kriging-gstat"></a>
+</h3>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/edzer/sp/" class="external-link">sp</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-spatial/gstat/" class="external-link">gstat</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">pred_kriging</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">s_train</span>, <span class="va">y_train</span>, <span class="va">s_new</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">sp_tr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://edzer.github.io/sp/reference/SpatialPoints.html" class="external-link">SpatialPointsDataFrame</a></span><span class="op">(</span>coords <span class="op">=</span> <span class="va">s_train</span>, data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y_train</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">sp_te</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://edzer.github.io/sp/reference/SpatialPoints.html" class="external-link">SpatialPoints</a></span><span class="op">(</span>coords <span class="op">=</span> <span class="va">s_new</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="va">vgm_mod</span> <span class="op">&lt;-</span> <span class="fu">fit.variogram</span><span class="op">(</span><span class="fu">variogram</span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fl">1</span>, <span class="va">sp_tr</span><span class="op">)</span>, <span class="fu">vgm</span><span class="op">(</span><span class="st">"Exp"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">krig_out</span> <span class="op">&lt;-</span> <span class="fu">krige</span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fl">1</span>, <span class="va">sp_tr</span>, <span class="va">sp_te</span>, model <span class="op">=</span> <span class="va">vgm_mod</span>, debug.level <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span>  <span class="va">krig_out</span><span class="op">$</span><span class="va">var1.pred</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="troubleshooting-common-errors">5. Troubleshooting Common Errors<a class="anchor" aria-label="anchor" href="#troubleshooting-common-errors"></a>
+</h2>
+<div class="section level3">
+<h3 id="error-s_train-and-s0-must-have-the-same-number-of-coordinate-columns">Error:
+<code>s_train and s0 must have the same number of coordinate columns</code><a class="anchor" aria-label="anchor" href="#error-s_train-and-s0-must-have-the-same-number-of-coordinate-columns"></a>
+</h3>
+<ul>
+<li>
+<strong>Cause:</strong> The number of columns in the training
+coordinate matrix does not match the query points (e.g. 2D training
+coordinates vs 3D spatio-temporal queries).</li>
+<li>
+<strong>Fix:</strong> Verify dimensions with
+<code>ncol(s_train) == ncol(s0)</code>.</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="error-s_train-and-y_train-must-have-the-same-number-of-observations">Error:
+<code>s_train and y_train must have the same number of observations</code><a class="anchor" aria-label="anchor" href="#error-s_train-and-y_train-must-have-the-same-number-of-observations"></a>
+</h3>
+<ul>
+<li><p><strong>Cause:</strong> Coordinate rows do not align with
+response vector length, or missing values were filtered from one object
+but not the other.</p></li>
+<li>
+<p><strong>Fix:</strong> Synchronize rows prior to calling
+<code>spconform</code>:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">valid_idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">s_train</span>, <span class="va">y_train</span><span class="op">)</span></span>
+<span><span class="va">s_train</span> <span class="op">&lt;-</span> <span class="va">s_train</span><span class="op">[</span><span class="va">valid_idx</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span><span class="va">y_train</span> <span class="op">&lt;-</span> <span class="va">y_train</span><span class="op">[</span><span class="va">valid_idx</span><span class="op">]</span></span></code></pre></div>
+</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="warning-effective-neighbourhood-weight-vanishingly-small-falling-back-to-unweighted-quantile">Warning:
+<code>Effective neighbourhood weight vanishingly small; falling back to unweighted quantile</code><a class="anchor" aria-label="anchor" href="#warning-effective-neighbourhood-weight-vanishingly-small-falling-back-to-unweighted-quantile"></a>
+</h3>
+<ul>
+<li>
+<strong>Cause:</strong> In <code><a href="../reference/scp_areal.html">scp_areal()</a></code>, an areal target
+unit has no graph neighbors in the training set (an isolated island or
+disconnected graph component).</li>
+<li>
+<strong>Fix:</strong> Check adjacency matrix connectivity using
+<code>rowSums(adjacency)</code>. Ensure graph adjacency accurately
+connects all target units.</li>
+</ul>
+<hr>
+</div>
+</div>
+<div class="section level2">
+<h2 id="submitting-a-minimal-reproducible-example-reprex">6. Submitting a Minimal Reproducible Example
+(<code>reprex</code>)<a class="anchor" aria-label="anchor" href="#submitting-a-minimal-reproducible-example-reprex"></a>
+</h2>
+<p>If you encounter unexpected behavior, please create a self-contained
+reproducible example:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://amjed-droid.github.io/spconform/">spconform</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 1. Synthetic reproducible dataset</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">n_tr</span> <span class="op">&lt;-</span> <span class="fl">80</span></span>
+<span><span class="va">n_te</span> <span class="op">&lt;-</span> <span class="fl">20</span></span>
+<span><span class="va">s_train</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_tr</span> <span class="op">*</span> <span class="fl">2</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">y_train</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">3</span> <span class="op">*</span> <span class="va">s_train</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_tr</span>, sd <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">s_test</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n_te</span> <span class="op">*</span> <span class="fl">2</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">y_test</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">3</span> <span class="op">*</span> <span class="va">s_test</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span><span class="op">)</span>  <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_te</span>, sd <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 2. Simple baseline predictor</span></span>
+<span><span class="va">pfun</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">s_tr</span>, <span class="va">y_tr</span>, <span class="va">s_new</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">y_tr</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">s_new</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># 3. Execution triggering the issue</span></span>
+<span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scp_geostatistical.html">scp_geostatistical</a></span><span class="op">(</span><span class="va">s_train</span>, <span class="va">y_train</span>, <span class="va">s_test</span>, <span class="va">pfun</span>, alpha <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
+<span><span class="va">cov</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/coverage_report.html">coverage_report</a></span><span class="op">(</span><span class="va">out</span>, <span class="va">y_test</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cov</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 4. Environment details</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="citation-academic-reference">7. Citation &amp; Academic Reference<a class="anchor" aria-label="anchor" href="#citation-academic-reference"></a>
+</h2>
+<p>If you use <strong>spconform</strong> in academic research, please
+cite:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bibtex"><code class="sourceCode bibtex"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="va">@Manual</span>{<span class="ot">spconform2026</span>,</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="dt">title</span>  = {spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R},</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="dt">author</span> = {Ahmed Sattar Jabbar},</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="dt">year</span>   = {2026},</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="dt">note</span>   = {R package version 0.1.2},</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="dt">url</span>    = {https://CRAN.R-project.org/package=spconform},</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  <span class="dt">doi</span>    = {10.32614/CRAN.package.spconform}</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>}</span></code></pre></div>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="maintainer-contact">8. Maintainer Contact<a class="anchor" aria-label="anchor" href="#maintainer-contact"></a>
+</h2>
+<ul>
+<li>
+<strong>Lead Author &amp; Maintainer:</strong> Ahmed Sattar
+Jabbar</li>
+<li>
+<strong>Email:</strong> <a href="mailto:ahmed.state.me@gmail.com">ahmed.state.me@gmail.com</a>
+</li>
+<li>
+<strong>ORCID:</strong> <a href="https://orcid.org/0009-0006-4614-735X" class="external-link">0009-0006-4614-735X</a>
+</li>
+<li>
+<strong>GitHub Repository:</strong> <a href="https://github.com/amjed-droid/spconform" class="external-link">amjed-droid/spconform</a>
+</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
