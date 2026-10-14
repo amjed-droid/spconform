@@ -149,24 +149,135 @@ pred_kriging <- function(s_train, y_train, s_new) {
 
 ---
 
-## 5. Troubleshooting Common Errors
+## 5. Troubleshooting Common Errors & Warnings
 
-### Error: `s_train and s0 must have the same number of coordinate columns`
-* **Cause:** The number of columns in the training coordinate matrix does not match the query points (e.g. 2D training coordinates vs 3D spatio-temporal queries).
-* **Fix:** Verify dimensions with `ncol(s_train) == ncol(s0)`.
+This section provides an exhaustive guide to diagnosing and resolving statistical, computational, and dimensional errors encountered across `scp_geostatistical()`, `scp_areal()`, and `diagnose()`.
 
-### Error: `s_train and y_train must have the same number of observations`
-* **Cause:** Coordinate rows do not align with response vector length, or missing values were filtered from one object but not the other.
-* **Fix:** Synchronize rows prior to calling `spconform`:
+---
+
+### 1. Coordinate & Dimension Mismatches
+#### Error: `s_train and s0 must have the same number of coordinate columns`
+* **Cause:** The number of spatial coordinate dimensions differs between training and query locations (for example, passing 2D coordinates `(x, y)` in `s_train` but 3D `(x, y, t)` in `s0`).
+* **Fix:** Verify column counts prior to execution:
   ```r
-  valid_idx <- complete.cases(s_train, y_train)
-  s_train <- s_train[valid_idx, , drop = FALSE]
-  y_train <- y_train[valid_idx]
+  stopifnot(ncol(s_train) == ncol(s0))
   ```
 
-### Warning: `Effective neighbourhood weight vanishingly small; falling back to unweighted quantile`
-* **Cause:** In `scp_areal()`, an areal target unit has no graph neighbors in the training set (an isolated island or disconnected graph component).
-* **Fix:** Check adjacency matrix connectivity using `rowSums(adjacency)`. Ensure graph adjacency accurately connects all target units.
+#### Issue: Single-point query vector treated as 1D vector instead of 1-row matrix
+* **Cause:** Passing a simple coordinate vector `s0 = c(50.2, 14.3)` rather than a 1-row matrix or data frame.
+* **Fix:** Coerce single query coordinates explicitly:
+  ```r
+  s0 <- matrix(c(50.2, 14.3), nrow = 1)
+  ```
+
+---
+
+### 2. Missing & Non-Finite Values (`NA`, `NaN`, `Inf`)
+#### Error: `s_train cannot contain NA or non-finite values` or `y_train contains missing values`
+* **Cause:** Sensor dropouts, unrecorded responses, or missing spatial coordinates in training or target sets.
+* **Fix:** Synchronize and filter rows simultaneously before passing data to `spconform`:
+  ```r
+  valid_tr <- complete.cases(s_train, y_train)
+  s_train  <- s_train[valid_tr, , drop = FALSE]
+  y_train  <- y_train[valid_tr]
+
+  valid_te <- complete.cases(s0)
+  s0       <- s0[valid_te, , drop = FALSE]
+  ```
+
+---
+
+### 3. Custom Predictor (`pred_fun`) Return Types & Single-Row Drops
+#### Error: `pred_fun must return a numeric vector of length nrow(s_new)`
+* **Cause 1 (Type Mismatch):** Your model's `predict()` method returns a `matrix` with 1 column, a `data.frame`, or an object with custom attributes rather than an atomic numeric vector.
+* **Fix 1:** Always wrap the return value in `as.numeric()`:
+  ```r
+  pred_fun <- function(s_train, y_train, s_new) {
+    fit <- ranger(y ~ ., data = data.frame(s_train, y = y_train))
+    as.numeric(predict(fit, data = data.frame(s_new))$predictions)
+  }
+  ```
+* **Cause 2 (Single-Row Dimension Drop):** Subsetting `s_new[i, ]` inside `pred_fun` drops a 1-row matrix to a vector, causing downstream matrix multiplications or feature extractors to fail.
+* **Fix 2:** Always include `drop = FALSE` in internal subsetting operations:
+  ```r
+  s_sub <- s_new[idx, , drop = FALSE]
+  ```
+
+---
+
+### 4. Coordinate Reference System (CRS) & Distance Scale Discrepancies
+#### Symptom: Prediction intervals are excessively wide or bandwidth estimation is degenerate
+* **Cause:** Mixing unprojected geographic coordinates (degrees of longitude and latitude) with planar coordinates (UTM meters), or passing coordinates where axes have wildly disparate scales. In unprojected coordinates, Euclidean distance fails to account for earth curvature.
+* **Fix:** Reproject coordinates to a conformal planar projection (e.g. UTM or EPSG:3857) prior to calibration:
+  ```r
+  # Example using sf:
+  # pts_projected <- sf::st_transform(pts_sf, crs = 32638)
+  # s_train <- sf::st_coordinates(pts_projected)
+  ```
+
+---
+
+### 5. Areal Adjacency Matrix Structural Errors
+#### Error: `adjacency must be a square numeric matrix`
+* **Cause:** Passing a non-square matrix (`nrow(adjacency) != ncol(adjacency)`) or an adjacency list rather than a binary/weighted contiguity matrix.
+* **Fix:** Validate matrix dimensions:
+  ```r
+  stopifnot(is.matrix(adjacency), nrow(adjacency) == ncol(adjacency))
+  ```
+
+#### Warning: `Effective neighbourhood weight vanishingly small; falling back to unweighted quantile`
+* **Cause:** An areal unit has no graph neighbors in the training set (e.g. an isolated island, enclaved district, or disconnected graph component with degree zero).
+* **Fix:** Audit graph connectivity. Identify isolated units and bridge graph components or adjust contiguity criteria:
+  ```r
+  isolated <- which(rowSums(adjacency) == 0)
+  if (length(isolated) > 0) {
+    message("Isolated units detected: ", paste(isolated, collapse = ", "))
+  }
+  ```
+
+---
+
+### 6. Calibration Sample Size vs. Nominal Miscoverage ($\alpha$)
+#### Symptom: Conformal quantile returns the maximum nonconformity score or upper bound is uninformative
+* **Cause (Mathematical Degeneracy):** The held-out calibration set is too small for the requested miscoverage level $\alpha$. Conformal prediction requires:
+  $$N_{\text{cal}} \ge \left\lceil \frac{1 - \alpha}{\alpha} \right\rceil$$
+  For example, requesting a 99% interval ($\alpha = 0.01$) when $N_{\text{cal}} = 40$ mathematically cannot calibrate a 99% empirical quantile, as the highest empirical quantile available is $1 - 1/(N_{\text{cal}} + 1) = 97.6\%$.
+* **Fix:** Either increase the calibration partition size via `split` (e.g. `split = 0.5` instead of `0.8`), or choose an $\alpha$ commensurate with sample size (e.g. $\alpha = 0.05$ or $0.10$).
+
+---
+
+### 7. Evaluation & Diagnostic Alignment
+#### Error: `y_true must have the same length as object$pred`
+* **Cause:** Passing the entire response vector `y` instead of the held-out evaluation subset corresponding to `s0`.
+* **Fix:** Align evaluation indices:
+  ```r
+  # Correct evaluation subset:
+  coverage_report(out, y_true = y_test)
+  diagnose(out, y_true = y_test, s_test = s_test)
+  ```
+
+#### Error: `s_test is required for spatial stratification and boundary audits`
+* **Cause:** Calling `diagnose(out, y_true = y_test)` without providing query coordinates `s_test`. Without coordinates, `diagnose()` cannot compute spatial quadrant partitions, convex hull boundaries, or Moran's $I$.
+* **Fix:** Always provide `s_test`:
+  ```r
+  diag <- diagnose(out, y_true = y_test, s_test = s_test, plot = TRUE)
+  ```
+
+---
+
+### 8. Graphics Layout & Multi-Panel Plot Devices
+#### Warning: Plot margins too large or layout display clipped in RStudio
+* **Cause:** The multi-panel diagnostic plot (`diagnose()`) renders 4 to 6 visual audits simultaneously, requiring adequate display geometry.
+* **Fix:** Open an expanded graphic window before plotting, or extract numerical diagnostics without plotting:
+  ```r
+  # Numerical diagnostics only (no graphical device):
+  diag <- diagnose(out, y_true = y_test, s_test = s_test, plot = FALSE)
+  print(diag)
+
+  # For plotting, expand display device:
+  dev.new(width = 11, height = 7)
+  plot(diag)
+  ```
 
 ---
 
