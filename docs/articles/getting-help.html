@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spconform</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -122,16 +122,15 @@ binom.test(round(report$coverage * length(y_test)), length(y_test), p = 1 - out$
 <li>Use <code>scp_geostatistical()</code> when observations have continuous coordinates $(x, y)$ or $(\text{lon}, \text{lat})$, such as weather stations, air quality sensors, or soil core samples.</li>
 <li>Use <code>scp_areal()</code> when data are aggregated over discrete spatial units (counties, municipalities, census tracts, or lattice grid cells) where relationships are defined by an adjacency matrix $W$.</li>
 </ul>
-<h3>Q3: How do spatial bandwidth and $k$-NN affect interval widths?</h3>
+<h3>Q3: How does spatial bandwidth affect interval widths?</h3>
 <ul>
-<li><strong>Bandwidth ($h$):</strong> In <code>scp_geostatistical()</code>, weights decay as $w_i = \exp(-|s_0 - s_i|^2 / (2h^2))$.
+<li>In <code>scp_geostatistical()</code>, weights decay as $w_i = \exp(-|s_0 - s_i|^2 / (2h^2))$.
 <ul>
-<li>A <strong>smaller $h$</strong> restricts calibration to immediately proximate neighbors, producing highly localized intervals that adapt to local heteroscedasticity, but may be noisy if local data are sparse.</li>
+<li>A <strong>smaller $h$</strong> restricts calibration to immediately proximate neighbors, producing localized intervals that adapt to local heteroscedasticity, but may be noisy if local data are sparse.</li>
 <li>A <strong>larger $h$</strong> borrows strength from more calibration points, yielding smoother, more stable intervals that approach standard split conformal prediction.</li>
 <li>The default (<code>bandwidth = NULL</code>) employs the median pairwise distance heuristic, which provides a robust balance for isotropic spatial domains.</li>
 </ul>
 </li>
-<li><strong>$k$-Nearest Neighbors (<code>k_neighbors</code>):</strong> For large calibration datasets ($N &gt; 1000$), setting e.g. <code>k_neighbors = 50</code> restricts kernel weighting to the 50 closest calibration stations, accelerating computation up to 50x while preserving asymptotic validity.</li>
 </ul>
 <h3>Q4: Does <code>spconform</code> support spatio-temporal data?</h3>
 <p><strong>Yes.</strong> Supply <code>t_train</code> and <code>t0</code> alongside coordinates in <code>scp_geostatistical()</code>:</p>
@@ -268,7 +267,7 @@ sessionInfo()
   title  = {spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R},
   author = {Ahmed Sattar Jabbar},
   year   = {2026},
-  note   = {R package version 0.1.2},
+  note   = {R package version 0.1.1},
   url    = {https://CRAN.R-project.org/package=spconform},
   doi    = {10.32614/CRAN.package.spconform}
 }
