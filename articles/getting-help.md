@@ -14,7 +14,7 @@ issues.
 | Need | Recommended Channel | Details |
 |:---|:---|:---|
 | **Bug Reports & Crashes** | [GitHub Issues](https://github.com/amjed-droid/spconform/issues) | Provide a minimal reproducible example (`reprex`) and [`sessionInfo()`](https://rdrr.io/r/utils/sessionInfo.html). |
-| **Model Advice & Theory** | [GitHub Discussions](https://github.com/amjed-droid/spconform/discussions) | Questions on spatial exchangeability, choice of kernel, or sample size. |
+| **Model Advice & Theory** | [GitHub Issues (Question)](https://github.com/amjed-droid/spconform/issues) | Questions on spatial exchangeability, choice of kernel, or sample size. |
 | **Feature Requests** | [GitHub Issues (Enhancement)](https://github.com/amjed-droid/spconform/issues/new) | Propose new diagnostic metrics, weight kernels, or interface integrations. |
 | **Academic Inquiries** | Direct Email | Reach maintainer Ahmed Sattar Jabbar at `ahmed.state.me@gmail.com`. |
 
@@ -61,13 +61,13 @@ binom.test(round(report$coverage * length(y_test)), length(y_test), p = 1 - out$
   municipalities, census tracts, or lattice grid cells) where
   relationships are defined by an adjacency matrix $`W`$.
 
-### Q3: How do spatial bandwidth and $`k`$-NN affect interval widths?
+### Q3: How does spatial bandwidth affect interval widths?
 
-- **Bandwidth ($`h`$):** In
+- In
   [`scp_geostatistical()`](https://amjed-droid.github.io/spconform/reference/scp_geostatistical.md),
   weights decay as $`w_i = \exp(-\|s_0 - s_i\|^2 / (2h^2))`$.
   - A **smaller $`h`$** restricts calibration to immediately proximate
-    neighbors, producing highly localized intervals that adapt to local
+    neighbors, producing localized intervals that adapt to local
     heteroscedasticity, but may be noisy if local data are sparse.
   - A **larger $`h`$** borrows strength from more calibration points,
     yielding smoother, more stable intervals that approach standard
@@ -75,10 +75,6 @@ binom.test(round(report$coverage * length(y_test)), length(y_test), p = 1 - out$
   - The default (`bandwidth = NULL`) employs the median pairwise
     distance heuristic, which provides a robust balance for isotropic
     spatial domains.
-- **$`k`$-Nearest Neighbors (`k_neighbors`):** For large calibration
-  datasets ($`N > 1000`$), setting e.g. `k_neighbors = 50` restricts
-  kernel weighting to the 50 closest calibration stations, accelerating
-  computation up to 50x while preserving asymptotic validity.
 
 ### Q4: Does `spconform` support spatio-temporal data?
 
@@ -287,7 +283,7 @@ If you use **spconform** in academic research, please cite:
   title  = {spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R},
   author = {Ahmed Sattar Jabbar},
   year   = {2026},
-  note   = {R package version 0.1.2},
+  note   = {R package version 0.1.1},
   url    = {https://CRAN.R-project.org/package=spconform},
   doi    = {10.32614/CRAN.package.spconform}
 }

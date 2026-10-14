@@ -101,8 +101,8 @@ Issues</a></td>
 </tr>
 <tr class="even">
 <td align="left"><strong>Model Advice &amp; Theory</strong></td>
-<td align="left"><a href="https://github.com/amjed-droid/spconform/discussions" class="external-link">GitHub
-Discussions</a></td>
+<td align="left"><a href="https://github.com/amjed-droid/spconform/issues" class="external-link">GitHub Issues
+(Question)</a></td>
 <td align="left">Questions on spatial exchangeability, choice of kernel,
 or sample size.</td>
 </tr>
@@ -179,22 +179,17 @@ cells) where relationships are defined by an adjacency matrix
 </ul>
 </div>
 <div class="section level3">
-<h3 id="q3-how-do-spatial-bandwidth-and-k-nn-affect-interval-widths">Q3: How do spatial bandwidth and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-NN
-affect interval widths?<a class="anchor" aria-label="anchor" href="#q3-how-do-spatial-bandwidth-and-k-nn-affect-interval-widths"></a>
+<h3 id="q3-how-does-spatial-bandwidth-affect-interval-widths">Q3: How does spatial bandwidth affect interval widths?<a class="anchor" aria-label="anchor" href="#q3-how-does-spatial-bandwidth-affect-interval-widths"></a>
 </h3>
 <ul>
-<li>
-<strong>Bandwidth
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>h</mi><annotation encoding="application/x-tex">h</annotation></semantics></math>):</strong>
-In <code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code>, weights decay as
+<li>In <code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code>, weights decay as
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mi>i</mi></msub><mo>=</mo><mrow><mi mathvariant="normal">exp</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>−</mi><mo stretchy="false" form="postfix">∥</mo><msub><mi>s</mi><mn>0</mn></msub><mo>−</mo><msub><mi>s</mi><mi>i</mi></msub><msup><mo stretchy="false" form="postfix">∥</mo><mn>2</mn></msup><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mn>2</mn><msup><mi>h</mi><mn>2</mn></msup><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">w_i = \exp(-\|s_0 - s_i\|^2 / (2h^2))</annotation></semantics></math>.
 <ul>
 <li>A <strong>smaller
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>h</mi><annotation encoding="application/x-tex">h</annotation></semantics></math></strong>
 restricts calibration to immediately proximate neighbors, producing
-highly localized intervals that adapt to local heteroscedasticity, but
-may be noisy if local data are sparse.</li>
+localized intervals that adapt to local heteroscedasticity, but may be
+noisy if local data are sparse.</li>
 <li>A <strong>larger
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>h</mi><annotation encoding="application/x-tex">h</annotation></semantics></math></strong>
 borrows strength from more calibration points, yielding smoother, more
@@ -204,14 +199,6 @@ pairwise distance heuristic, which provides a robust balance for
 isotropic spatial domains.</li>
 </ul>
 </li>
-<li>
-<strong><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-Nearest
-Neighbors (<code>k_neighbors</code>):</strong> For large calibration
-datasets
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>&gt;</mo><mn>1000</mn></mrow><annotation encoding="application/x-tex">N &gt; 1000</annotation></semantics></math>),
-setting e.g. <code>k_neighbors = 50</code> restricts kernel weighting to
-the 50 closest calibration stations, accelerating computation up to 50x
-while preserving asymptotic validity.</li>
 </ul>
 </div>
 <div class="section level3">
@@ -450,7 +437,7 @@ cite:</p>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="dt">title</span>  = {spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R},</span>
 <span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="dt">author</span> = {Ahmed Sattar Jabbar},</span>
 <span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="dt">year</span>   = {2026},</span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="dt">note</span>   = {R package version 0.1.2},</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="dt">note</span>   = {R package version 0.1.1},</span>
 <span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="dt">url</span>    = {https://CRAN.R-project.org/package=spconform},</span>
 <span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  <span class="dt">doi</span>    = {10.32614/CRAN.package.spconform}</span>
 <span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>}</span></code></pre></div>
