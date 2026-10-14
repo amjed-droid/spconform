@@ -1,8 +1,8 @@
 # Print Method for spconform Objects
 
-Prints a concise summary of an `spconform` prediction object, including
-the data type, target coverage level, total number of prediction points,
-and a preview of the first few prediction intervals.
+Displays a concise summary of the conformal prediction object including
+model type, nominal target coverage, and a preview table of prediction
+intervals.
 
 ## Usage
 

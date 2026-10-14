@@ -1,8 +1,6 @@
 # Empirical Coverage and Average Interval Width for an spconform Object
 
-Computes the empirical coverage rate and mean interval width by
-comparing conformal prediction intervals against held-out ground truth
-responses.
+Empirical Coverage and Average Interval Width for an spconform Object
 
 ## Usage
 
@@ -18,20 +16,13 @@ coverage_report(object, y_true)
 
 - y_true:
 
-  Numeric vector of true observed values at the prediction locations.
-  Must have the same length as `object$pred`.
+  Numeric vector of true observed values at the prediction locations,
+  same length/order as `object$pred`.
 
 ## Value
 
-A named list with:
-
-- coverage:
-
-  Proportion of true values falling within the prediction intervals.
-
-- mean_width:
-
-  Mean width of the prediction intervals.
+A named list with `coverage` (proportion of `y_true` falling within
+`[lower, upper]`) and `mean_width` (average interval width).
 
 ## Examples
 

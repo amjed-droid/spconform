@@ -1,7 +1,7 @@
-# Compute Gaussian-kernel spatial weights between a target location and a set of reference locations
+# Spatial Gaussian Kernel Proximity Weights
 
-Compute Gaussian-kernel spatial weights between a target location and a
-set of reference locations
+Computes Gaussian-kernel spatial weights between a target location and a
+set of reference locations.
 
 ## Usage
 

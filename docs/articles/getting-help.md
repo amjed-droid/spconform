@@ -26,16 +26,17 @@ follow these steps.
 
 ## Documentation
 
-For general usage, start with the function reference:
-
 ``` r
 
 ?scp_geostatistical
 ?scp_areal
+?diagnose
+?methods.spconform
+vignette("spconform-intro", package = "spconform")
 ```
 
-You may also consult the introductory vignette for an overview of the
-package and its main functionality.
+You may also consult the introductory vignette for an in-depth
+walkthrough of the package and its S3 diagnostic suite.
 
 ## GitHub Discussions
 
@@ -60,7 +61,7 @@ Please open an issue describing:
 If you use **spconform** in your research, please cite:
 
 > Jabbar, A. S. (2026). *spconform: Conformal Prediction for Spatially
-> and Spatio-Temporally Dependent Data in R* (Version 0.1.0) \[Computer
+> and Spatio-Temporally Dependent Data in R* (Version 0.1.1) \[Computer
 > software\]. Zenodo. <https://doi.org/10.5281/zenodo.21862024>
 
 You can also obtain the citation directly from R:
