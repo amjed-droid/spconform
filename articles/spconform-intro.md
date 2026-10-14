@@ -263,6 +263,9 @@ coverage_report(out_areal, agg$y)
 #> 
 #> $mean_width
 #> [1] 1.866613
+#> 
+#> $winkler_score
+#> [1] 2.524212
 ```
 
 ``` r

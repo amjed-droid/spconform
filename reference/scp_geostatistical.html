@@ -13,7 +13,7 @@ that standard conformal prediction relies on."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">spconform</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,6 +66,7 @@ that standard conformal prediction relies on.</p>
 <span>  t_train <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  t0 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  temporal_bandwidth <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  k_neighbors <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -119,6 +120,11 @@ automatically per target location.</p></dd>
 <dd><p>Optional time indices (and temporal
 bandwidth) for spatio-temporal weighting; see
 <code><a href="spatial_kernel_weights.html">spatial_kernel_weights</a></code>.</p></dd>
+
+
+<dt id="arg-k-neighbors">k_neighbors<a class="anchor" aria-label="anchor" href="#arg-k-neighbors"></a></dt>
+<dd><p>Optional integer; number of nearest calibration neighbours
+to retain for localized calibration. Defaults to <code>NULL</code> (all units).</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>

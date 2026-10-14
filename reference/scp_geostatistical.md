@@ -19,6 +19,7 @@ scp_geostatistical(
   t_train = NULL,
   t0 = NULL,
   temporal_bandwidth = NULL,
+  k_neighbors = NULL,
   seed = NULL
 )
 ```
@@ -68,6 +69,11 @@ scp_geostatistical(
   Optional time indices (and temporal bandwidth) for spatio-temporal
   weighting; see
   [`spatial_kernel_weights`](https://amjed-droid.github.io/spconform/reference/spatial_kernel_weights.md).
+
+- k_neighbors:
+
+  Optional integer; number of nearest calibration neighbours to retain
+  for localized calibration. Defaults to `NULL` (all units).
 
 - seed:
 

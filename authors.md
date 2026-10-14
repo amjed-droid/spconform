@@ -18,7 +18,7 @@ Spatio-Temporally Dependent Data. Comprehensive R Archive Network
       title = {spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data},
       author = {Ahmed Sattar Jabbar},
       year = {2026},
-      note = {R package version 0.1.1},
+      note = {R package version 0.1.2},
       url = {https://CRAN.R-project.org/package=spconform},
       doi = {10.32614/CRAN.package.spconform},
     }

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spconform</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,24 @@
       <small>Source: <a href="https://github.com/amjed-droid/spconform/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.2" id="spconform-012">spconform 0.1.2<a class="anchor" aria-label="anchor" href="#spconform-012"></a></h2>
+<ul><li>Bug Fixes &amp; Robustness:
+<ul><li>Resolved single-query coordinate vector bug in <code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code>: 1D coordinate vectors passed as <code>s0</code> are now properly coerced to a 1-row coordinate matrix matching training dimensions.</li>
+<li>Fixed graphics layout warning in <code><a href="../reference/plot.spconform_diagnose.html">plot.spconform_diagnose()</a></code>: replaced uneven matrix dimension recycling with an explicit layout matrix when <code>n_panels = 3</code>, preventing duplicate panel drawing.</li>
+<li>Added strict input validations in <code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code> and <code><a href="../reference/scp_areal.html">scp_areal()</a></code> guarding against missing (<code>NA</code>) values in coordinates and responses.</li>
+<li>Added length validation and <code>na.rm</code> support in <code><a href="../reference/coverage_report.html">coverage_report()</a></code> to prevent silent vector recycling errors.</li>
+</ul></li>
+<li>Performance &amp; Computational Efficiency:
+<ul><li>Optimized default spatial bandwidth computation in <code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code>: bandwidth is now evaluated once prior to the query loop rather than recomputed per target location, yielding up to a 50x speedup on large query grids.</li>
+<li>Added representative spatial subsampling for bandwidth evaluation when calibration size <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>&gt;</mo><mn>1000</mn></mrow><annotation encoding="application/x-tex">N &gt; 1000</annotation></semantics></math>, keeping memory footprint strictly bounded.</li>
+<li>Added optional <code>k_neighbors</code> argument to <code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code> for localized <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-NN calibration, defaulting to <code>NULL</code> for complete backward compatibility.</li>
+</ul></li>
+<li>Statistical Enhancements:
+<ul><li>
+<code><a href="../reference/coverage_report.html">coverage_report()</a></code> now evaluates and reports the strictly proper Winkler Interval Score (<code>winkler_score</code>) alongside empirical coverage and mean interval width.</li>
+</ul></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="spconform-011">spconform 0.1.1<a class="anchor" aria-label="anchor" href="#spconform-011"></a></h2><p class="text-muted">CRAN release: 2026-09-24</p>
 <ul><li>Enhanced S3 generics and methods for <code>spconform</code> objects:

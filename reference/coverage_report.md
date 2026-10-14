@@ -1,11 +1,12 @@
 # Empirical Coverage and Average Interval Width for an spconform Object
 
-Empirical Coverage and Average Interval Width for an spconform Object
+Evaluates empirical coverage, average prediction interval width, and the
+strictly proper Winkler interval score for an `"spconform"` object.
 
 ## Usage
 
 ``` r
-coverage_report(object, y_true)
+coverage_report(object, y_true, na.rm = TRUE)
 ```
 
 ## Arguments
@@ -19,10 +20,32 @@ coverage_report(object, y_true)
   Numeric vector of true observed values at the prediction locations,
   same length/order as `object$pred`.
 
+- na.rm:
+
+  Logical; if `TRUE`, missing values in `y_true` are removed before
+  computing evaluation metrics. Defaults to `TRUE`.
+
 ## Value
 
-A named list with `coverage` (proportion of `y_true` falling within
-`[lower, upper]`) and `mean_width` (average interval width).
+A named list with:
+
+- coverage:
+
+  Proportion of observations falling within `[lower, upper]`
+
+.
+
+- mean_width:
+
+  Average prediction interval width
+
+.
+
+- winkler_score:
+
+  Mean Winkler interval score across evaluation points
+
+.
 
 ## Examples
 
@@ -39,5 +62,8 @@ coverage_report(out, y)
 #> 
 #> $mean_width
 #> [1] 1.697122
+#> 
+#> $winkler_score
+#> [1] 2.849409
 #> 
 ```
