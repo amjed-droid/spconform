@@ -256,9 +256,12 @@ plot.spconform_diagnose <- function(x, ...) {
   if (!is.null(conditional)) n_panels <- n_panels + 1
   if (!is.null(boundary)) n_panels <- n_panels + 1
 
-  layout_mat <- matrix(1:n_panels, ncol = 2, byrow = TRUE)
-  if (n_panels %% 2 == 1) {
-    layout_mat <- rbind(layout_mat, c(n_panels, n_panels))
+  layout_mat <- if (n_panels == 2) {
+    matrix(1:2, nrow = 1, ncol = 2)
+  } else if (n_panels == 3) {
+    matrix(c(1, 2, 3, 3), nrow = 2, ncol = 2, byrow = TRUE)
+  } else {
+    matrix(1:4, nrow = 2, ncol = 2, byrow = TRUE)
   }
 
   old_par <- graphics::par(no.readonly = TRUE)

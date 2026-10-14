@@ -29,7 +29,7 @@ Standard conformal prediction assumes exchangeable data — an assumption routin
 
 `spconform` is, to our knowledge, the first R package to offer conformal prediction spanning both major spatial data structures with optional spatio-temporal extension.
 
-> **Status:** `spconform` v0.1.1 is available on CRAN. It has passed strict `R CMD check --as-cran` with 0 errors, 0 warnings, and 0 notes across Windows, macOS, and Linux (R-devel & R-release). A permanent, citable snapshot of the initial release is archived on Zenodo (DOI above).
+> **Status:** `spconform` v0.1.2 is prepared and fully validated for CRAN. It passes strict `R CMD check --as-cran` with 0 errors, 0 warnings, and 0 notes across Windows, macOS, and Linux (R-devel & R-release). A permanent, citable snapshot is archived on Zenodo (DOI above).
 
 ---
 

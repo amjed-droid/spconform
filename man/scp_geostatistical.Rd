@@ -15,6 +15,7 @@ scp_geostatistical(
   t_train = NULL,
   t0 = NULL,
   temporal_bandwidth = NULL,
+  k_neighbors = NULL,
   seed = NULL
 )
 }
@@ -49,6 +50,9 @@ automatically per target location.}
 \item{t_train, t0, temporal_bandwidth}{Optional time indices (and temporal
 bandwidth) for spatio-temporal weighting; see
 \code{\link{spatial_kernel_weights}}.}
+
+\item{k_neighbors}{Optional integer; number of nearest calibration neighbours
+to retain for localized calibration. Defaults to \code{NULL} (all units).}
 
 \item{seed}{Optional integer seed for the train/calibration split, for
 reproducibility.}

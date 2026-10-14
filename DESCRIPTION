@@ -1,7 +1,8 @@
 Package: spconform
 Type: Package
 Title: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data
-Version: 0.1.1
+Version: 0.1.2
+Date: 2026-10-10
 Authors@R: person(given = "Ahmed Sattar", family = "Jabbar",
                    email = "ahmed.state.me@gmail.com", 
                    role = c("aut", "cre"),

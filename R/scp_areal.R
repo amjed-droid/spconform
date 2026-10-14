@@ -57,6 +57,7 @@ scp_areal <- function(y, X = NULL, adjacency, pred_fun = NULL,
                       alpha = 0.1, decay = 1) {
   cl <- match.call()
   
+  if (anyNA(y)) stop("'y' must not contain missing values.")
   n <- length(y)
   adjacency <- as.matrix(adjacency)
   if (nrow(adjacency) != n || ncol(adjacency) != n) {
@@ -64,11 +65,14 @@ scp_areal <- function(y, X = NULL, adjacency, pred_fun = NULL,
   }
   if (alpha <= 0 || alpha >= 1) stop("'alpha' must be in (0, 1).")
   
+  if (anyNA(adjacency)) stop("'adjacency' must not contain missing values.")
+  
   if (!is.null(X)) {
     X <- as.matrix(X)
     if (nrow(X) != n) {
       stop("'X' must have same number of rows as length(y).")
     }
+    if (anyNA(X)) stop("'X' must not contain missing values.")
   }
   
   if (any(adjacency < 0, na.rm = TRUE)) {

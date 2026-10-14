@@ -104,13 +104,19 @@ plot.spconform <- function(x, y_true = NULL, ...) {
 
 #' Empirical Coverage and Average Interval Width for an spconform Object
 #'
+#' Evaluates empirical coverage, average prediction interval width,
+#' and the strictly proper Winkler interval score for an \code{"spconform"} object.
+#'
 #' @param object An object of class \code{"spconform"}.
 #' @param y_true Numeric vector of true observed values at the prediction
 #'   locations, same length/order as \code{object$pred}.
+#' @param na.rm Logical; if \code{TRUE}, missing values in \code{y_true} are
+#'   removed before computing evaluation metrics. Defaults to \code{TRUE}.
 #'
-#' @return A named list with \code{coverage} (proportion of \code{y_true}
-#'   falling within \code{[lower, upper]}) and \code{mean_width} (average
-#'   interval width).
+#' @return A named list with:
+#'   \item{coverage}{Proportion of observations falling within \code{[lower, upper]}}.
+#'   \item{mean_width}{Average prediction interval width}.
+#'   \item{winkler_score}{Mean Winkler interval score across evaluation points}.
 #'
 #' @examples
 #' set.seed(1)
@@ -122,12 +128,21 @@ plot.spconform <- function(x, y_true = NULL, ...) {
 #' coverage_report(out, y)
 #'
 #' @export
-coverage_report <- function(object, y_true) {
+coverage_report <- function(object, y_true, na.rm = TRUE) {
   if (!inherits(object, "spconform")) stop("'object' must be of class 'spconform'.")
+  if (length(y_true) != length(object$pred)) {
+    stop("length(y_true) must equal length(object$pred).")
+  }
+  alpha <- object$alpha
+  widths <- object$upper - object$lower
   covered <- (y_true >= object$lower) & (y_true <= object$upper)
+  underage <- pmax(0, object$lower - y_true)
+  overage  <- pmax(0, y_true - object$upper)
+  wis_vec  <- widths + (2 / alpha) * underage + (2 / alpha) * overage
   list(
-    coverage = mean(covered),
-    mean_width = mean(object$upper - object$lower)
+    coverage      = mean(covered, na.rm = na.rm),
+    mean_width    = mean(widths, na.rm = na.rm),
+    winkler_score = mean(wis_vec, na.rm = na.rm)
   )
 }
 

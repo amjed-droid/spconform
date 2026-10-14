@@ -13,7 +13,7 @@ home:
   sidebar:
     structure: [links, license, community, citation, authors, dev]
   links:
-    - text: CRAN (v0.1.1)
+    - text: CRAN (v0.1.2)
       href: https://CRAN.R-project.org/package=spconform
     - text: Report a bug
       href: https://github.com/amjed-droid/spconform/issues

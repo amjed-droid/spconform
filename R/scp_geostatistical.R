@@ -28,6 +28,8 @@
 #' @param t_train,t0,temporal_bandwidth Optional time indices (and temporal
 #'   bandwidth) for spatio-temporal weighting; see
 #'   \code{\link{spatial_kernel_weights}}.
+#' @param k_neighbors Optional integer; number of nearest calibration neighbours
+#'   to retain for localized calibration. Defaults to \code{NULL} (all units).
 #' @param seed Optional integer seed for the train/calibration split, for
 #'   reproducibility.
 #'
@@ -83,17 +85,28 @@ scp_geostatistical <- function(s_train, y_train, s0, pred_fun,
                                 bandwidth = NULL,
                                 t_train = NULL, t0 = NULL,
                                 temporal_bandwidth = NULL,
+                                k_neighbors = NULL,
                                 seed = NULL) {
   cl <- match.call()
 
   s_train <- as.matrix(s_train)
-  s0 <- as.matrix(s0)
+  if (is.null(dim(s0))) {
+    s0 <- matrix(s0, nrow = 1)
+  } else {
+    s0 <- as.matrix(s0)
+  }
   n <- nrow(s_train)
 
+  if (anyNA(y_train)) stop("'y_train' must not contain missing values.")
+  if (anyNA(s_train)) stop("'s_train' must not contain missing values.")
+  if (anyNA(s0)) stop("'s0' must not contain missing values.")
   if (length(y_train) != n) stop("'y_train' must match nrow(s_train).")
   if (!is.function(pred_fun)) stop("'pred_fun' must be a function.")
   if (alpha <= 0 || alpha >= 1) stop("'alpha' must be in (0, 1).")
   if (split <= 0 || split >= 1) stop("'split' must be in (0, 1).")
+  if (!is.null(k_neighbors) && (k_neighbors < 1)) {
+    stop("'k_neighbors' must be a positive integer.")
+  }
 
   if (!is.null(t_train) && length(t_train) != n) {
     stop("'t_train' must match nrow(s_train).")
@@ -122,6 +135,18 @@ scp_geostatistical <- function(s_train, y_train, s0, pred_fun,
 
   pred0 <- pred_fun(s_fit, y_fit, s0)
 
+  # Precompute default spatial bandwidth once outside the query loop
+  if (is.null(bandwidth)) {
+    if (nrow(s_cal) > 1000) {
+      sub_idx <- sample(seq_len(nrow(s_cal)), 1000)
+      pd <- stats::dist(s_cal[sub_idx, , drop = FALSE])
+    } else {
+      pd <- stats::dist(s_cal)
+    }
+    bandwidth <- stats::median(pd)
+    if (!is.finite(bandwidth) || bandwidth <= 0) bandwidth <- 1
+  }
+
   m <- nrow(s0)
   lower <- upper <- numeric(m)
 
@@ -132,10 +157,18 @@ scp_geostatistical <- function(s_train, y_train, s0, pred_fun,
       t0 = t0j, t = t_cal, temporal_bandwidth = temporal_bandwidth
     )
 
-    ord <- order(resid_abs)
-    r_sorted <- resid_abs[ord]
-    w_sorted <- w[ord]
-    w_sorted <- w_sorted + 1e-12
+    if (!is.null(k_neighbors) && k_neighbors < length(resid_abs)) {
+      top_k <- order(w, decreasing = TRUE)[seq_len(k_neighbors)]
+      r_sub <- resid_abs[top_k]
+      w_sub <- w[top_k]
+      ord <- order(r_sub)
+      r_sorted <- r_sub[ord]
+      w_sorted <- w_sub[ord] + 1e-12
+    } else {
+      ord <- order(resid_abs)
+      r_sorted <- resid_abs[ord]
+      w_sorted <- w[ord] + 1e-12
+    }
     cw <- cumsum(w_sorted) / sum(w_sorted)
 
     q_level <- min(1, (1 - alpha) * (length(r_sorted) + 1) / length(r_sorted))

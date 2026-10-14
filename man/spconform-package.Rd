@@ -10,12 +10,21 @@ Provides distribution-free, model-agnostic prediction intervals for spatially
 and spatio-temporally dependent data using localized conformal calibration,
 fast k-NN proximity calculations, and multi-core parallel execution.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://amjed-droid.github.io/spconform/}
+  \item \url{https://github.com/amjed-droid/spconform}
+  \item Report bugs at \url{https://github.com/amjed-droid/spconform/issues}
+}
+
+}
 \author{
-\strong{Maintainer}: Ahmed Sattar Jabbar \email{ahmed.state.me@gmail.com}
+\strong{Maintainer}: Ahmed Sattar Jabbar \email{ahmed.state.me@gmail.com} (\href{https://orcid.org/0009-0006-4614-735X}{ORCID})
 
 Authors:
 \itemize{
-  \item Ahmed Sattar Jabbar \email{ahmed.state.me@gmail.com}
+  \item Ahmed Sattar Jabbar \email{ahmed.state.me@gmail.com} (\href{https://orcid.org/0009-0006-4614-735X}{ORCID})
 }
 
 }

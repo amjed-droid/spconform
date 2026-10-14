@@ -134,3 +134,81 @@ test_that("diagnose suite returns classed object and supports plot/print", {
   dev.off()
 })
 
+
+
+test_that("v0.1.2: single vector query point s0 works without error", {
+  set.seed(42)
+  s_tr <- matrix(runif(20), ncol = 2)
+  y_tr <- rnorm(10)
+  pfun <- function(s_train, y_train, s_new) rep(mean(y_train), nrow(s_new))
+
+  # Single point query as a numeric vector (was a fatal dimension bug in v0.1.1)
+  s0_vec <- c(0.45, 0.65)
+  out_single <- scp_geostatistical(s_tr, y_tr, s0_vec, pfun, alpha = 0.1, seed = 1)
+  expect_s3_class(out_single, "spconform")
+  expect_equal(length(out_single$pred), 1)
+  expect_true(out_single$upper >= out_single$lower)
+})
+
+test_that("v0.1.2: coverage_report computes Winkler Score and checks length mismatch", {
+  set.seed(123)
+  s_tr <- matrix(runif(40), ncol = 2)
+  y_tr <- rnorm(20)
+  s_te <- matrix(runif(20), ncol = 2)
+  y_te <- rnorm(10)
+  pfun <- function(s_train, y_train, s_new) rep(mean(y_train), nrow(s_new))
+  out <- scp_geostatistical(s_tr, y_tr, s_te, pfun, alpha = 0.1, seed = 1)
+
+  rep_res <- coverage_report(out, y_te)
+  expect_true("winkler_score" %in% names(rep_res))
+  expect_true(is.numeric(rep_res$winkler_score))
+  expect_false(is.na(rep_res$winkler_score))
+
+  # Length mismatch error
+  expect_error(coverage_report(out, y_te[1:5]), "length")
+
+  # Missing values handling
+  y_te_na <- y_te
+  y_te_na[1] <- NA
+  rep_na_true <- coverage_report(out, y_te_na, na.rm = TRUE)
+  expect_true(is.numeric(rep_na_true$coverage))
+  expect_false(is.na(rep_na_true$coverage))
+
+  rep_na_false <- coverage_report(out, y_te_na, na.rm = FALSE)
+  expect_true(is.na(rep_na_false$coverage))
+  expect_true(is.na(rep_na_false$winkler_score))
+})
+
+test_that("v0.1.2: k_neighbors parameter accelerates and functions correctly", {
+  set.seed(99)
+  n <- 50
+  s_tr <- matrix(runif(2 * n), ncol = 2)
+  y_tr <- rnorm(n)
+  s_te <- matrix(runif(10), ncol = 2)
+  pfun <- function(s_train, y_train, s_new) rep(mean(y_train), nrow(s_new))
+
+  out_knn <- scp_geostatistical(s_tr, y_tr, s_te, pfun, alpha = 0.1, k_neighbors = 15, seed = 42)
+  expect_s3_class(out_knn, "spconform")
+  expect_equal(length(out_knn$pred), 5)
+  expect_true(all(out_knn$upper >= out_knn$lower))
+})
+
+test_that("v0.1.2: defensive input validation detects NAs and bad arguments", {
+  s_good <- matrix(1:4, 2, 2)
+  y_good <- c(1, 2)
+  pfun <- function(...) c(1, 1)
+
+  # NAs in coordinates or response
+  s_na <- s_good; s_na[1, 1] <- NA
+  y_na <- y_good; y_na[1] <- NA
+  expect_error(scp_geostatistical(s_na, y_good, s_good, pfun), "missing")
+  expect_error(scp_geostatistical(s_good, y_na, s_good, pfun), "missing")
+  expect_error(scp_geostatistical(s_good, y_good, s_na, pfun), "missing")
+
+  # NAs in areal data
+  adj <- matrix(c(0, 1, 1, 0), 2, 2)
+  expect_error(scp_areal(c(1, NA), adjacency = adj), "missing")
+  adj_na <- adj; adj_na[1, 2] <- NA
+  expect_error(scp_areal(c(1, 2), adjacency = adj_na), "missing")
+  expect_error(scp_areal(c(1, 2), X = matrix(c(1, NA), 2, 1), adjacency = adj), "missing")
+})

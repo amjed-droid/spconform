@@ -1,8 +1,8 @@
 # Plot Prediction Intervals for spconform Objects
 
-Plots point predictions and conformal prediction intervals across
-observation indices, optionally overlaying true target values for visual
-evaluation.
+Visualizes the conformal prediction intervals and point predictions
+across target locations or areal units. Optionally overlays true
+observations if provided.
 
 ## Usage
 
@@ -19,12 +19,11 @@ plot(x, y_true = NULL, ...)
 
 - y_true:
 
-  Optional numeric vector of true observed responses at prediction
-  locations.
+  Optional numeric vector of true observed responses matching `x$pred`.
 
 - ...:
 
-  Further graphical parameters passed to
+  Additional arguments passed to
   [`plot`](https://rdrr.io/r/graphics/plot.default.html).
 
 ## Value
