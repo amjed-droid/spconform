@@ -344,55 +344,278 @@ numeric vector of length <code>nrow(s_new)</code>.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="troubleshooting-common-errors">5. Troubleshooting Common Errors<a class="anchor" aria-label="anchor" href="#troubleshooting-common-errors"></a>
+<h2 id="troubleshooting-common-errors-warnings">5. Troubleshooting Common Errors &amp; Warnings<a class="anchor" aria-label="anchor" href="#troubleshooting-common-errors-warnings"></a>
 </h2>
+<p>This section provides an exhaustive guide to diagnosing and resolving
+statistical, computational, and dimensional errors encountered across
+<code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code>, <code><a href="../reference/scp_areal.html">scp_areal()</a></code>, and
+<code><a href="../reference/diagnose.html">diagnose()</a></code>.</p>
+<hr>
 <div class="section level3">
-<h3 id="error-s_train-and-s0-must-have-the-same-number-of-coordinate-columns">Error:
+<h3 id="coordinate-dimension-mismatches">1. Coordinate &amp; Dimension Mismatches<a class="anchor" aria-label="anchor" href="#coordinate-dimension-mismatches"></a>
+</h3>
+<div class="section level4">
+<h4 id="error-s_train-and-s0-must-have-the-same-number-of-coordinate-columns">Error:
 <code>s_train and s0 must have the same number of coordinate columns</code><a class="anchor" aria-label="anchor" href="#error-s_train-and-s0-must-have-the-same-number-of-coordinate-columns"></a>
-</h3>
+</h4>
 <ul>
+<li><p><strong>Cause:</strong> The number of spatial coordinate
+dimensions differs between training and query locations (for example,
+passing 2D coordinates <code>(x, y)</code> in <code>s_train</code> but
+3D <code>(x, y, t)</code> in <code>s0</code>).</p></li>
 <li>
-<strong>Cause:</strong> The number of columns in the training
-coordinate matrix does not match the query points (e.g. 2D training
-coordinates vs 3D spatio-temporal queries).</li>
-<li>
-<strong>Fix:</strong> Verify dimensions with
-<code>ncol(s_train) == ncol(s0)</code>.</li>
-</ul>
-</div>
-<div class="section level3">
-<h3 id="error-s_train-and-y_train-must-have-the-same-number-of-observations">Error:
-<code>s_train and y_train must have the same number of observations</code><a class="anchor" aria-label="anchor" href="#error-s_train-and-y_train-must-have-the-same-number-of-observations"></a>
-</h3>
-<ul>
-<li><p><strong>Cause:</strong> Coordinate rows do not align with
-response vector length, or missing values were filtered from one object
-but not the other.</p></li>
-<li>
-<p><strong>Fix:</strong> Synchronize rows prior to calling
-<code>spconform</code>:</p>
+<p><strong>Fix:</strong> Verify column counts prior to
+execution:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">valid_idx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">s_train</span>, <span class="va">y_train</span><span class="op">)</span></span>
-<span><span class="va">s_train</span> <span class="op">&lt;-</span> <span class="va">s_train</span><span class="op">[</span><span class="va">valid_idx</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
-<span><span class="va">y_train</span> <span class="op">&lt;-</span> <span class="va">y_train</span><span class="op">[</span><span class="va">valid_idx</span><span class="op">]</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">s_train</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">s0</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </li>
 </ul>
 </div>
-<div class="section level3">
-<h3 id="warning-effective-neighbourhood-weight-vanishingly-small-falling-back-to-unweighted-quantile">Warning:
-<code>Effective neighbourhood weight vanishingly small; falling back to unweighted quantile</code><a class="anchor" aria-label="anchor" href="#warning-effective-neighbourhood-weight-vanishingly-small-falling-back-to-unweighted-quantile"></a>
-</h3>
+<div class="section level4">
+<h4 id="issue-single-point-query-vector-treated-as-1d-vector-instead-of-1-row-matrix">Issue: Single-point query vector treated as 1D vector instead of
+1-row matrix<a class="anchor" aria-label="anchor" href="#issue-single-point-query-vector-treated-as-1d-vector-instead-of-1-row-matrix"></a>
+</h4>
 <ul>
+<li><p><strong>Cause:</strong> Passing a simple coordinate vector
+<code>s0 = c(50.2, 14.3)</code> rather than a 1-row matrix or data
+frame.</p></li>
 <li>
-<strong>Cause:</strong> In <code><a href="../reference/scp_areal.html">scp_areal()</a></code>, an areal target
-unit has no graph neighbors in the training set (an isolated island or
-disconnected graph component).</li>
-<li>
-<strong>Fix:</strong> Check adjacency matrix connectivity using
-<code>rowSums(adjacency)</code>. Ensure graph adjacency accurately
-connects all target units.</li>
+<p><strong>Fix:</strong> Coerce single query coordinates
+explicitly:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">s0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50.2</span>, <span class="fl">14.3</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+</li>
 </ul>
 <hr>
+</div>
+</div>
+<div class="section level3">
+<h3 id="missing-non-finite-values-na-nan-inf">2. Missing &amp; Non-Finite Values (<code>NA</code>,
+<code>NaN</code>, <code>Inf</code>)<a class="anchor" aria-label="anchor" href="#missing-non-finite-values-na-nan-inf"></a>
+</h3>
+<div class="section level4">
+<h4 id="error-s_train-cannot-contain-na-or-non-finite-values-or-y_train-contains-missing-values">Error: <code>s_train cannot contain NA or non-finite values</code>
+or <code>y_train contains missing values</code><a class="anchor" aria-label="anchor" href="#error-s_train-cannot-contain-na-or-non-finite-values-or-y_train-contains-missing-values"></a>
+</h4>
+<ul>
+<li><p><strong>Cause:</strong> Sensor dropouts, unrecorded responses, or
+missing spatial coordinates in training or target sets.</p></li>
+<li>
+<p><strong>Fix:</strong> Synchronize and filter rows simultaneously
+before passing data to <code>spconform</code>:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">valid_tr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">s_train</span>, <span class="va">y_train</span><span class="op">)</span></span>
+<span><span class="va">s_train</span>  <span class="op">&lt;-</span> <span class="va">s_train</span><span class="op">[</span><span class="va">valid_tr</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span><span class="va">y_train</span>  <span class="op">&lt;-</span> <span class="va">y_train</span><span class="op">[</span><span class="va">valid_tr</span><span class="op">]</span></span>
+<span></span>
+<span><span class="va">valid_te</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">s0</span><span class="op">)</span></span>
+<span><span class="va">s0</span>       <span class="op">&lt;-</span> <span class="va">s0</span><span class="op">[</span><span class="va">valid_te</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span></code></pre></div>
+</li>
+</ul>
+<hr>
+</div>
+</div>
+<div class="section level3">
+<h3 id="custom-predictor-pred_fun-return-types-single-row-drops">3. Custom Predictor (<code>pred_fun</code>) Return Types &amp;
+Single-Row Drops<a class="anchor" aria-label="anchor" href="#custom-predictor-pred_fun-return-types-single-row-drops"></a>
+</h3>
+<div class="section level4">
+<h4 id="error-pred_fun-must-return-a-numeric-vector-of-length-nrows_new">Error:
+<code>pred_fun must return a numeric vector of length nrow(s_new)</code><a class="anchor" aria-label="anchor" href="#error-pred_fun-must-return-a-numeric-vector-of-length-nrows_new"></a>
+</h4>
+<ul>
+<li><p><strong>Cause 1 (Type Mismatch):</strong> Your model’s
+<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> method returns a <code>matrix</code> with 1
+column, a <code>data.frame</code>, or an object with custom attributes
+rather than an atomic numeric vector.</p></li>
+<li>
+<p><strong>Fix 1:</strong> Always wrap the return value in
+<code><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric()</a></code>:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pred_fun</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">s_train</span>, <span class="va">y_train</span>, <span class="va">s_new</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">ranger</span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">s_train</span>, y <span class="op">=</span> <span class="va">y_train</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">s_new</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">predictions</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</li>
+<li><p><strong>Cause 2 (Single-Row Dimension Drop):</strong> Subsetting
+<code>s_new[i, ]</code> inside <code>pred_fun</code> drops a 1-row
+matrix to a vector, causing downstream matrix multiplications or feature
+extractors to fail.</p></li>
+<li>
+<p><strong>Fix 2:</strong> Always include <code>drop = FALSE</code>
+in internal subsetting operations:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">s_sub</span> <span class="op">&lt;-</span> <span class="va">s_new</span><span class="op">[</span><span class="va">idx</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span></code></pre></div>
+</li>
+</ul>
+<hr>
+</div>
+</div>
+<div class="section level3">
+<h3 id="coordinate-reference-system-crs-distance-scale-discrepancies">4. Coordinate Reference System (CRS) &amp; Distance Scale
+Discrepancies<a class="anchor" aria-label="anchor" href="#coordinate-reference-system-crs-distance-scale-discrepancies"></a>
+</h3>
+<div class="section level4">
+<h4 id="symptom-prediction-intervals-are-excessively-wide-or-bandwidth-estimation-is-degenerate">Symptom: Prediction intervals are excessively wide or bandwidth
+estimation is degenerate<a class="anchor" aria-label="anchor" href="#symptom-prediction-intervals-are-excessively-wide-or-bandwidth-estimation-is-degenerate"></a>
+</h4>
+<ul>
+<li><p><strong>Cause:</strong> Mixing unprojected geographic coordinates
+(degrees of longitude and latitude) with planar coordinates (UTM
+meters), or passing coordinates where axes have wildly disparate scales.
+In unprojected coordinates, Euclidean distance fails to account for
+earth curvature.</p></li>
+<li>
+<p><strong>Fix:</strong> Reproject coordinates to a conformal planar
+projection (e.g. UTM or EPSG:3857) prior to calibration:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Example using sf:</span></span>
+<span><span class="co"># pts_projected &lt;- sf::st_transform(pts_sf, crs = 32638)</span></span>
+<span><span class="co"># s_train &lt;- sf::st_coordinates(pts_projected)</span></span></code></pre></div>
+</li>
+</ul>
+<hr>
+</div>
+</div>
+<div class="section level3">
+<h3 id="areal-adjacency-matrix-structural-errors">5. Areal Adjacency Matrix Structural Errors<a class="anchor" aria-label="anchor" href="#areal-adjacency-matrix-structural-errors"></a>
+</h3>
+<div class="section level4">
+<h4 id="error-adjacency-must-be-a-square-numeric-matrix">Error: <code>adjacency must be a square numeric matrix</code><a class="anchor" aria-label="anchor" href="#error-adjacency-must-be-a-square-numeric-matrix"></a>
+</h4>
+<ul>
+<li><p><strong>Cause:</strong> Passing a non-square matrix
+(<code>nrow(adjacency) != ncol(adjacency)</code>) or an adjacency list
+rather than a binary/weighted contiguity matrix.</p></li>
+<li>
+<p><strong>Fix:</strong> Validate matrix dimensions:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">is.matrix</a></span><span class="op">(</span><span class="va">adjacency</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">adjacency</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">adjacency</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</li>
+</ul>
+</div>
+<div class="section level4">
+<h4 id="warning-effective-neighbourhood-weight-vanishingly-small-falling-back-to-unweighted-quantile">Warning:
+<code>Effective neighbourhood weight vanishingly small; falling back to unweighted quantile</code><a class="anchor" aria-label="anchor" href="#warning-effective-neighbourhood-weight-vanishingly-small-falling-back-to-unweighted-quantile"></a>
+</h4>
+<ul>
+<li><p><strong>Cause:</strong> An areal unit has no graph neighbors in
+the training set (e.g. an isolated island, enclaved district, or
+disconnected graph component with degree zero).</p></li>
+<li>
+<p><strong>Fix:</strong> Audit graph connectivity. Identify isolated
+units and bridge graph components or adjust contiguity criteria:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">isolated</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">adjacency</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">isolated</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Isolated units detected: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">isolated</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</li>
+</ul>
+<hr>
+</div>
+</div>
+<div class="section level3">
+<h3 id="calibration-sample-size-vs--nominal-miscoverage-alpha">6. Calibration Sample Size vs. Nominal Miscoverage
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>)<a class="anchor" aria-label="anchor" href="#calibration-sample-size-vs--nominal-miscoverage-alpha"></a>
+</h3>
+<div class="section level4">
+<h4 id="symptom-conformal-quantile-returns-the-maximum-nonconformity-score-or-upper-bound-is-uninformative">Symptom: Conformal quantile returns the maximum nonconformity score
+or upper bound is uninformative<a class="anchor" aria-label="anchor" href="#symptom-conformal-quantile-returns-the-maximum-nonconformity-score-or-upper-bound-is-uninformative"></a>
+</h4>
+<ul>
+<li>
+<strong>Cause (Mathematical Degeneracy):</strong> The held-out
+calibration set is too small for the requested miscoverage level
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>.
+Conformal prediction requires:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>N</mi><mtext mathvariant="normal">cal</mtext></msub><mo>≥</mo><mrow><mo stretchy="true" form="prefix">⌈</mo><mfrac><mrow><mn>1</mn><mo>−</mo><mi>α</mi></mrow><mi>α</mi></mfrac><mo stretchy="true" form="postfix">⌉</mo></mrow></mrow><annotation encoding="application/x-tex">N_{\text{cal}} \ge \left\lceil \frac{1 - \alpha}{\alpha} \right\rceil</annotation></semantics></math>
+For example, requesting a 99% interval
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mn>0.01</mn></mrow><annotation encoding="application/x-tex">\alpha = 0.01</annotation></semantics></math>)
+when
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>N</mi><mtext mathvariant="normal">cal</mtext></msub><mo>=</mo><mn>40</mn></mrow><annotation encoding="application/x-tex">N_{\text{cal}} = 40</annotation></semantics></math>
+mathematically cannot calibrate a 99% empirical quantile, as the highest
+empirical quantile available is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><mn>1</mn><mi>/</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>N</mi><mtext mathvariant="normal">cal</mtext></msub><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>97.6</mn><mi>%</mi></mrow><annotation encoding="application/x-tex">1 - 1/(N_{\text{cal}} + 1) = 97.6\%</annotation></semantics></math>.</li>
+<li>
+<strong>Fix:</strong> Either increase the calibration partition size
+via <code>split</code> (e.g. <code>split = 0.5</code> instead of
+<code>0.8</code>), or choose an
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>
+commensurate with sample size
+(e.g. <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>=</mo><mn>0.05</mn></mrow><annotation encoding="application/x-tex">\alpha = 0.05</annotation></semantics></math>
+or
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>0.10</mn><annotation encoding="application/x-tex">0.10</annotation></semantics></math>).</li>
+</ul>
+<hr>
+</div>
+</div>
+<div class="section level3">
+<h3 id="evaluation-diagnostic-alignment">7. Evaluation &amp; Diagnostic Alignment<a class="anchor" aria-label="anchor" href="#evaluation-diagnostic-alignment"></a>
+</h3>
+<div class="section level4">
+<h4 id="error-y_true-must-have-the-same-length-as-objectpred">Error:
+<code>y_true must have the same length as object$pred</code><a class="anchor" aria-label="anchor" href="#error-y_true-must-have-the-same-length-as-objectpred"></a>
+</h4>
+<ul>
+<li><p><strong>Cause:</strong> Passing the entire response vector
+<code>y</code> instead of the held-out evaluation subset corresponding
+to <code>s0</code>.</p></li>
+<li>
+<p><strong>Fix:</strong> Align evaluation indices:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Correct evaluation subset:</span></span>
+<span><span class="fu"><a href="../reference/coverage_report.html">coverage_report</a></span><span class="op">(</span><span class="va">out</span>, y_true <span class="op">=</span> <span class="va">y_test</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/diagnose.html">diagnose</a></span><span class="op">(</span><span class="va">out</span>, y_true <span class="op">=</span> <span class="va">y_test</span>, s_test <span class="op">=</span> <span class="va">s_test</span><span class="op">)</span></span></code></pre></div>
+</li>
+</ul>
+</div>
+<div class="section level4">
+<h4 id="error-s_test-is-required-for-spatial-stratification-and-boundary-audits">Error:
+<code>s_test is required for spatial stratification and boundary audits</code><a class="anchor" aria-label="anchor" href="#error-s_test-is-required-for-spatial-stratification-and-boundary-audits"></a>
+</h4>
+<ul>
+<li><p><strong>Cause:</strong> Calling
+<code>diagnose(out, y_true = y_test)</code> without providing query
+coordinates <code>s_test</code>. Without coordinates,
+<code><a href="../reference/diagnose.html">diagnose()</a></code> cannot compute spatial quadrant partitions,
+convex hull boundaries, or Moran’s
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>I</mi><annotation encoding="application/x-tex">I</annotation></semantics></math>.</p></li>
+<li>
+<p><strong>Fix:</strong> Always provide <code>s_test</code>:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">diag</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/diagnose.html">diagnose</a></span><span class="op">(</span><span class="va">out</span>, y_true <span class="op">=</span> <span class="va">y_test</span>, s_test <span class="op">=</span> <span class="va">s_test</span>, plot <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+</li>
+</ul>
+<hr>
+</div>
+</div>
+<div class="section level3">
+<h3 id="graphics-layout-multi-panel-plot-devices">8. Graphics Layout &amp; Multi-Panel Plot Devices<a class="anchor" aria-label="anchor" href="#graphics-layout-multi-panel-plot-devices"></a>
+</h3>
+<div class="section level4">
+<h4 id="warning-plot-margins-too-large-or-layout-display-clipped-in-rstudio">Warning: Plot margins too large or layout display clipped in
+RStudio<a class="anchor" aria-label="anchor" href="#warning-plot-margins-too-large-or-layout-display-clipped-in-rstudio"></a>
+</h4>
+<ul>
+<li><p><strong>Cause:</strong> The multi-panel diagnostic plot
+(<code><a href="../reference/diagnose.html">diagnose()</a></code>) renders 4 to 6 visual audits simultaneously,
+requiring adequate display geometry.</p></li>
+<li>
+<p><strong>Fix:</strong> Open an expanded graphic window before
+plotting, or extract numerical diagnostics without plotting:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Numerical diagnostics only (no graphical device):</span></span>
+<span><span class="va">diag</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/diagnose.html">diagnose</a></span><span class="op">(</span><span class="va">out</span>, y_true <span class="op">=</span> <span class="va">y_test</span>, s_test <span class="op">=</span> <span class="va">s_test</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diag</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># For plotting, expand display device:</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html" class="external-link">dev.new</a></span><span class="op">(</span>width <span class="op">=</span> <span class="fl">11</span>, height <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">diag</span><span class="op">)</span></span></code></pre></div>
+</li>
+</ul>
+<hr>
+</div>
 </div>
 </div>
 <div class="section level2">
@@ -401,7 +624,7 @@ connects all target units.</li>
 </h2>
 <p>If you encounter unexpected behavior, please create a self-contained
 reproducible example:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://amjed-droid.github.io/spconform/">spconform</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 1. Synthetic reproducible dataset</span></span>
@@ -433,14 +656,14 @@ reproducible example:</p>
 </h2>
 <p>If you use <strong>spconform</strong> in academic research, please
 cite:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bibtex"><code class="sourceCode bibtex"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="va">@Manual</span>{<span class="ot">spconform2026</span>,</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="dt">title</span>  = {spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R},</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="dt">author</span> = {Ahmed Sattar Jabbar},</span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="dt">year</span>   = {2026},</span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="dt">note</span>   = {R package version 0.1.1},</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="dt">url</span>    = {https://CRAN.R-project.org/package=spconform},</span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  <span class="dt">doi</span>    = {10.32614/CRAN.package.spconform}</span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bibtex"><code class="sourceCode bibtex"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="va">@Manual</span>{<span class="ot">spconform2026</span>,</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>  <span class="dt">title</span>  = {spconform: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data in R},</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>  <span class="dt">author</span> = {Ahmed Sattar Jabbar},</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a>  <span class="dt">year</span>   = {2026},</span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a>  <span class="dt">note</span>   = {R package version 0.1.1},</span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a>  <span class="dt">url</span>    = {https://CRAN.R-project.org/package=spconform},</span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>  <span class="dt">doi</span>    = {10.32614/CRAN.package.spconform}</span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a>}</span></code></pre></div>
 <hr>
 </div>
 <div class="section level2">
