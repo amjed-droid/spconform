@@ -73,6 +73,15 @@ test_that("scp_classification works on multiclass spatial data and S3 methods wo
   dev.off()
   unlink(temp_pdf)
   
+
+  # Test coverage_report with Conformal Brier Score
+  rep_cls <- coverage_report(fit_multi, y_te)
+  expect_s3_class(rep_cls, "spconform_coverage_report")
+  expect_true(rep_cls$coverage >= 0.70)
+  expect_true(rep_cls$brier_score > 0)
+  expect_true(rep_cls$avg_set_size >= 1)
+  expect_output(print(rep_cls), "spconform Coverage & Efficiency Audit")
+
   # Input errors
   expect_error(scp_classification(s_tr, y_tr, s_te, pred_fun_multi, alpha = 1.5))
   expect_error(scp_classification(s_tr, y_tr[1:10], s_te, pred_fun_multi))

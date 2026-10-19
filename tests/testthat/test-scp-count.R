@@ -58,6 +58,16 @@ test_that("scp_count handles overdispersion, S3 methods, and input errors", {
   fit_nb <- scp_count(s_tr, y_tr, s_te, pred_fun, alpha = 0.10)
   expect_true(fit_nb$dispersion >= 0)
   
+  # Test coverage_report for count modality
+  y_te <- stats::rnbinom(30, size = 2, mu = exp(1.5 + s_te[, 1]))
+  rep_cnt <- coverage_report(fit_nb, y_te)
+  expect_s3_class(rep_cnt, "spconform_coverage_report")
+  expect_true(rep_cnt$coverage >= 0.70)
+  expect_true(rep_cnt$winkler_score > 0)
+  expect_true(rep_cnt$mean_span_width >= 1)
+  expect_true(rep_cnt$zero_lower_rate >= 0 && rep_cnt$zero_lower_rate <= 1)
+  expect_output(print(rep_cnt), "spconform Coverage & Efficiency Audit")
+
   # Test S3 print and summary
   expect_output(print(fit_nb))
   expect_output(summary(fit_nb))
