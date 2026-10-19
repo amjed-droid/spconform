@@ -106,6 +106,17 @@ pred_fun = function(s_train, y_train, s_new) { ... }
   \textbf{Diagnostic auditing and reporting:} Comprehensive model evaluation via \texttt{plot()}, \texttt{diagnose()}, \texttt{conformal\_ce\_surface()}, and \texttt{coverage\_report()}.
 \end{enumerate}
 
+Figure \ref{fig:fig-workflow} illustrates the typical diagnostic and calibration workflow of \CRANpkg{spconform}, detailing the sequential pipeline from data configuration to localized calibration, spatial dependence audits, and efficiency trade-off surfaces.
+
+\begin{figure}
+
+{\centering \includegraphics[width=1\linewidth,alt={Flowchart diagram displaying the typical workflow of spconform from data setup to calibration and diagnostics.}]{figures/workflow} 
+
+}
+
+\caption{Typical workflow of the spconform package.}\label{fig:fig-workflow}
+\end{figure}
+
 \subsection{Object model and implementation details}\label{object-model-and-implementation-details}
 
 \CRANpkg{spconform} strictly adheres to R's standard S3 object-oriented system. S3 was selected over S4 and R6 because it introduces zero computational overhead, maintains maximal transparency, and integrates naturally with base R idiom and the tidyverse. The package defines lightweight S3 classes (\texttt{spconform}, \texttt{spconform\_classification}, \texttt{spconform\_count}, \texttt{spconform\_multivariate}, \texttt{spconform\_diagnose}, \texttt{spconform\_ce\_surface}, \texttt{spconform\_mantel}, \texttt{spconform\_cross\_l}), each providing tailored implementations of generic functions:
@@ -259,7 +270,7 @@ plot(fit_meuse, y_true = y_test)
 
 }
 
-\caption{Figure 1: Spatially localized conformal prediction intervals for log-zinc concentration on the held-out Meuse River validation set.}\label{fig:fig-meuse-intervals}
+\caption{Spatially localized conformal prediction intervals for log-zinc concentration on the held-out Meuse River validation set.}\label{fig:fig-meuse-intervals}
 \end{figure}
 
 \subsection{Advanced spatial diagnostic testing}\label{advanced-spatial-diagnostic-testing}
@@ -317,7 +328,7 @@ plot(ce_surface, type = "phase")
 
 }
 
-\caption{Figure 2: Conformal Efficiency-Coverage (C-E) phase portrait displaying the four-quadrant spatial reliability typology on the Meuse dataset.}\label{fig:fig-ce-phase}
+\caption{Conformal Efficiency-Coverage (C-E) phase portrait displaying the four-quadrant spatial reliability typology on the Meuse dataset.}\label{fig:fig-ce-phase}
 \end{figure}
 
 \section{Summary}\label{summary}

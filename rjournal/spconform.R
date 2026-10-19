@@ -14,6 +14,10 @@ library(spconform)
 library(sp)
 
 
+## ----fig-workflow, echo=FALSE, out.width="100%", fig.cap="Typical workflow of the spconform package.", fig.alt="Flowchart diagram displaying the typical workflow of spconform from data setup to calibration and diagnostics."----
+knitr::include_graphics("figures/workflow.png")
+
+
 ## ----tab-comparison, echo=FALSE-----------------------------------------------
 comp_df <- data.frame(
   Package = c("conformalInference", "splitconformal", "MAPIE (Python)", "gstat / geoR", "spconform"),
@@ -90,7 +94,7 @@ fit_meuse <- scp_geostatistical(
 )
 
 
-## ----fig-meuse-intervals, fig.cap="Figure 1: Spatially localized conformal prediction intervals for log-zinc concentration on the held-out Meuse River validation set.", fig.alt="Scatter plot comparing predicted and observed values with localized confidence intervals."----
+## ----fig-meuse-intervals, fig.cap="Spatially localized conformal prediction intervals for log-zinc concentration on the held-out Meuse River validation set.", fig.alt="Scatter plot comparing predicted and observed values with localized confidence intervals."----
 plot(fit_meuse, y_true = y_test)
 
 
@@ -100,6 +104,6 @@ ce_surface <- conformal_ce_surface(fit_meuse, y_true = y_test)
 print(ce_surface)
 
 
-## ----fig-ce-phase, fig.cap="Figure 2: Conformal Efficiency-Coverage (C-E) phase portrait displaying the four-quadrant spatial reliability typology on the Meuse dataset.", fig.alt="Two-dimensional phase plot showing local interval width on the x-axis and local empirical coverage on the y-axis, divided into four quadrants."----
+## ----fig-ce-phase, fig.cap="Conformal Efficiency-Coverage (C-E) phase portrait displaying the four-quadrant spatial reliability typology on the Meuse dataset.", fig.alt="Two-dimensional phase plot showing local interval width on the x-axis and local empirical coverage on the y-axis, divided into four quadrants."----
 plot(ce_surface, type = "phase")
 

@@ -112,6 +112,13 @@ pred_fun = function(s_train, y_train, s_new) { ... }
 3. **Localized conformal calibration:** Fitting prediction intervals via `scp_geostatistical()` (point data), `scp_areal()` (polygon lattices), `scp_count()` (discrete epidemiology), `scp_classification()` (prediction sets), or `scp_multivariate()` (vector fields).
 4. **Diagnostic auditing and reporting:** Comprehensive model evaluation via `plot()`, `diagnose()`, `conformal_ce_surface()`, and `coverage_report()`.
 
+Figure \ref{fig:fig-workflow} illustrates the typical diagnostic and calibration workflow of \CRANpkg{spconform}, detailing the sequential pipeline from data configuration to localized calibration, spatial dependence audits, and efficiency trade-off surfaces.
+
+```{r fig-workflow, echo=FALSE, out.width="100%", fig.cap="Typical workflow of the spconform package.", fig.alt="Flowchart diagram displaying the typical workflow of spconform from data setup to calibration and diagnostics."}
+knitr::include_graphics("figures/workflow.png")
+```
+
+
 ## Object model and implementation details
 
 \CRANpkg{spconform} strictly adheres to R's standard S3 object-oriented system. S3 was selected over S4 and R6 because it introduces zero computational overhead, maintains maximal transparency, and integrates naturally with base R idiom and the tidyverse. The package defines lightweight S3 classes (`spconform`, `spconform_classification`, `spconform_count`, `spconform_multivariate`, `spconform_diagnose`, `spconform_ce_surface`, `spconform_mantel`, `spconform_cross_l`), each providing tailored implementations of generic functions:
@@ -245,7 +252,7 @@ fit_meuse <- scp_geostatistical(
 
 The resulting intervals can be inspected and visualized immediately through the standard S3 `plot()` method:
 
-```{r fig-meuse-intervals, fig.cap="Figure 1: Spatially localized conformal prediction intervals for log-zinc concentration on the held-out Meuse River validation set.", fig.alt="Scatter plot comparing predicted and observed values with localized confidence intervals."}
+```{r fig-meuse-intervals, fig.cap="Spatially localized conformal prediction intervals for log-zinc concentration on the held-out Meuse River validation set.", fig.alt="Scatter plot comparing predicted and observed values with localized confidence intervals."}
 plot(fit_meuse, y_true = y_test)
 ```
 
@@ -264,7 +271,7 @@ ce_surface <- conformal_ce_surface(fit_meuse, y_true = y_test)
 print(ce_surface)
 ```
 
-```{r fig-ce-phase, fig.cap="Figure 2: Conformal Efficiency-Coverage (C-E) phase portrait displaying the four-quadrant spatial reliability typology on the Meuse dataset.", fig.alt="Two-dimensional phase plot showing local interval width on the x-axis and local empirical coverage on the y-axis, divided into four quadrants."}
+```{r fig-ce-phase, fig.cap="Conformal Efficiency-Coverage (C-E) phase portrait displaying the four-quadrant spatial reliability typology on the Meuse dataset.", fig.alt="Two-dimensional phase plot showing local interval width on the x-axis and local empirical coverage on the y-axis, divided into four quadrants."}
 plot(ce_surface, type = "phase")
 ```
 
