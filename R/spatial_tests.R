@@ -925,3 +925,215 @@ plot.spconform_anisotropy <- function(x, ...) {
   graphics::text(lim * 0.9, 0, "East (0 deg)", pos = 4, cex = 0.8)
   graphics::text(0, lim * 0.9, "North (90 deg)", pos = 3, cex = 0.8)
 }
+
+
+#' Spatial Mantel Test for Conformal Score Autocorrelation and Whitening
+#'
+#' Evaluates whether prediction nonconformity scores (or model residuals) exhibit
+#' significant spatial autocorrelation by computing the matrix correlation between
+#' geographical distances and score discrepancies via finite-sample matrix permutation.
+#'
+#' @param object An object of class \code{"spconform"} or numeric vector of scores/residuals.
+#' @param coords Numeric matrix of spatial coordinates (\eqn{n \times 2}). If \code{NULL} and
+#'   \code{object} is an \code{spconform} object, extracted from \code{object$s0}.
+#' @param y_true Optional numeric vector of true observed values to compute residuals if \code{object}
+#'   is an \code{spconform} object.
+#' @param n_permutations Integer; number of Monte Carlo matrix permutations (default 999).
+#' @param alternative Character specifying the alternative hypothesis: \code{"greater"} (default, positive spatial correlation),
+#'   \code{"two.sided"}, or \code{"less"}.
+#' @param seed Optional integer seed for reproducible permutation testing.
+#'
+#' @return An object of class \code{"spconform_mantel"} containing:
+#' \describe{
+#'   \item{mantel_r}{Observed Mantel matrix correlation statistic \eqn{r_M \in [-1, 1]}.}
+#'   \item{p_value}{Monte Carlo permutation p-value.}
+#'   \item{z_score}{Standardized z-score relative to the permutation null distribution.}
+#'   \item{perm_r}{Numeric vector of permutation correlation values under \eqn{H_0}.}
+#'   \item{alternative}{The alternative hypothesis evaluated.}
+#'   \item{n}{Number of spatial locations.}
+#'   \item{n_pairs}{Number of pairwise matrix distance comparisons \eqn{n(n-1)/2}.}
+#'   \item{is_whitened}{Logical; \code{TRUE} if p-value >= 0.05 (H0 of spatial independence is accepted, confirming spatial whitening).}
+#'   \item{decision}{Human-readable conclusion.}
+#' }
+#'
+#' @references
+#' Mantel, N. (1967). The detection of disease clustering and a generalized regression approach.
+#' \emph{Cancer Research}, 27(2), 209--220.
+#'
+#' Legendre, P. and Fortin, M. J. (2010). Comparison of the Mantel test and alternative approaches
+#' for detecting complex multivariate relationships in the spatial analysis of genetic data.
+#' \emph{Molecular Ecology Resources}, 10(5), 831--844.
+#'
+#' @examples
+#' set.seed(42)
+#' n <- 50
+#' coords <- matrix(runif(n * 2, 0, 10), n, 2)
+#' # Spatially correlated field
+#' scores <- sin(coords[, 1] * 0.5) + rnorm(n, sd = 0.2)
+#' res <- spatial_mantel(scores, coords = coords, n_permutations = 199, seed = 123)
+#' print(res)
+#'
+#' @importFrom stats dist cor sd median
+#' @importFrom graphics hist abline legend
+#' @export
+spatial_mantel <- function(object, coords = NULL, y_true = NULL,
+                           n_permutations = 999,
+                           alternative = c("greater", "two.sided", "less"),
+                           seed = NULL) {
+  alternative <- match.arg(alternative)
+
+  # 1. Extract scores and coordinates
+  if (inherits(object, "spconform")) {
+    if (!is.null(y_true)) {
+      y_true <- as.numeric(y_true)
+      if (length(y_true) != length(object$pred)) {
+        stop("length(y_true) must match length(object$pred).")
+      }
+      scores <- abs(y_true - object$pred)
+    } else {
+      scores <- object$upper - object$lower
+    }
+    if (is.null(coords)) coords <- object$s0
+  } else {
+    scores <- as.numeric(object)
+  }
+
+  if (is.null(coords)) {
+    stop("Spatial coordinates 'coords' must be provided.")
+  }
+  coords <- as.matrix(coords)
+  n <- length(scores)
+
+  if (nrow(coords) != n) {
+    stop("nrow(coords) must equal length of scores/residuals.")
+  }
+  if (n < 5) {
+    stop("Need at least 5 spatial locations to compute Mantel test.")
+  }
+
+  # 2. Form Distance Matrices
+  D_geo <- as.matrix(stats::dist(coords))
+  D_score <- as.matrix(stats::dist(scores))
+
+  lower_idx <- lower.tri(D_geo)
+  v_geo <- D_geo[lower_idx]
+  v_score <- D_score[lower_idx]
+  M <- length(v_score)
+
+  sd_geo <- stats::sd(v_geo)
+  sd_score <- stats::sd(v_score)
+
+  if (sd_geo <= 1e-12 || sd_score <= 1e-12) {
+    return(structure(
+      list(
+        mantel_r = 0, p_value = 1, z_score = 0,
+        perm_r = rep(0, n_permutations), alternative = alternative,
+        n = n, n_pairs = M, is_whitened = TRUE,
+        decision = "Zero variance in pairwise distances; spatial randomness assumed."
+      ),
+      class = "spconform_mantel"
+    ))
+  }
+
+  r_obs <- stats::cor(v_geo, v_score)
+
+  # 3. Fast Invariant Permutation Loop
+  # Since off-diagonal multiset is invariant under permutation of indices:
+  # mean_geo and sd_geo are strictly constant across all permutations!
+  y_std <- (v_score - mean(v_score)) / (sd_score * (M - 1))
+  mean_geo <- mean(v_geo)
+
+  if (!is.null(seed)) set.seed(seed)
+  perm_r <- numeric(n_permutations)
+
+  for (b in seq_len(n_permutations)) {
+    p_idx <- sample.int(n)
+    D_perm <- D_geo[p_idx, p_idx]
+    v_perm <- D_perm[lower_idx]
+    vp_std <- (v_perm - mean_geo) / sd_geo
+    perm_r[b] <- sum(vp_std * y_std)
+  }
+
+  # 4. Monte Carlo p-value
+  if (alternative == "greater") {
+    p_val <- (1 + sum(perm_r >= r_obs)) / (n_permutations + 1)
+  } else if (alternative == "two.sided") {
+    p_val <- (1 + sum(abs(perm_r) >= abs(r_obs))) / (n_permutations + 1)
+  } else {
+    p_val <- (1 + sum(perm_r <= r_obs)) / (n_permutations + 1)
+  }
+
+  z_sc <- if (stats::sd(perm_r) > 1e-12) (r_obs - mean(perm_r)) / stats::sd(perm_r) else 0
+
+  is_white <- (p_val >= 0.05)
+  decision <- if (is_white) {
+    "Spatial independence accepted (p >= 0.05). Conformal calibration successfully whitened spatial correlation."
+  } else {
+    sprintf("Significant spatial correlation detected (r_M = %+.4f, p = %.4f). Residuals retain spatial clustering.", r_obs, p_val)
+  }
+
+  structure(
+    list(
+      mantel_r = r_obs,
+      p_value = p_val,
+      z_score = z_sc,
+      perm_r = perm_r,
+      alternative = alternative,
+      n = n,
+      n_pairs = M,
+      is_whitened = is_white,
+      decision = decision
+    ),
+    class = "spconform_mantel"
+  )
+}
+
+#' Print Method for spconform_mantel Objects
+#' @param x An object of class \code{"spconform_mantel"}.
+#' @param ... Additional arguments.
+#' @export
+print.spconform_mantel <- function(x, ...) {
+  cat("-----------------------------------------------------------\n")
+  cat("  spconform: Spatial Mantel Test (Whitening & Autocorrelation)\n")
+  cat("-----------------------------------------------------------\n")
+  cat(sprintf("Number of Locations (n)     : %d (%d pairwise comparisons)\n", x$n, x$n_pairs))
+  cat(sprintf("Mantel Matrix Correlation   : %+.4f (r_M)\n", x$mantel_r))
+  cat(sprintf("Permutation Z-Score         : %+.4f\n", x$z_score))
+  cat(sprintf("Monte Carlo Permutations    : %d\n", length(x$perm_r)))
+  cat("Alternative Hypothesis      : ", x$alternative, "
+", sep = "")
+  cat(sprintf("Permutation p-value         : %.4f\n", x$p_value))
+  cat("-----------------------------------------------------------\n")
+  cat("Whitening Status:             ",
+      if (x$is_whitened) "PASSED (Spatial independence / Whitened)"
+      else "WARNING (Spatial autocorrelation detected)", "\n", sep = "")
+  cat("Conclusion:                   ", x$decision, "\n", sep = "")
+  cat("-----------------------------------------------------------\n")
+  invisible(x)
+}
+
+#' Plot Method for spconform_mantel Objects
+#'
+#' Displays the Monte Carlo permutation distribution under H0 and observed Mantel r.
+#'
+#' @param x An object of class \code{"spconform_mantel"}.
+#' @param ... Additional graphical arguments.
+#' @importFrom graphics hist abline legend
+#' @export
+plot.spconform_mantel <- function(x, ...) {
+  xlims <- range(c(x$perm_r, x$mantel_r))
+  xlims <- c(min(xlims[1], -0.1), max(xlims[2], 0.1))
+
+  graphics::hist(x$perm_r, breaks = 30, col = "gray85", border = "gray50",
+                 xlim = xlims, xlab = "Mantel r (Matrix Correlation)",
+                 main = sprintf("Mantel Permutation Null Distribution (n = %d)", x$n), ...)
+  graphics::abline(v = x$mantel_r, col = "#D7191C", lwd = 2.5, lty = 1)
+  graphics::abline(v = mean(x$perm_r), col = "blue", lwd = 1.5, lty = 2)
+
+  graphics::legend("topright",
+                   legend = c(sprintf("Observed r_M = %+.3f (p = %.4f)", x$mantel_r, x$p_value),
+                              "Null Expectation E(r_M) = 0"),
+                   col = c("#D7191C", "blue"), lwd = c(2.5, 1.5), lty = c(1, 2),
+                   bty = "n", cex = 0.85)
+  invisible(x)
+}

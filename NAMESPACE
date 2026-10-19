@@ -9,6 +9,7 @@ S3method(plot,spconform_classification)
 S3method(plot,spconform_count)
 S3method(plot,spconform_diagnose)
 S3method(plot,spconform_lisa)
+S3method(plot,spconform_mantel)
 S3method(plot,spconform_multivariate)
 S3method(plot,spconform_strata)
 S3method(predict,spconform)
@@ -21,6 +22,7 @@ S3method(print,spconform_coverage_test)
 S3method(print,spconform_diagnose)
 S3method(print,spconform_geary)
 S3method(print,spconform_lisa)
+S3method(print,spconform_mantel)
 S3method(print,spconform_moran)
 S3method(print,spconform_multicov_report)
 S3method(print,spconform_multivariate)
@@ -45,6 +47,7 @@ export(spatial_conditional_coverage)
 export(spatial_geary)
 export(spatial_kernel_weights)
 export(spatial_lisa)
+export(spatial_mantel)
 export(spatial_moran)
 export(strata_diagnostics)
 importFrom(grDevices,
@@ -54,6 +57,7 @@ importFrom(grDevices,
 importFrom(graphics,
   abline,
   barplot,
+  hist,
   layout,
   legend,
   lines,
@@ -65,6 +69,7 @@ importFrom(graphics,
   text
 )
 importFrom(stats,
+  cor,
   cov,
   dist,
   median,

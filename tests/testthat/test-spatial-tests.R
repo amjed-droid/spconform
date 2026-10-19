@@ -138,3 +138,45 @@ test_that("spatial_anisotropy works correctly under isotropy and anisotropy", {
   # 4. Input error
   expect_error(spatial_anisotropy(1:4, coords = coords[1:4, ])) # n < 8
 })
+
+
+test_that("spatial_mantel correctly evaluates matrix correlation and whitening", {
+  set.seed(42)
+  n <- 50
+  coords <- matrix(runif(n * 2, 0, 10), n, 2)
+
+  # 1. Spatially independent noise (H0 holds: spatial whitening)
+  scores_indep <- rnorm(n)
+  res_indep <- spatial_mantel(scores_indep, coords = coords, n_permutations = 199, seed = 123)
+  expect_s3_class(res_indep, "spconform_mantel")
+  expect_equal(res_indep$n, n)
+  expect_equal(res_indep$n_pairs, n * (n - 1) / 2)
+  expect_true(res_indep$p_value >= 0.05)
+  expect_true(res_indep$is_whitened)
+
+  # 2. Spatially correlated scores (H0 rejected: clustering)
+  scores_corr <- sin(coords[, 1] * 0.4) + cos(coords[, 2] * 0.4) + rnorm(n, sd = 0.1)
+  res_corr <- spatial_mantel(scores_corr, coords = coords, n_permutations = 199, seed = 123)
+  expect_true(res_corr$mantel_r > 0.20)
+  expect_true(res_corr$p_value < 0.05)
+  expect_false(res_corr$is_whitened)
+
+  # 3. Integration with spconform object
+  pfun <- function(st, yt, sn) rep(mean(yt), nrow(sn))
+  fit_sp <- scp_geostatistical(coords[1:35, ], scores_indep[1:35], coords[36:50, ], pfun, alpha = 0.1)
+  res_obj <- spatial_mantel(fit_sp, y_true = scores_indep[36:50], n_permutations = 99, seed = 42)
+  expect_s3_class(res_obj, "spconform_mantel")
+
+  # 4. Print and Plot methods execute cleanly
+  expect_output(print(res_indep), "spconform: Spatial Mantel Test")
+
+  temp_pdf <- tempfile(fileext = ".pdf")
+  pdf(temp_pdf)
+  expect_silent(plot(res_indep))
+  dev.off()
+  unlink(temp_pdf)
+
+  # 5. Error handling
+  expect_error(spatial_mantel(rnorm(3), coords = coords[1:3, ]), "Need at least 5 spatial locations")
+  expect_error(spatial_mantel(rnorm(10), coords = coords[1:5, ]), "nrow\\(coords\\) must equal length")
+})
