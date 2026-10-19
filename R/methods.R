@@ -133,7 +133,26 @@ plot.spconform <- function(x, y_true = NULL, ...) {
 #'
 #' @export
 coverage_report <- function(object, y_true, na.rm = TRUE) {
-  if (!inherits(object, "spconform")) stop("'object' must be of class 'spconform'.")
+  if (inherits(object, "spconform_classification")) {
+    y_true <- as.character(y_true)
+    n <- length(object$prediction_sets)
+    if (length(y_true) != n) {
+      stop("length(y_true) must equal number of classification predictions.")
+    }
+    covered <- logical(n)
+    for (i in seq_len(n)) {
+      covered[i] <- y_true[i] %in% object$prediction_sets[[i]]
+    }
+    cov_val <- mean(covered, na.rm = na.rm)
+    return(list(
+      coverage       = cov_val,
+      avg_set_size   = mean(object$set_sizes, na.rm = na.rm),
+      singleton_rate = mean(object$set_sizes == 1, na.rm = na.rm),
+      coverage_gap   = abs(cov_val - (1 - object$alpha))
+    ))
+  }
+
+  if (!inherits(object, "spconform")) stop("'object' must be of class 'spconform' or 'spconform_classification'.")
   if (length(y_true) != length(object$pred)) {
     stop("length(y_true) must equal length(object$pred).")
   }

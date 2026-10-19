@@ -1,30 +1,35 @@
 Package: spconform
 Type: Package
 Title: Conformal Prediction for Spatially and Spatio-Temporally Dependent Data
-Version: 0.1.2
-Date: 2026-10-10
+Version: 0.2.2
+Date: 2026-10-19
 Authors@R: person(given = "Ahmed Sattar", family = "Jabbar",
                    email = "ahmed.state.me@gmail.com", 
                    role = c("aut", "cre"),
                    comment = c(ORCID = "0009-0006-4614-735X"))
+Author: Ahmed Sattar Jabbar [aut, cre] (<https://orcid.org/0009-0006-4614-735X>)
+Maintainer: Ahmed Sattar Jabbar <ahmed.state.me@gmail.com>
 Description: Provides distribution-free, model-agnostic prediction
-    intervals for spatially and spatio-temporally dependent data using
-    localized conformal calibration. Implements locally weighted split
-    conformal prediction for geostatistical (point-referenced) data based on
-    spatial-distance kernels, and a neighbourhood-weighted conformal
-    procedure for areal (lattice) data based on graph adjacency structures.
-    Relaxes the standard exchangeability assumption using spatial proximity,
-    following the localized conformal framework of Mao, Martin and Reich
-    (2024) <doi:10.1080/01621459.2022.2147531>. Includes comprehensive
-    spatial diagnostic tools to audit empirical coverage, conditional
-    spatial strata, and boundary proximity effects.
+    intervals and sets for spatially and spatio-temporally dependent data
+    using localized conformal calibration. Implements locally weighted
+    conformal prediction for geostatistical regression, areal lattices,
+    binary/multiclass classification (adaptive prediction sets), discrete
+    count/epidemiological responses with overdispersion scaling, and
+    multivariate vector outputs via localized Mahalanobis ellipsoids.
+    Relaxes the exchangeability assumption under spatial proximity,
+    following Mao, Martin and Reich (2024) <doi:10.1080/01621459.2022.2147531>.
+    Includes an extensive spatial diagnostic test suite: Moran's I,
+    Cliff-Ord Geary's C, Anselin's Local Moran (LISA), directional
+    anisotropy ANOVA tests, and spatial conditional coverage tests.
 License: GPL-3
 URL: https://amjed-droid.github.io/spconform/, https://github.com/amjed-droid/spconform
 BugReports: https://github.com/amjed-droid/spconform/issues
 Encoding: UTF-8
 Depends: R (>= 3.6.0)
 Imports:
-    stats
+    stats,
+    graphics,
+    grDevices
 Suggests:
     testthat (>= 3.0.0),
     knitr,

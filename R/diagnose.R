@@ -368,6 +368,7 @@ plot.spconform_strata <- function(x, ...) {
 #'   (\eqn{m \times p}). Required for spatial stratification, boundary effects,
 #'   and spatial autocorrelation diagnostics.
 #' @param n_bins Integer; number of spatial bins per dimension for conditional coverage (default 4).
+#' @param run_advanced Logical; if \code{TRUE} (default), executes the advanced spatial tests suite.
 #' @param plot Logical; if \code{TRUE} (default), generates a multi-panel diagnostic plot.
 #' @param ... Additional graphical parameters passed to internal plotting methods.
 #'
@@ -431,7 +432,7 @@ plot.spconform_strata <- function(x, ...) {
 #' @importFrom graphics abline barplot layout par text legend
 #' @importFrom grDevices chull
 #' @export
-diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...) {
+diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, run_advanced = TRUE, plot = TRUE, ...) {
 
   if (!inherits(object, "spconform")) {
     stop("'object' must be of class 'spconform'")
@@ -485,6 +486,20 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
     spatial_autocorr <- spatial_moran(object, y_true, s_test)
   }
 
+  ## ---- 4b. Advanced Spatial Diagnostic Tests (v0.2.2) ----
+  conditional_test <- NULL
+  geary_res        <- NULL
+  lisa_res         <- NULL
+  aniso_res        <- NULL
+
+  if (isTRUE(run_advanced) && !is.null(s_test) && n >= 10 && ncol(s_test) >= 2) {
+    resids_vec <- if (inherits(object, "spconform")) as.vector(y_true - object$pred) else as.vector(y_true - object)
+    conditional_test <- tryCatch(spatial_conditional_coverage(object, y_true = y_true, coords = s_test), error = function(e) NULL)
+    geary_res        <- tryCatch(spatial_geary(resids_vec, coords = s_test), error = function(e) NULL)
+    lisa_res         <- tryCatch(spatial_lisa(object, coords = s_test, y_true = y_true, target = "residuals"), error = function(e) NULL)
+    aniso_res        <- tryCatch(spatial_anisotropy(object, coords = s_test, y_true = y_true), error = function(e) NULL)
+  }
+
   ## ---- 5. Nonconformity Score Distribution ----
   scores <- pmax(object$upper - object$pred, object$pred - object$lower)
 
@@ -501,6 +516,10 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
     conditional      = conditional,
     boundary         = boundary,
     spatial_autocorr = spatial_autocorr,
+    conditional_test = conditional_test,
+    geary            = geary_res,
+    lisa             = lisa_res,
+    anisotropy       = aniso_res,
     scores           = scores_summary,
     raw_scores       = scores,
     alpha            = object$alpha
@@ -690,8 +709,47 @@ print.spconform_diagnose <- function(x, ...) {
 
   # 5. Nonconformity Scores
   cat(">> 5. Nonconformity Score Distribution Moments:\n")
-  cat(sprintf("   * Mean = %.4f | Median = %.4f | SD = %.4f | Q90 = %.4f | Q95 = %.4f\n",
+  cat(sprintf("   * Mean = %.4f | Median = %.4f | SD = %.4f | Q90 = %.4f | Q95 = %.4f\n\n",
               x$scores$mean, x$scores$median, x$scores$sd, x$scores$q90, x$scores$q95))
+
+  # 6. Advanced Spatial Diagnostic Tests (v0.2.2)
+  if (!is.null(x$conditional_test)) {
+    ct <- x$conditional_test
+    cat(">> 6. Spatial Conditional Coverage Omnibus Test:\n")
+    cat(sprintf("   - Omnibus Chi-Square    : %.4f (df = %d, p = %.4f)\n",
+                ct$statistic, ct$df, ct$p_value))
+    cat(sprintf("   - Spatial Calibration   : %s\n\n",
+                if (ct$p_value >= 0.05) "Pass (No significant spatial miscoverage bias)"
+                else "Warning (Significant spatial miscalibration detected)"))
+  }
+
+  if (!is.null(x$lisa)) {
+    ls <- x$lisa
+    counts <- table(ls$quadrant)
+    hh <- if ("High-High" %in% names(counts)) as.integer(counts[["High-High"]]) else 0L
+    ll <- if ("Low-Low" %in% names(counts)) as.integer(counts[["Low-Low"]]) else 0L
+    hl <- if ("High-Low" %in% names(counts)) as.integer(counts[["High-Low"]]) else 0L
+    lh <- if ("Low-High" %in% names(counts)) as.integer(counts[["Low-High"]]) else 0L
+    is_sig <- (as.character(ls$quadrant) != "Not Significant")
+    n_sig <- sum(is_sig)
+    pct_sig <- 100 * mean(is_sig)
+    cat(">> 7. Local Indicators of Spatial Association (LISA Residual Clusters):\n")
+    cat(sprintf("   - Hotspots (High-High)  : %d | Coldspots (Low-Low): %d | Outliers (HL/LH): %d/%d\n",
+                hh, ll, hl, lh))
+    cat(sprintf("   - Significant Localities: %d of %d (%.1f%% at alpha = %.2f, %s)\n\n",
+                n_sig, ls$n, pct_sig, ls$significance_level, ls$p_adjust_method))
+  }
+
+  if (!is.null(x$anisotropy)) {
+    an <- x$anisotropy
+    cat(">> 8. Directional Semivariance & Spatial Anisotropy:\n")
+    cat(sprintf("   - Geometric Anisotropy  : Ratio = %.2fx (%s continuity along %d deg)\n",
+                an$anisotropy_ratio,
+                if (isTRUE(an$is_anisotropic)) "Directional" else "Isotropic",
+                an$principal_angle))
+    cat(sprintf("   - Directional ANOVA     : F = %.3f (p = %.4f)\n",
+                an$F_statistic, an$p_value))
+  }
   cat("======================================================================\n")
 
   invisible(x)

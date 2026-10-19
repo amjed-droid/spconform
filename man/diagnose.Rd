@@ -4,7 +4,15 @@
 \alias{diagnose}
 \title{Comprehensive Diagnostic Suite for Spatial Conformal Prediction Objects}
 \usage{
-diagnose(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...)
+diagnose(
+  object,
+  y_true,
+  s_test = NULL,
+  n_bins = 4,
+  run_advanced = TRUE,
+  plot = TRUE,
+  ...
+)
 }
 \arguments{
 \item{object}{An object of class \code{"spconform"}, typically output from
@@ -18,6 +26,8 @@ Must have the same length as \code{object$pred}.}
 and spatial autocorrelation diagnostics.}
 
 \item{n_bins}{Integer; number of spatial bins per dimension for conditional coverage (default 4).}
+
+\item{run_advanced}{Logical; if \code{TRUE} (default), executes the advanced spatial tests suite.}
 
 \item{plot}{Logical; if \code{TRUE} (default), generates a multi-panel diagnostic plot.}
 
