@@ -13,6 +13,10 @@ print.spconform <- function(x, ...) {
   cat(sprintf("Target coverage: %.1f%%\n", 100 * (1 - x$alpha)))
   n <- length(x$pred)
   cat(sprintf("Number of prediction points: %d\n", n))
+  if (!is.null(x$anisotropy) && isTRUE(x$anisotropy$is_anisotropic)) {
+    cat(sprintf("Spatial anisotropy: Auto-corrected (Ratio = %.2fx along %d deg)\n",
+                x$anisotropy$ratio, x$anisotropy$principal_angle))
+  }
   k <- min(n, 6)
   df <- data.frame(
     pred = round(x$pred[seq_len(k)], 3),

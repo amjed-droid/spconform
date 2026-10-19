@@ -22,6 +22,10 @@
 #' @param split Proportion of the training data used for model fitting; the
 #'   remainder is used as the calibration set for conformal scores. Default
 #'   0.5.
+#' @param auto_anisotropy Logical; if \code{TRUE}, evaluates directional
+#'   spatial anisotropy on the calibration set and applies an affine coordinate
+#'   rotation and scaling transformation matrix to equalize directional spatial
+#'   variability. Defaults to \code{FALSE}.
 #' @param bandwidth Optional spatial kernel bandwidth passed to
 #'   \code{\link{spatial_kernel_weights}}; if \code{NULL}, chosen
 #'   automatically per target location.
@@ -83,10 +87,12 @@
 #' out <- scp_geostatistical(s_train, y_train, s0, pred_fun, alpha = 0.1, seed = 1)
 #' print(out)
 #'
+#'
 #' @export
 scp_geostatistical <- function(s_train, y_train, s0, pred_fun,
                                 alpha = 0.1, split = 0.5,
                                 bandwidth = NULL,
+                                auto_anisotropy = FALSE,
                                 t_train = NULL, t0 = NULL,
                                 temporal_bandwidth = NULL,
                                 k_neighbors = NULL,
@@ -139,13 +145,31 @@ scp_geostatistical <- function(s_train, y_train, s0, pred_fun,
 
   pred0 <- pred_fun(s_fit, y_fit, s0)
 
+  # Optional Auto-Anisotropic Metric Alignment
+  aniso_info <- NULL
+  if (isTRUE(auto_anisotropy) && ncol(s_train) == 2) {
+    aniso_info <- estimate_anisotropic_transform(s_cal, resid_abs)
+    if (isTRUE(aniso_info$is_anisotropic)) {
+      T_mat <- aniso_info$transform_matrix
+      s_cal_weights <- s_cal %*% T_mat
+      s0_weights    <- s0 %*% T_mat
+    } else {
+      s_cal_weights <- s_cal
+      s0_weights    <- s0
+    }
+  } else {
+    s_cal_weights <- s_cal
+    s0_weights    <- s0
+  }
+
   # Precompute default spatial bandwidth once outside the query loop
   if (is.null(bandwidth)) {
-    if (nrow(s_cal) > 1000) {
-      sub_idx <- sample(seq_len(nrow(s_cal)), 1000)
-      pd <- stats::dist(s_cal[sub_idx, , drop = FALSE])
+    ref_coords <- s_cal_weights
+    if (nrow(ref_coords) > 1000) {
+      sub_idx <- sample(seq_len(nrow(ref_coords)), 1000)
+      pd <- stats::dist(ref_coords[sub_idx, , drop = FALSE])
     } else {
-      pd <- stats::dist(s_cal)
+      pd <- stats::dist(ref_coords)
     }
     bandwidth <- stats::median(pd)
     if (!is.finite(bandwidth) || bandwidth <= 0) bandwidth <- 1
@@ -157,7 +181,7 @@ scp_geostatistical <- function(s_train, y_train, s0, pred_fun,
   for (j in seq_len(m)) {
     t0j <- if (!is.null(t0)) t0[j] else NULL
     w <- spatial_kernel_weights(
-      s0 = s0[j, ], s = s_cal, bandwidth = bandwidth,
+      s0 = s0_weights[j, ], s = s_cal_weights, bandwidth = bandwidth,
       t0 = t0j, t = t_cal, temporal_bandwidth = temporal_bandwidth
     )
 
@@ -191,9 +215,85 @@ scp_geostatistical <- function(s_train, y_train, s0, pred_fun,
       upper = upper,
       alpha = alpha,
       s0 = s0,
+      anisotropy = aniso_info,
       type = "geostatistical",
       call = cl
     ),
     class = "spconform"
+  )
+}
+
+#' Estimate Spatial Anisotropy Transformation Matrix
+#'
+#' Evaluates directional semivariance across azimuth orientations and constructs
+#' an affine transformation matrix to rotate and scale coordinates, eliminating
+#' spatial geometric anisotropy.
+#'
+#' @param coords Numeric matrix of 2D spatial coordinates (\eqn{n \times 2}).
+#' @param residuals Numeric vector of prediction residuals or nonconformity scores.
+#' @param p_threshold Significance threshold for declaring anisotropy (default 0.05).
+#' @param ratio_threshold Minimum geometric anisotropy ratio to trigger transformation (default 1.25).
+#'
+#' @return A list with components:
+#' \describe{
+#'   \item{is_anisotropic}{Logical; \code{TRUE} if significant anisotropy is detected.}
+#'   \item{ratio}{Geometric anisotropy ratio (\eqn{\lambda \ge 1}).}
+#'   \item{principal_angle}{Principal continuity direction in degrees (0, 45, 90, 135).}
+#'   \item{transform_matrix}{2x2 affine transformation matrix.}
+#'   \item{p_value}{P-value from directional ANOVA.}
+#' }
+#' @export
+estimate_anisotropic_transform <- function(coords, residuals, p_threshold = 0.05, ratio_threshold = 1.25) {
+  coords <- as.matrix(coords)
+  residuals <- as.numeric(residuals)
+  n <- nrow(coords)
+
+  if (ncol(coords) != 2 || n < 15) {
+    return(list(
+      is_anisotropic = FALSE,
+      ratio = 1.0,
+      principal_angle = 0,
+      transform_matrix = diag(2),
+      p_value = 1.0
+    ))
+  }
+
+  aniso_res <- tryCatch(
+    spatial_anisotropy(object = residuals, coords = coords, target = "residuals"),
+    error = function(e) NULL
+  )
+
+  if (is.null(aniso_res)) {
+    return(list(
+      is_anisotropic = FALSE,
+      ratio = 1.0,
+      principal_angle = 0,
+      transform_matrix = diag(2),
+      p_value = 1.0
+    ))
+  }
+
+  ratio <- aniso_res$anisotropy_ratio
+  p_val <- aniso_res$p_value
+  princ_angle <- aniso_res$principal_angle
+
+  is_aniso <- (p_val < p_threshold) || (ratio >= ratio_threshold)
+
+  if (isTRUE(is_aniso)) {
+    theta_rad <- princ_angle * pi / 180
+    R_mat <- matrix(c(cos(theta_rad), sin(theta_rad),
+                      -sin(theta_rad), cos(theta_rad)), 2, 2)
+    S_mat <- diag(c(1, ratio))
+    T_mat <- R_mat %*% S_mat
+  } else {
+    T_mat <- diag(2)
+  }
+
+  list(
+    is_anisotropic = is_aniso,
+    ratio = ratio,
+    principal_angle = princ_angle,
+    transform_matrix = T_mat,
+    p_value = p_val
   )
 }
