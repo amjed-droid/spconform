@@ -8,8 +8,10 @@ knitr::opts_chunk$set(
   message = FALSE,
   fig.align = "center",
   fig.width = 6.5,
-  fig.height = 4.5
+  fig.height = 4.5,
+  crop = NULL
 )
+knitr::knit_hooks$set(crop = function(before, options, envir) NULL)
 library(spconform)
 library(sp)
 
@@ -24,10 +26,10 @@ comp_df <- data.frame(
   Language = c("R", "R", "Python", "R", "R"),
   Spatial_Weighting = c("No", "No", "No", "Yes (Kriging)", "Yes (Kernel + Graph)"),
   Exchangeability = c("Required", "Required", "Required", "Stationary Covariance", "Relaxed (Localized)"),
-  Multi_Modality = c("Continuous only", "Continuous only", "Continuous + Classification", "Continuous only", "Point, Areal, Count, Multiclass, Vector"),
+  Spatial_Modality = c("Continuous non-spatial", "Continuous non-spatial", "Continuous + Classification", "Continuous geostatistical", "Point geostatistical + Areal lattice"),
   External_Deps = c("Low", "Low", "Scikit-Learn", "Heavy (C++)", "Zero (Base R)")
 )
-colnames(comp_df) <- c("Package", "Language", "Spatial Weighting", "Exchangeability", "Multi-Modality Support", "External Dependencies")
+colnames(comp_df) <- c("Package", "Language", "Spatial Weighting", "Exchangeability", "Spatial Modality", "External Dependencies")
 knitr::kable(comp_df, caption = "Feature comparison between spconform and existing uncertainty quantification packages.")
 
 
@@ -87,10 +89,10 @@ pfun_gam <- function(st, yt, sn) {
   as.numeric(predict(fit, newdata = df_te))
 }
 
-# Run localized conformal prediction with auto-anisotropy
+# Run localized conformal prediction
 fit_meuse <- scp_geostatistical(
   s_train = s_train, y_train = y_train, s0 = s_test,
-  pred_fun = pfun_gam, alpha = 0.10, auto_anisotropy = TRUE, seed = 123
+  pred_fun = pfun_gam, alpha = 0.10, seed = 123
 )
 
 
@@ -99,11 +101,25 @@ plot(fit_meuse, y_true = y_test)
 
 
 ## ----diag-suite, echo=TRUE----------------------------------------------------
-# Evaluate the local efficiency-coverage trade-off surface
-ce_surface <- conformal_ce_surface(fit_meuse, y_true = y_test)
-print(ce_surface)
+# Evaluate the comprehensive diagnostic suite
+diag_report <- diagnose(fit_meuse, y_true = y_test, s_test = s_test, plot = FALSE)
+print(diag_report)
 
 
-## ----fig-ce-phase, fig.cap="Conformal Efficiency-Coverage (C-E) phase portrait displaying the four-quadrant spatial reliability typology on the Meuse dataset.", fig.alt="Two-dimensional phase plot showing local interval width on the x-axis and local empirical coverage on the y-axis, divided into four quadrants."----
-plot(ce_surface, type = "phase")
+## ----fig-diag-dashboard, fig.cap="Three-panel diagnostic dashboard from diagnose() displaying response residuals, Moran scatterplot, and Q-Q normality plot.", fig.alt="Multi-panel diagnostic plot showing residuals against predictions, Moran scatterplot, and normal Q-Q plot."----
+plot(diag_report)
+
+
+## ----diag-strata, echo=TRUE---------------------------------------------------
+# Spatial quadrant strata audit
+strata_res <- strata_diagnostics(fit_meuse, y_true = y_test, s_test = s_test)
+print(strata_res)
+
+# Domain boundary proximity audit
+boundary_res <- boundary_diagnostics(fit_meuse, y_true = y_test, s_test = s_test)
+print(boundary_res)
+
+# Executive coverage summary
+cov_rep <- coverage_report(fit_meuse, y_true = y_test)
+print(cov_rep)
 

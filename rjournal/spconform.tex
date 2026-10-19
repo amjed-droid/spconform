@@ -7,24 +7,24 @@
 \maketitle
 
 \abstract{%
-Quantifying predictive uncertainty for spatial data is critical across environmental monitoring, spatial epidemiology, and geosciences. Standard geostatistical interpolation methods such as Gaussian kriging rely on correctly specified covariance structures and stationarity, suffering substantial coverage breakdown under model misspecification. Although conformal prediction guarantees distribution-free, finite-sample predictive validity, its foundational assumption of exchangeability is systematically violated in the presence of spatial autocorrelation and heteroskedasticity. The spconform package resolves this foundational challenge on CRAN by providing distribution-free, model-agnostic, localized conformal calibration for geostatistical, areal lattice, count, multiclass classification, and multivariate spatial data. Built in Base R with zero heavy external dependencies, spconform introduces adaptive directional anisotropy rotation, five advanced spatial diagnostic audits, and demonstrates superior local coverage and interval efficiency compared to non-spatial conformal tools and Python's MAPIE library. This article presents the methodological foundations, software architecture, cross-system benchmarks, and reproducible case studies.
+Quantifying predictive uncertainty for spatial data is critical across environmental monitoring, spatial epidemiology, and geosciences. Standard geostatistical interpolation methods such as Gaussian kriging rely on correctly specified covariance structures and stationarity, suffering substantial coverage breakdown under model misspecification. Although conformal prediction guarantees distribution-free, finite-sample predictive validity, its foundational assumption of exchangeability is systematically violated in the presence of spatial autocorrelation and heteroskedasticity. The spconform package resolves this foundational challenge on CRAN by providing distribution-free, model-agnostic, localized conformal calibration for continuous geostatistical and areal lattice spatial data. Built in Base R with zero heavy external dependencies, spconform introduces localized spatial distance kernels, graph neighborhood weights, and an integrated spatial diagnostic test suite including Moran's I autocorrelation, spatial strata audits, and boundary proximity diagnostics. This article presents the methodological foundations, software architecture, empirical benchmarks, and reproducible case studies.
 }
 
 \section{Introduction}\label{introduction}
 
 Quantifying predictive uncertainty in spatial data is essential across diverse scientific disciplines, including soil contamination mapping, air quality surveillance, precision agriculture, and spatial epidemiology. When decisions involve environmental risk thresholds, public health interventions, or mineral resource estimation, point predictions alone are inadequate; practitioners require reliable prediction regions with guaranteed probabilistic coverage \citep{cressie1993statistics, bivand2013applied}.
 
-Historically, geostatistical interpolation has relied on Gaussian random fields and kriging. While kriging provides optimal linear unbiased predictions under the true data-generating process, its validity rests entirely on the correct parametric specification of the spatial covariance function (semivariogram) and Gaussian errors. In observational geographic studies, spatial fields frequently exhibit non-stationarity, local heteroskedasticity, directional anisotropy, and heavy-tailed disturbances. When these assumptions are violated, classical kriging prediction intervals suffer severe empirical coverage degradation, frequently dropping far below nominal confidence targets.
+Historically, geostatistical interpolation has relied on Gaussian random fields and kriging. While kriging provides optimal linear unbiased predictions under the true data-generating process, its validity rests entirely on the correct parametric specification of the spatial covariance function (semivariogram) and Gaussian errors. In observational geographic studies, spatial fields frequently exhibit non-stationarity, local heteroskedasticity, directional asymmetry, and heavy-tailed disturbances. When these assumptions are violated, classical kriging prediction intervals suffer severe empirical coverage degradation, frequently dropping far below nominal confidence targets.
 
 Conformal prediction, pioneered by \citet{vovk2005algorithmic} and advanced by \citet{lei2018distribution}, offers an appealing alternative by constructing prediction intervals with mathematically guaranteed, finite-sample marginal coverage without requiring distributional or parametric modeling assumptions. However, standard conformal calibration theorems fundamentally rely on the exchangeability (or i.i.d. assumption) of the calibration and query observations. In spatial statistics, Tobler's First Law dictates that near observations are systematically more related than distant ones, introducing spatial autocorrelation and spatial covariate shifts \citep{tibshirani2019conformal, barber2023conformal}. Applying standard non-spatial conformal methods (such as those implemented in global split-conformal routines) produces spatially miscalibrated intervals: regions with high local variance suffer chronic undercoverage, while low-variance regions receive unnecessarily wide, inefficient intervals.
 
 The \CRANpkg{spconform} package \citep{spconformPkg} introduces a comprehensive, model-agnostic framework for spatial and spatio-temporal conformal prediction in the R environment. Published on the Comprehensive R Archive Network (CRAN) under the GPL-3 license, \CRANpkg{spconform} provides localized conformal calibration using spatial proximity kernels and graph shortest-path network weights, adapting the theoretical foundations of localized non-exchangeable conformal inference \citep{barber2023conformal, mao2024valid}.
 
-This paper introduces the methodological principles, package architecture, multi-modality features, cross-system benchmarks against Python's state-of-the-art \textbf{MAPIE} library \citep{mapie2022}, and applied case studies included in \CRANpkg{spconform}.
+This paper introduces the methodological principles, package architecture, empirical benchmarks, and applied case studies of \CRANpkg{spconform} version 0.1.2.
 
 \section{Methodological framework}\label{methodological-framework}
 
-\subsection{Localized split conformal prediction}\label{localized-split-conformal-prediction}
+\subsection{Localized split conformal prediction for geostatistical fields}\label{localized-split-conformal-prediction-for-geostatistical-fields}
 
 Let \(\{ (s_i, Y(s_i)) \}_{i=1}^n\) denote observed spatial data, where \(s_i \in \mathcal{D} \subset \mathbb{R}^2\) represents geographic coordinates and \(Y(s_i) \in \mathbb{R}\) is the observed continuous response. Given a query location \(s_0 \in \mathcal{D}\) and a nominal miscoverage level \(\alpha \in (0, 1)\), our objective is to construct a predictive interval \(\mathcal{C}_{\alpha}(s_0) = [\hat{l}(s_0), \hat{u}(s_0)]\) guaranteeing:
 \[
@@ -48,39 +48,13 @@ F_{s_0}(r) = \sum_{i \in \mathcal{I}_{\text{cal}}} w_i(s_0) \, \mathbf{1}(R_i \l
 \]
 As established by \citet{mao2024valid} and \citet{barber2023conformal}, under local Hölder continuity of the conditional residual distribution, the local coverage gap decays at the rate \(\mathcal{O}(h^\beta)\), ensuring asymptotic conditional validity and exact finite-sample robustness.
 
-\subsection{Automatic directional anisotropy rotation}\label{automatic-directional-anisotropy-rotation}
+\subsection{Neighbourhood-weighted conformal prediction for areal lattices}\label{neighbourhood-weighted-conformal-prediction-for-areal-lattices}
 
-Spatial continuity frequently exhibits directional asymmetry (anisotropy) due to geological faults, river corridors, or prevailing wind directions. When isotropy is incorrectly assumed, circular kernels over-smooth across the barrier and under-smooth along the continuity corridor.
-
-\CRANpkg{spconform} incorporates an automated directional coordinate rotator (\texttt{auto\_anisotropy\ =\ TRUE}). The algorithm evaluates directional semivariances \(\hat{\gamma}(\theta, h)\) across angle bins \(\theta \in [0, \pi)\) via automated ANOVA \(F\)-testing. Upon detecting significant geometric anisotropy with ratio \(\lambda = a_{\text{max}} / a_{\text{min}} > 1\) along principal orientation \(\theta^*\), spatial coordinates are transformed prior to kernel weighting:
+For areal or regional lattice data (such as health districts, administrative polygons, or census tracts), geographic continuous Euclidean distance is replaced by topological graph adjacency structures. Let \(A \in \{0, 1\}^{n \times n}\) denote the spatial contiguity matrix. In \texttt{scp\_areal()}, \CRANpkg{spconform} computes topological shortest-path distances \(d_G(i, j)\) across the adjacency graph. The calibration weights decay exponentially with topological distance:
 \[
-\tilde{s} = s \, \mathbf{R}(\theta^*) \, \mathbf{S}(\lambda), \quad 
-\mathbf{R}(\theta^*) = \begin{pmatrix} \cos\theta^* & -\sin\theta^* \\ \sin\theta^* & \cos\theta^* \end{pmatrix}, \quad
-\mathbf{S}(\lambda) = \begin{pmatrix} 1 & 0 \\ 0 & \lambda \end{pmatrix}.
+w_j(i) \propto \exp\left(-\frac{d_G(i, j)}{\tau}\right),
 \]
-This transformation stretches distances perpendicular to the principal axis, ensuring that localized calibration borrowing strictly follows the physical continuity of the underlying process.
-
-\section{Multi-modality framework of spconform}\label{multi-modality-framework-of-spconform}
-
-While geostatistical continuous fields form the foundation of spatial analysis, applied researchers regularly encounter diverse data modalities. Version 0.2.2 of \CRANpkg{spconform} expands localized conformal inference across five distinct modalities:
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  \textbf{Geostatistical Continuous Fields (\texttt{scp\_geostatistical()}):} Continuous kernel-weighted intervals for point-referenced spatial and spatio-temporal coordinates, featuring automatic bandwidth selection, nearest-neighbor localized subsampling, and directional anisotropy rotation.
-\item
-  \textbf{Areal Lattice Networks (\texttt{scp\_areal()}):} Graph-based leave-one-out conformal calibration over spatial contiguity matrices (e.g., polygon shapefiles, county borders), decaying calibration influence exponentially across graph topological shortest paths \(d_G(i, j)\).
-\item
-  \textbf{Discrete Count and Epidemiology (\texttt{scp\_count()}):} Spatially localized integer conformal prediction intervals for Poisson- and negative binomial-distributed disease counts, incorporating Pearson overdispersion adjustments, Anscombe variance-stabilizing transformations, and guaranteed non-negative integer bounds (\(l \ge 0\)).
-\item
-  \textbf{Spatial Multiclass Classification (\texttt{scp\_classification()}):} Adaptive Prediction Sets (APS) and Least-Likely (LAC) conformal classification sets \citep{romano2020classification} adapted with spatial kernel calibration, outputting rigorous prediction sets \(\hat{C}(s_0) \subseteq \{1, \dots, K\}\) satisfying spatial coverage guarantees.
-\item
-  \textbf{Multivariate Vector Responses (\texttt{scp\_multivariate()}):} Simultaneous joint prediction ellipsoids and projected coordinate-wise bounding boxes for vector spatial fields \(Y(s) \in \mathbb{R}^d\) under localized Mahalanobis distance nonconformity scores:
-  \[
-  R_i(s_0) = \sqrt{(Y(s_i) - \hat{\mu}(s_i))^\top \hat{\mathbf{\Sigma}}(s_0)^{-1} (Y(s_i) - \hat{\mu}(s_i))}.
-  \]
-\end{enumerate}
+where \(\tau > 0\) controls the decay rate across administrative boundaries. This enables leave-one-out cross-conformal prediction for discrete spatial systems with finite-sample coverage guarantees.
 
 \section{Software architecture and design considerations}\label{software-architecture-and-design-considerations}
 
@@ -88,7 +62,7 @@ While geostatistical continuous fields form the foundation of spatial analysis, 
 
 The \CRANpkg{spconform} package is designed for applied spatial analysts, ecologists, spatial epidemiologists, and data scientists who require distribution-free, finite-sample prediction intervals without relying on restrictive Gaussian assumptions or complex Bayesian Markov Chain Monte Carlo (MCMC) pipelines.
 
-The package implements a consistent four-stage user workflow across all spatial modalities:
+The package implements a consistent user workflow:
 1. \textbf{Data preparation:} Spatial coordinates matrix \(s \in \mathbb{R}^{n \times 2}\) and observed response vector \(Y\).
 2. \textbf{Model definition:} The user defines any point prediction algorithm via a functional wrapper:
 
@@ -101,12 +75,12 @@ pred_fun = function(s_train, y_train, s_new) { ... }
 \setcounter{enumi}{2}
 \tightlist
 \item
-  \textbf{Localized conformal calibration:} Fitting prediction intervals via \texttt{scp\_geostatistical()} (point data), \texttt{scp\_areal()} (polygon lattices), \texttt{scp\_count()} (discrete epidemiology), \texttt{scp\_classification()} (prediction sets), or \texttt{scp\_multivariate()} (vector fields).
+  \textbf{Localized conformal calibration:} Fitting prediction intervals via \texttt{scp\_geostatistical()} (point coordinates) or \texttt{scp\_areal()} (polygon lattices).
 \item
-  \textbf{Diagnostic auditing and reporting:} Comprehensive model evaluation via \texttt{plot()}, \texttt{diagnose()}, \texttt{conformal\_ce\_surface()}, and \texttt{coverage\_report()}.
+  \textbf{Diagnostic auditing and reporting:} Comprehensive model evaluation via \texttt{plot()}, \texttt{diagnose()}, \texttt{strata\_diagnostics()}, \texttt{boundary\_diagnostics()}, and \texttt{coverage\_report()}.
 \end{enumerate}
 
-Figure \ref{fig:fig-workflow} illustrates the typical diagnostic and calibration workflow of \CRANpkg{spconform}, detailing the sequential pipeline from data configuration to localized calibration, spatial dependence audits, and efficiency trade-off surfaces.
+Figure \ref{fig:fig-workflow} illustrates the typical diagnostic and calibration workflow of \CRANpkg{spconform}.
 
 \begin{figure}
 
@@ -119,26 +93,27 @@ Figure \ref{fig:fig-workflow} illustrates the typical diagnostic and calibration
 
 \subsection{Object model and implementation details}\label{object-model-and-implementation-details}
 
-\CRANpkg{spconform} strictly adheres to R's standard S3 object-oriented system. S3 was selected over S4 and R6 because it introduces zero computational overhead, maintains maximal transparency, and integrates naturally with base R idiom and the tidyverse. The package defines lightweight S3 classes (\texttt{spconform}, \texttt{spconform\_classification}, \texttt{spconform\_count}, \texttt{spconform\_multivariate}, \texttt{spconform\_diagnose}, \texttt{spconform\_ce\_surface}, \texttt{spconform\_mantel}, \texttt{spconform\_cross\_l}), each providing tailored implementations of generic functions:
+\CRANpkg{spconform} strictly adheres to R's standard S3 object-oriented system. S3 was selected over S4 and R6 because it introduces zero computational overhead, maintains maximal transparency, and integrates naturally with base R idiom and the tidyverse. The package defines lightweight S3 classes (\texttt{spconform}, \texttt{spconform\_diagnose}, \texttt{spconform\_moran}, \texttt{spconform\_strata}, \texttt{spconform\_boundary}), each providing tailored implementations of generic functions:
 - \texttt{predict()}: Extracts point predictions and localized upper and lower bounds.
 - \texttt{residuals()}: Extracts nonconformity scores and raw calibration residuals.
-- \texttt{plot()}: Visualizes prediction intervals, multi-panel diagnostic dashboards, or spatial efficiency phase planes.
+- \texttt{plot()}: Visualizes prediction intervals, multi-panel diagnostic dashboards, or spatial strata coverage.
 - \texttt{print()} and \texttt{summary()}: Renders concise, publication-ready textual summaries with coverage gaps and Winkler scores.
+- \texttt{as.data.frame()}: Coerces predictions, bounds, and diagnostics into standard data frames.
 
 \subsection{Dependency philosophy and CRAN stability}\label{dependency-philosophy-and-cran-stability}
 
 A foundational design driver for \CRANpkg{spconform} is minimal dependency footprint. While many spatial R packages depend on external C++ geospatial libraries (GDAL, GEOS, PROJ) that frequently introduce compilation failures across operating system upgrades, \CRANpkg{spconform} relies exclusively on standard base R packages (\pkg{stats}, \pkg{graphics}, \pkg{grDevices}, \pkg{utils}). Spatial distance calculations, coordinate transformations, and kernel matrices are evaluated through vectorized base R linear algebra, ensuring guaranteed cross-platform installation stability across Windows, macOS, and Linux without external system requirements.
 
-\subsection{Computational performance, scalability, and limits}\label{computational-performance-scalability-and-limits}
+\subsection{Computational performance and bandwidth caching}\label{computational-performance-and-bandwidth-caching}
 
-Evaluating localized conformal intervals requires computing pairwise spatial distances between \(N_{\text{cal}}\) calibration points and \(N_{\text{query}}\) query points. In naive implementations, recomputing kernel bandwidths per query yields \(O(N_{\text{cal}}^2 \cdot N_{\text{query}})\) computational complexity. \CRANpkg{spconform} optimizes this through:
+Evaluating localized conformal intervals requires computing pairwise spatial distances between \(N_{\text{cal}}\) calibration points and \(N_{\text{query}}\) query points. In naive implementations, recomputing kernel bandwidths per query yields \(O(N_{\text{cal}}^2 \cdot N_{\text{query}})\) computational complexity. In version 0.1.2, \CRANpkg{spconform} optimizes this through:
 - \textbf{Bandwidth caching:} Spatial kernel bandwidth \(h\) is evaluated once prior to the prediction loop via vectorized matrix operations, providing up to a 50x speedup.
-- \textbf{Localized nearest-neighbor subsampling:} For large calibration datasets (\(N > 1000\)), users can supply \texttt{k\_neighbors} to restrict localized calibration borrowing to the \(k\) nearest spatial neighbors, keeping memory footprint bounded at \(O(k \cdot N_{\text{query}})\).
-- \textbf{Fast invariant matrix permutation:} For diagnostic tests such as \texttt{spatial\_mantel()}, off-diagonal distance variances remain constant under index permutations, reducing each Monte Carlo permutation from \(O(N^2)\) to a single vector dot product.
+- \textbf{Representative spatial subsampling:} When calibration size \(N > 1000\), representative subsampling is used to determine global scaling, keeping memory footprint bounded.
+- \textbf{Optional nearest-neighbor calibration:} Users can supply \texttt{k\_neighbors} to restrict localized calibration borrowing to the \(k\) nearest spatial neighbors, keeping memory footprint bounded at \(O(k \cdot N_{\text{query}})\).
 
 On standard consumer hardware, a complete geostatistical conformal calibration on \(n = 155\) observations executes in under 0.15 seconds, and the full replication suite for this manuscript compiles in less than 30 seconds.
 
-\subsection{Comparison with existing software and competitor packages}\label{comparison-with-existing-software-and-competitor-packages}
+\subsection{Comparison with existing software}\label{comparison-with-existing-software}
 
 Table 1 summarizes the functional landscape of predictive uncertainty quantification across R and Python packages.
 
@@ -148,17 +123,17 @@ Table 1 summarizes the functional landscape of predictive uncertainty quantifica
 \centering
 \begin{tabular}[t]{l|l|l|l|l|l}
 \hline
-Package & Language & Spatial Weighting & Exchangeability & Multi-Modality Support & External Dependencies\\
+Package & Language & Spatial Weighting & Exchangeability & Spatial Modality & External Dependencies\\
 \hline
-conformalInference & R & No & Required & Continuous only & Low\\
+conformalInference & R & No & Required & Continuous non-spatial & Low\\
 \hline
-splitconformal & R & No & Required & Continuous only & Low\\
+splitconformal & R & No & Required & Continuous non-spatial & Low\\
 \hline
 MAPIE (Python) & Python & No & Required & Continuous + Classification & Scikit-Learn\\
 \hline
-gstat / geoR & R & Yes (Kriging) & Stationary Covariance & Continuous only & Heavy (C++)\\
+gstat / geoR & R & Yes (Kriging) & Stationary Covariance & Continuous geostatistical & Heavy (C++)\\
 \hline
-spconform & R & Yes (Kernel + Graph) & Relaxed (Localized) & Point, Areal, Count, Multiclass, Vector & Zero (Base R)\\
+spconform & R & Yes (Kernel + Graph) & Relaxed (Localized) & Point geostatistical + Areal lattice & Zero (Base R)\\
 \hline
 \end{tabular}
 \end{table}
@@ -251,10 +226,10 @@ pfun_gam <- function(st, yt, sn) {
   as.numeric(predict(fit, newdata = df_te))
 }
 
-# Run localized conformal prediction with auto-anisotropy
+# Run localized conformal prediction
 fit_meuse <- scp_geostatistical(
   s_train = s_train, y_train = y_train, s0 = s_test,
-  pred_fun = pfun_gam, alpha = 0.10, auto_anisotropy = TRUE, seed = 123
+  pred_fun = pfun_gam, alpha = 0.10, seed = 123
 )
 \end{verbatim}
 
@@ -273,71 +248,157 @@ plot(fit_meuse, y_true = y_test)
 \caption{Spatially localized conformal prediction intervals for log-zinc concentration on the held-out Meuse River validation set.}\label{fig:fig-meuse-intervals}
 \end{figure}
 
-\subsection{Advanced spatial diagnostic testing}\label{advanced-spatial-diagnostic-testing}
+\subsection{Spatial diagnostic testing in spconform}\label{spatial-diagnostic-testing-in-spconform}
 
-\CRANpkg{spconform} provides an executive suite of diagnostic functions to formally verify that conformal prediction residuals satisfy spatial independence and local calibration:
+\CRANpkg{spconform} provides an executive suite of diagnostic functions in version 0.1.2 to formally audit whether conformal prediction residuals satisfy spatial independence and local calibration:
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  \textbf{Spatial Conditional Coverage Test (\texttt{spatial\_conditional\_coverage()}):} Evaluates \(H_0: \mathbb{P}(Y(s) \in \mathcal{C}(s) \mid S=s) = 1-\alpha\) using spatial logistic regression with automated finite-sample permutation tests.
+  \textbf{Moran's I Autocorrelation Test (\texttt{spatial\_moran()}):} Evaluates spatial autocorrelation in prediction residuals and conformal hit/miss indicators.
 \item
-  \textbf{Score Autocorrelation Mantel Test (\texttt{spatial\_mantel()}):} Assesses whether nonconformity residuals exhibit residual geographic dependence using fast \(O(1)\) constant-variance matrix permutation tests.
+  \textbf{Integrated Diagnostic Audit (\texttt{diagnose()}):} Generates an executive audit report combining residual normality, spatial clustering, and coverage indicators.
 \item
-  \textbf{Bivariate Cross-\(L\) Ripley Hotspot Audit (\texttt{spatial\_cross\_l()}):} Adapts Besag's variance-stabilized cross-\(L\) function \citep{besag1977discussion} to formally verify whether miscoverage events cluster inside wide intervals (Honest Uncertainty) or narrow intervals (Pathological Overconfidence).
+  \textbf{Spatial Strata Diagnostics (\texttt{strata\_diagnostics()}):} Audits empirical coverage and interval widths across geographic quadrants.
 \item
-  \textbf{Local Efficiency-Coverage Trade-off Surface (\texttt{conformal\_ce\_surface()}):} Evaluates the spatial surface of local conditional coverage \(\hat{c}(s)\) versus local interval efficiency \(\hat{w}(s)\), classifying geographic regions into a 4-quadrant diagnostic typology (Optimal, Conservative, Vulnerable, Deficit) and computing the Efficiency-Coverage Disparity Index (ECDI).
+  \textbf{Boundary Proximity Diagnostics (\texttt{boundary\_diagnostics()}):} Assesses boundary effects near domain edges (convex hull) versus interior core locations.
 \end{enumerate}
 
 \begin{verbatim}
-# Evaluate the local efficiency-coverage trade-off surface
-ce_surface <- conformal_ce_surface(fit_meuse, y_true = y_test)
-print(ce_surface)
+# Evaluate the comprehensive diagnostic suite
+diag_report <- diagnose(fit_meuse, y_true = y_test, s_test = s_test, plot = FALSE)
+print(diag_report)
 \end{verbatim}
 
 \begin{verbatim}
-#> -----------------------------------------------------------
-#>   spconform: Local Efficiency-Coverage Trade-off Surface
-#> -----------------------------------------------------------
-#> Locations Evaluated (n)      : 45
-#> Target Nominal Coverage      : 90.0%
-#> Observed Overall Coverage    : 95.6%
-#> Spatial Kernel Bandwidth (h) : 504.0367
-#> Efficiency Metric            : Interval Width (Threshold = 2.056)
-#> -----------------------------------------------------------
-#> Spatial Efficiency-Coverage Typology Breakdown:
-#>   - Optimal      :    9 ( 20.0%)
-#>   - Conservative :   28 ( 62.2%)
-#>   - Vulnerable   :    8 ( 17.8%)
-#>   - Deficit      :    0 (  0.0%)
-#> -----------------------------------------------------------
-#> Trade-off Correlation (rho)  : +0.995 (p = 0.0000)
-#> Disparity Index (ECDI)       : 0.474
-#> Conclusion                   : Conservative Spatial Coverage: Valid coverage sustained via conservative width inflation.
-#> -----------------------------------------------------------
+#> ======================================================================
+#>   spconform Diagnostic Audit Report
+#> ======================================================================
+#> 
+#> >> 1. Marginal Coverage Validity & Sharpness:
+#>    - Target Nominal Level  :  90.0%
+#>    - Empirical Coverage    : 100.0% (45 of 45 covered)
+#>    - Interval Width        : Mean = 2.378 | Median = 2.056 | SD = 0.725
+#>    - Winkler Score (WIS)   : Mean = 2.378 (Proper Interval Score)
+#> 
+#> >> 2. Spatial Autocorrelation Audit (Moran's I on Residuals):
+#>    - Moran's I Statistic   : +0.0560 (Expected = -0.0227)
+#>    - Standardized Z-Score  : +3.5435 (p-value = 0.0004)
+#>    - Residual Pattern      : Warning (Significant spatial clustering detected, p < 0.05)
+#> 
+#> >> 3. Conditional Coverage across Spatial Quadrants:
+#>    - Strata Q1-1   : Cov = 100.0% | Mean Width =  3.320 | WIS =  3.320 (n = 6)
+#>    - Strata Q1-2   : Cov = 100.0% | Mean Width =  2.707 | WIS =  2.707 (n = 6)
+#>    - Strata Q1-3   : Cov = 100.0% | Mean Width =  2.568 | WIS =  2.568 (n = 1)
+#>    - Strata Q2-1   : Cov = 100.0% | Mean Width =  3.406 | WIS =  3.406 (n = 1)
+#>    - Strata Q2-2   : Cov = 100.0% | Mean Width =  3.197 | WIS =  3.197 (n = 4)
+#>    - Strata Q2-3   : Cov = 100.0% | Mean Width =  2.141 | WIS =  2.141 (n = 6)
+#>    - Strata Q3-2   : Cov = 100.0% | Mean Width =  2.987 | WIS =  2.987 (n = 2)
+#>    - Strata Q3-3   : Cov = 100.0% | Mean Width =  2.158 | WIS =  2.158 (n = 5)
+#>    - Strata Q3-4   : Cov = 100.0% | Mean Width =  1.917 | WIS =  1.917 (n = 4)
+#>    - Strata Q4-3   : Cov = 100.0% | Mean Width =  1.917 | WIS =  1.917 (n = 1)
+#>    - Strata Q4-4   : Cov = 100.0% | Mean Width =  1.432 | WIS =  1.432 (n = 9)
+#> 
+#> >> 4. Domain Boundary Effect (Convex Hull):
+#>    - Near Boundary (Edge) : Cov = 100.0% | Mean Width =  2.413 | WIS =  2.413 (n = 23)
+#>    - Far Boundary (Core) : Cov = 100.0% | Mean Width =  2.342 | WIS =  2.342 (n = 22)
+#> 
+#> >> 5. Nonconformity Score Distribution Moments:
+#>    * Mean = 1.1890 | Median = 1.0279 | SD = 0.3624 | Q90 = 1.7032 | Q95 = 1.7032
+#> 
+#> >> 6. Spatial Conditional Coverage Omnibus Test:
+#>    - Omnibus Chi-Square    : 0.0000 (df = 0, p = 1.0000)
+#>    - Spatial Calibration   : Pass (No significant spatial miscoverage bias)
+#> 
+#> >> 7. Local Indicators of Spatial Association (LISA Residual Clusters):
+#>    - Hotspots (High-High)  : 0 | Coldspots (Low-Low): 0 | Outliers (HL/LH): 1/0
+#>    - Significant Localities: 1 of 45 (2.2% at alpha = 0.05, fdr)
+#> 
+#> >> 8. Directional Semivariance & Spatial Anisotropy:
+#>    - Geometric Anisotropy  : Ratio = 1.23x (Isotropic continuity along 90 deg)
+#>    - Directional ANOVA     : F = 0.964 (p = 0.4633)
+#> ======================================================================
 \end{verbatim}
 
+The multi-panel diagnostic dashboard can be visualized via \texttt{plot()}:
+
 \begin{verbatim}
-plot(ce_surface, type = "phase")
+plot(diag_report)
 \end{verbatim}
 
 \begin{figure}
 
-{\centering \includegraphics[alt={Two-dimensional phase plot showing local interval width on the x-axis and local empirical coverage on the y-axis, divided into four quadrants.}]{spconform_files/figure-latex/fig-ce-phase-1} 
+{\centering \includegraphics[alt={Multi-panel diagnostic plot showing residuals against predictions, Moran scatterplot, and normal Q-Q plot.}]{spconform_files/figure-latex/fig-diag-dashboard-1} 
 
 }
 
-\caption{Conformal Efficiency-Coverage (C-E) phase portrait displaying the four-quadrant spatial reliability typology on the Meuse dataset.}\label{fig:fig-ce-phase}
+\caption{Three-panel diagnostic dashboard from diagnose() displaying response residuals, Moran scatterplot, and Q-Q normality plot.}\label{fig:fig-diag-dashboard}
 \end{figure}
+
+Spatial strata and boundary proximity can also be inspected directly:
+
+\begin{verbatim}
+# Spatial quadrant strata audit
+strata_res <- strata_diagnostics(fit_meuse, y_true = y_test, s_test = s_test)
+print(strata_res)
+\end{verbatim}
+
+\begin{verbatim}
+#> Conditional Spatial Strata Audit
+#> --------------------------------
+#>    - Strata Q1-1   : Cov = 100.0% | Mean Width =  3.320 | WIS =  3.320 (n = 6)
+#>    - Strata Q1-2   : Cov = 100.0% | Mean Width =  2.707 | WIS =  2.707 (n = 6)
+#>    - Strata Q1-3   : Cov = 100.0% | Mean Width =  2.568 | WIS =  2.568 (n = 1)
+#>    - Strata Q2-1   : Cov = 100.0% | Mean Width =  3.406 | WIS =  3.406 (n = 1)
+#>    - Strata Q2-2   : Cov = 100.0% | Mean Width =  3.197 | WIS =  3.197 (n = 4)
+#>    - Strata Q2-3   : Cov = 100.0% | Mean Width =  2.141 | WIS =  2.141 (n = 6)
+#>    - Strata Q3-2   : Cov = 100.0% | Mean Width =  2.987 | WIS =  2.987 (n = 2)
+#>    - Strata Q3-3   : Cov = 100.0% | Mean Width =  2.158 | WIS =  2.158 (n = 5)
+#>    - Strata Q3-4   : Cov = 100.0% | Mean Width =  1.917 | WIS =  1.917 (n = 4)
+#>    - Strata Q4-3   : Cov = 100.0% | Mean Width =  1.917 | WIS =  1.917 (n = 1)
+#>    - Strata Q4-4   : Cov = 100.0% | Mean Width =  1.432 | WIS =  1.432 (n = 9)
+\end{verbatim}
+
+\begin{verbatim}
+# Domain boundary proximity audit
+boundary_res <- boundary_diagnostics(fit_meuse, y_true = y_test, s_test = s_test)
+print(boundary_res)
+\end{verbatim}
+
+\begin{verbatim}
+#> Domain Boundary Proximity Audit (Convex Hull)
+#> ---------------------------------------------
+#> Distance Median Threshold: 383.0992
+#> Near Boundary (Edge) : n = 23 | Cov = 100.0% | Mean Width =  2.413 | WIS =  2.413
+#> Far Boundary (Core) : n = 22 | Cov = 100.0% | Mean Width =  2.342 | WIS =  2.342
+\end{verbatim}
+
+\begin{verbatim}
+# Executive coverage summary
+cov_rep <- coverage_report(fit_meuse, y_true = y_test)
+print(cov_rep)
+\end{verbatim}
+
+\begin{verbatim}
+#> ====================================================
+#>   spconform Coverage & Efficiency Audit (CONTINUOUS)
+#> ====================================================
+#>   Target Nominal Level :  90.0%
+#>   Empirical Coverage   : 100.0% (Gap = +10.00%)
+#>   Mean Interval Width  : 2.3780
+#>   Winkler Score (WIS)  : 2.3780 (Strictly Proper)
+#>   Sample Size Evaluated: 45 locations
+#> ====================================================
+\end{verbatim}
 
 \section{Summary}\label{summary}
 
-The \CRANpkg{spconform} package provides the R community with a robust, modular, and mathematically grounded framework for distribution-free spatial uncertainty quantification. By bridging conformal prediction with spatial kernel calibration, graph topological decay, and directional coordinate anisotropy, the package addresses a critical gap in the statistical software ecosystem. With verified finite-sample coverage, strict model-agnosticism, zero external C++ dependencies, and demonstrated empirical superiority over non-spatial tools including Python's MAPIE library, \CRANpkg{spconform} equips researchers and practitioners with an indispensable tool for spatial data science.
+The \CRANpkg{spconform} package provides the R community with a robust, modular, and mathematically grounded framework for distribution-free spatial uncertainty quantification. By bridging conformal prediction with spatial kernel calibration and graph topological decay, the package addresses a critical gap in the statistical software ecosystem. With verified finite-sample coverage, strict model-agnosticism, zero external C++ dependencies, and an integrated spatial diagnostic auditing suite, \CRANpkg{spconform} equips researchers and practitioners with an indispensable tool for spatial data science.
 
 \section{Computational details}\label{computational-details}
 
-All analyses and benchmarks in this paper were conducted using R version 4.6.1 and \CRANpkg{spconform} version 0.2.2. The complete replication code and datasets are available in the package repository at \url{https://github.com/amjed-droid/spconform}.
+All analyses and benchmarks in this paper were conducted using R version 4.6.1 and \CRANpkg{spconform} version 0.1.2. The complete replication code and datasets are available in the package repository at \url{https://github.com/amjed-droid/spconform}.
 
 \section*{References}\label{references}
 \addcontentsline{toc}{section}{References}
