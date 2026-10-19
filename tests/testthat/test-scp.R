@@ -255,3 +255,44 @@ test_that("v0.1.2: modular diagnostic functions work independently and programma
   expect_true(is.data.frame(df_diag))
   expect_true("coverage" %in% names(df_diag))
 })
+
+
+test_that("auto_anisotropy transformation works seamlessly in scp_geostatistical", {
+  set.seed(42)
+  n <- 80
+  s <- matrix(runif(n * 2, 0, 10), n, 2)
+  # Anisotropic field: stretched along 45 degrees
+  u <- (s[, 1] + s[, 2]) / sqrt(2)
+  v <- (-s[, 1] + s[, 2]) / sqrt(2)
+  y <- 2 * sin(u * 0.5) + 0.5 * cos(v * 2.0) + rnorm(n, sd = 0.2)
+
+  s_tr <- s[1:60, ]
+  y_tr <- y[1:60]
+  s_te <- s[61:80, ]
+  y_te <- y[61:80]
+
+  pfun <- function(st, yt, sn) {
+    df_fit <- data.frame(y = yt, x = st[, 1], y_coord = st[, 2])
+    df_nw  <- data.frame(x = sn[, 1], y_coord = sn[, 2])
+    fit <- stats::lm(y ~ x + y_coord, data = df_fit)
+    as.numeric(stats::predict(fit, newdata = df_nw))
+  }
+
+  # 1. estimate_anisotropic_transform
+  resids <- rnorm(60)
+  aniso_est <- estimate_anisotropic_transform(s_tr, resids)
+  expect_true(is.list(aniso_est))
+  expect_true("is_anisotropic" %in% names(aniso_est))
+  expect_true("transform_matrix" %in% names(aniso_est))
+  expect_equal(dim(aniso_est$transform_matrix), c(2, 2))
+
+  # 2. scp_geostatistical with auto_anisotropy = TRUE
+  fit_aniso <- scp_geostatistical(s_tr, y_tr, s_te, pfun,
+                                 alpha = 0.10, auto_anisotropy = TRUE, seed = 42)
+  expect_s3_class(fit_aniso, "spconform")
+  expect_true(all(fit_aniso$upper >= fit_aniso$lower))
+  expect_true(!is.null(fit_aniso$anisotropy))
+
+  # 3. Print method handles anisotropy cleanly
+  expect_output(print(fit_aniso), "<spconform> geostatistical conformal prediction")
+})

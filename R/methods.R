@@ -13,6 +13,10 @@ print.spconform <- function(x, ...) {
   cat(sprintf("Target coverage: %.1f%%\n", 100 * (1 - x$alpha)))
   n <- length(x$pred)
   cat(sprintf("Number of prediction points: %d\n", n))
+  if (!is.null(x$anisotropy) && isTRUE(x$anisotropy$is_anisotropic)) {
+    cat(sprintf("Spatial anisotropy: Auto-corrected (Ratio = %.2fx along %d deg)\n",
+                x$anisotropy$ratio, x$anisotropy$principal_angle))
+  }
   k <- min(n, 6)
   df <- data.frame(
     pred = round(x$pred[seq_len(k)], 3),
@@ -133,21 +137,164 @@ plot.spconform <- function(x, y_true = NULL, ...) {
 #'
 #' @export
 coverage_report <- function(object, y_true, na.rm = TRUE) {
-  if (!inherits(object, "spconform")) stop("'object' must be of class 'spconform'.")
+  # 1. Classification Modality
+  if (inherits(object, "spconform_classification")) {
+    y_true <- as.character(y_true)
+    n <- length(object$prediction_sets)
+    if (length(y_true) != n) {
+      stop("length(y_true) must equal number of classification predictions.")
+    }
+    covered <- logical(n)
+    for (i in seq_len(n)) {
+      covered[i] <- y_true[i] %in% object$prediction_sets[[i]]
+    }
+    cov_val <- mean(covered, na.rm = na.rm)
+    alpha <- object$alpha
+    K <- length(object$classes)
+    set_sizes <- object$set_sizes
+
+    # Strictly proper Conformal Brier Score for prediction sets
+    # Penalizes large set sizes and heavily penalizes miscoverage (2/alpha)
+    cbs_vec <- (set_sizes / K) + (2 / alpha) * (!covered)
+    brier_score <- mean(cbs_vec, na.rm = na.rm)
+
+    res <- list(
+      modality       = "classification",
+      nominal        = 1 - alpha,
+      coverage       = cov_val,
+      coverage_gap   = abs(cov_val - (1 - alpha)),
+      avg_set_size   = mean(set_sizes, na.rm = na.rm),
+      singleton_rate = mean(set_sizes == 1, na.rm = na.rm),
+      brier_score    = brier_score,
+      n              = n
+    )
+    class(res) <- "spconform_coverage_report"
+    return(res)
+  }
+
+  # 2. Multivariate Ellipsoidal Modality
+  if (inherits(object, "spconform_multivariate")) {
+    y_true <- as.matrix(y_true)
+    m <- nrow(object$pred)
+    d <- object$dimension
+    if (nrow(y_true) != m || ncol(y_true) != d) {
+      stop("y_true dimensions must match object predictions (m x d).")
+    }
+    multi_rep <- multivariate_coverage_report(object, y_true)
+    res <- list(
+      modality              = "multivariate",
+      nominal               = 1 - object$alpha,
+      joint_coverage        = multi_rep$joint_coverage,
+      coverage_gap          = abs(multi_rep$joint_coverage - (1 - object$alpha)),
+      marginal_coverage     = multi_rep$marginal_coverage,
+      mean_ellipsoid_volume = mean(object$ellipsoid_volumes, na.rm = na.rm),
+      mean_projected_width  = mean(colMeans(object$upper - object$lower, na.rm = na.rm)),
+      n                     = m,
+      dimension             = d
+    )
+    class(res) <- "spconform_coverage_report"
+    return(res)
+  }
+
+  # 3. Discrete Count Modality
+  if (inherits(object, "spconform_count")) {
+    y_true <- as.numeric(y_true)
+    n <- length(object$pred)
+    if (length(y_true) != n) {
+      stop("length(y_true) must equal length(object$pred).")
+    }
+    alpha <- object$alpha
+    covered <- (y_true >= object$lower) & (y_true <= object$upper)
+    cov_val <- mean(covered, na.rm = na.rm)
+
+    # Discrete integer width: count span [L, U] contains (U - L + 1) discrete states
+    span_widths <- (object$upper - object$lower + 1)
+    underage <- pmax(0, object$lower - y_true)
+    overage  <- pmax(0, y_true - object$upper)
+    wis_count <- span_widths + (2 / alpha) * underage + (2 / alpha) * overage
+
+    res <- list(
+      modality        = "count",
+      nominal         = 1 - alpha,
+      coverage        = cov_val,
+      coverage_gap    = abs(cov_val - (1 - alpha)),
+      mean_span_width = mean(span_widths, na.rm = na.rm),
+      winkler_score   = mean(wis_count, na.rm = na.rm),
+      zero_lower_rate = mean(object$lower == 0, na.rm = na.rm),
+      n               = n
+    )
+    class(res) <- "spconform_coverage_report"
+    return(res)
+  }
+
+  # 4. Standard Continuous Geostatistical / Areal Modality
+  if (!inherits(object, "spconform")) {
+    stop("'object' must be an spconform object (geostatistical, areal, count, multivariate, or classification).")
+  }
+  y_true <- as.numeric(y_true)
   if (length(y_true) != length(object$pred)) {
     stop("length(y_true) must equal length(object$pred).")
   }
   alpha <- object$alpha
   widths <- object$upper - object$lower
   covered <- (y_true >= object$lower) & (y_true <= object$upper)
+  cov_val <- mean(covered, na.rm = na.rm)
+
   underage <- pmax(0, object$lower - y_true)
   overage  <- pmax(0, y_true - object$upper)
   wis_vec  <- widths + (2 / alpha) * underage + (2 / alpha) * overage
-  list(
-    coverage      = mean(covered, na.rm = na.rm),
+
+  res <- list(
+    modality      = "continuous",
+    nominal       = 1 - alpha,
+    coverage      = cov_val,
+    coverage_gap  = abs(cov_val - (1 - alpha)),
     mean_width    = mean(widths, na.rm = na.rm),
-    winkler_score = mean(wis_vec, na.rm = na.rm)
+    winkler_score = mean(wis_vec, na.rm = na.rm),
+    n             = length(object$pred)
   )
+  class(res) <- "spconform_coverage_report"
+  res
+}
+
+#' Print Method for spconform_coverage_report Objects
+#' @param x An object of class \code{"spconform_coverage_report"}.
+#' @param ... Additional arguments.
+#' @export
+print.spconform_coverage_report <- function(x, ...) {
+  cat("====================================================\n")
+  cat(sprintf("  spconform Coverage & Efficiency Audit (%s)\n", toupper(x$modality)))
+  cat("====================================================\n")
+  cat(sprintf("  Target Nominal Level : %5.1f%%\n", 100 * x$nominal))
+
+  if (x$modality == "classification") {
+    cat(sprintf("  Empirical Coverage   : %5.1f%% (Gap = %+.2f%%)\n", 100 * x$coverage, 100 * (x$coverage - x$nominal)))
+    cat(sprintf("  Average Set Size     : %.3f classes\n", x$avg_set_size))
+    cat(sprintf("  Singleton Rate       : %5.1f%% (High-confidence points)\n", 100 * x$singleton_rate))
+    cat(sprintf("  Conformal Brier Score: %.4f (Strictly Proper)\n", x$brier_score))
+  } else if (x$modality == "multivariate") {
+    cat(sprintf("  Joint Coverage       : %5.1f%% (Ellipsoidal Containment, Gap = %+.2f%%)\n",
+                100 * x$joint_coverage, 100 * (x$joint_coverage - x$nominal)))
+    cat(sprintf("  Mean Ellipsoid Volume: %.4f (Dimension d = %d)\n", x$mean_ellipsoid_volume, x$dimension))
+    cat(sprintf("  Mean Projected Width : %.4f\n", x$mean_projected_width))
+    cat("  Marginal Coverages   :\n")
+    for (nm in names(x$marginal_coverage)) {
+      cat(sprintf("    - %-12s : %5.1f%%\n", nm, 100 * x$marginal_coverage[nm]))
+    }
+  } else if (x$modality == "count") {
+    cat(sprintf("  Empirical Coverage   : %5.1f%% (Gap = %+.2f%%)\n", 100 * x$coverage, 100 * (x$coverage - x$nominal)))
+    cat(sprintf("  Mean Count Span      : %.3f integer states\n", x$mean_span_width))
+    cat(sprintf("  Winkler Score (WIS)  : %.4f (Strictly Proper)\n", x$winkler_score))
+    cat(sprintf("  Zero-Bounded Rate    : %5.1f%% [L = 0 non-negative bounds]\n", 100 * x$zero_lower_rate))
+  } else {
+    cat(sprintf("  Empirical Coverage   : %5.1f%% (Gap = %+.2f%%)\n", 100 * x$coverage, 100 * (x$coverage - x$nominal)))
+    cat(sprintf("  Mean Interval Width  : %.4f\n", x$mean_width))
+    cat(sprintf("  Winkler Score (WIS)  : %.4f (Strictly Proper)\n", x$winkler_score))
+  }
+
+  cat(sprintf("  Sample Size Evaluated: %d locations\n", x$n))
+  cat("====================================================\n")
+  invisible(x)
 }
 
 #' Coerce an spconform Object to a Data Frame

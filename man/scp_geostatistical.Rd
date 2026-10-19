@@ -12,6 +12,7 @@ scp_geostatistical(
   alpha = 0.1,
   split = 0.5,
   bandwidth = NULL,
+  auto_anisotropy = FALSE,
   t_train = NULL,
   t0 = NULL,
   temporal_bandwidth = NULL,
@@ -46,6 +47,11 @@ remainder is used as the calibration set for conformal scores. Default
 \item{bandwidth}{Optional spatial kernel bandwidth passed to
 \code{\link{spatial_kernel_weights}}; if \code{NULL}, chosen
 automatically per target location.}
+
+\item{auto_anisotropy}{Logical; if \code{TRUE}, evaluates directional
+spatial anisotropy on the calibration set and applies an affine coordinate
+rotation and scaling transformation matrix to equalize directional spatial
+variability. Defaults to \code{FALSE}.}
 
 \item{t_train, t0, temporal_bandwidth}{Optional time indices (and temporal
 bandwidth) for spatio-temporal weighting; see
@@ -105,6 +111,7 @@ pred_fun <- function(s_train, y_train, s_new) {
 
 out <- scp_geostatistical(s_train, y_train, s0, pred_fun, alpha = 0.1, seed = 1)
 print(out)
+
 
 }
 \references{

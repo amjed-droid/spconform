@@ -1,0 +1,1854 @@
+#' Spatial Conditional Coverage Test for Conformal Prediction
+#'
+#' Formally tests whether the coverage of conformal prediction intervals varies
+#' systematically across spatial coordinates using a spatial logistic likelihood
+#' ratio test. Evaluates the null hypothesis H0: P(Y(s) in C(s) | S = s) = 1 - alpha.
+#' Includes automatic degree regularization and finite-sample permutation testing
+#' to prevent quasi-complete separation artifacts when miscoverage counts are small.
+#'
+#' @param object An object of class \code{"spconform"}.
+#' @param y_true Numeric vector of observed test responses.
+#' @param coords Optional numeric matrix or data frame of spatial coordinates (N x 2).
+#'   If \code{NULL}, coordinates are extracted from \code{object$coords}.
+#' @param degree Integer degree of the spatial polynomial trend (default: 2, quadratic).
+#'   Automatically reduced to 1 if the number of miscovered points is small to prevent
+#'   overfitting and separation.
+#' @param test Character specifying the test statistic: \code{"LRT"} (Likelihood
+#'   Ratio Test, default) or \code{"Wald"}.
+#' @param permutation Logical or \code{"auto"}. If \code{"auto"} (default), runs a
+#'   finite-sample spatial permutation test whenever miscoverage count <= 10 or N <= 150.
+#' @param n_perm Number of permutation replicates when permutation testing is active (default: 499).
+#'
+#' @return An object of class \code{"spconform_coverage_test"} containing:
+#' \describe{
+#'   \item{statistic}{The chi-squared test statistic value.}
+#'   \item{df}{Degrees of freedom under the null distribution.}
+#'   \item{p_value}{Reported p-value (permutation p-value if permutation active, otherwise asymptotic).}
+#'   \item{p_asymptotic}{Asymptotic chi-squared p-value.}
+#'   \item{p_perm}{Permutation test p-value (or NA if not computed).}
+#'   \item{empirical_coverage}{Observed marginal coverage rate.}
+#'   \item{nominal_coverage}{Target nominal coverage 1 - alpha.}
+#'   \item{decision}{Verbal interpretation of the hypothesis test.}
+#'   \item{hit_indicator}{Binary integer vector of coverage indicators (1 = covered, 0 = missed).}
+#'   \item{method}{Name of the test performed.}
+#'   \item{degree_used}{Effective polynomial degree evaluated.}
+#' }
+#' @export
+#'
+#' @examples
+#' set.seed(123)
+#' s_train <- matrix(runif(100 * 2), 100, 2)
+#' y_train <- rnorm(100)
+#' s_test  <- matrix(runif(40 * 2), 40, 2)
+#' y_test  <- rnorm(40)
+#' fit <- scp_geostatistical(s_train, y_train, s_test, function(tr_s, tr_y, nw_s) rep(0, nrow(nw_s)), alpha = 0.1)
+#' test_res <- spatial_conditional_coverage(fit, y_test, s_test)
+#' print(test_res)
+spatial_conditional_coverage <- function(object, y_true, coords = NULL, degree = 2, 
+                                         test = c("LRT", "Wald"), 
+                                         permutation = "auto", n_perm = 499) {
+  test <- match.arg(test)
+  
+  if (!inherits(object, "spconform")) {
+    stop("'object' must be an object of class 'spconform'.")
+  }
+  
+  n <- length(object$pred)
+  if (length(y_true) != n) {
+    stop(sprintf("length(y_true) (%d) must match length(object$pred) (%d).", length(y_true), n))
+  }
+  
+  if (is.null(coords)) {
+    if (!is.null(object$s0)) {
+      coords <- object$s0
+    } else if (!is.null(object$coords)) {
+      coords <- object$coords
+    } else {
+      stop("Spatial coordinates must be provided via 'coords' or present in 'object$s0'.")
+    }
+  }
+  
+  coords <- as.matrix(coords)
+  if (nrow(coords) != n || ncol(coords) < 2) {
+    stop("'coords' must have at least 2 columns and match the number of predictions.")
+  }
+  
+  # Binary coverage hit indicator: 1 = covered, 0 = miscovered
+  hit <- as.integer(y_true >= object$lower & y_true <= object$upper)
+  n_hit  <- sum(hit == 1)
+  n_miss <- sum(hit == 0)
+  emp_cov <- mean(hit)
+  nom_cov <- 1 - object$alpha
+  
+  # Edge case: perfect homogeneous coverage (all 1s or all 0s)
+  if (n_miss == 0 || n_hit == 0) {
+    res <- list(
+      statistic = 0,
+      df = 0,
+      p_value = 1.0,
+      p_asymptotic = 1.0,
+      p_perm = 1.0,
+      empirical_coverage = emp_cov,
+      nominal_coverage = nom_cov,
+      decision = "Uniform coverage achieved (no spatial variance to test).",
+      hit_indicator = hit,
+      method = paste("Spatial Conditional Coverage (Homogeneous)", test),
+      degree_used = 0,
+      model = NULL
+    )
+    class(res) <- "spconform_coverage_test"
+    return(res)
+  }
+  
+  # Guard against quasi-complete separation:
+  # If minority class has <= 4 observations, reduce degree to 1 (x + y only, df = 2)
+  min_class <- min(n_hit, n_miss)
+  degree_used <- degree
+  if (min_class <= 4 && degree > 1) {
+    degree_used <- 1
+  }
+  
+  # Center coordinates for numerical stability
+  x_coord <- scale(coords[, 1], center = TRUE, scale = TRUE)
+  y_coord <- scale(coords[, 2], center = TRUE, scale = TRUE)
+  
+  df_model <- data.frame(hit = hit, x = as.numeric(x_coord), y = as.numeric(y_coord))
+  
+  # Null model: spatially invariant coverage logit(P(Hit=1)) = beta_0
+  m_null <- suppressWarnings(
+    stats::glm(hit ~ 1, data = df_model, family = stats::binomial(link = "logit"))
+  )
+  
+  # Spatial alternative model: coverage depends on spatial coordinates
+  if (degree_used == 1) {
+    m_spatial <- suppressWarnings(
+      stats::glm(hit ~ x + y, data = df_model, family = stats::binomial(link = "logit"))
+    )
+  } else {
+    m_spatial <- suppressWarnings(
+      stats::glm(hit ~ stats::poly(x, y, degree = degree_used, raw = TRUE), 
+                 data = df_model, family = stats::binomial(link = "logit"))
+    )
+  }
+  
+  if (test == "LRT") {
+    # Likelihood Ratio Test: deviance difference
+    stat <- stats::deviance(m_null) - stats::deviance(m_spatial)
+    stat <- max(0, stat)
+    df_diff <- m_null$df.residual - m_spatial$df.residual
+    p_asymp <- stats::pchisq(stat, df = df_diff, lower.tail = FALSE)
+  } else {
+    # Wald Test on all spatial coefficients
+    coefs <- stats::coef(m_spatial)[-1] # drop intercept
+    vcov_mat <- stats::vcov(m_spatial)[-1, -1, drop = FALSE]
+        base_pinv <- function(A, tol = 1e-7) {
+      s <- svd(A)
+      pos <- s$d > tol * max(s$d)
+      if (all(!pos)) return(matrix(0, ncol(A), nrow(A)))
+      s$v[, pos, drop = FALSE] %*% ((1 / s$d[pos]) * t(s$u[, pos, drop = FALSE]))
+    }
+    inv_vcov <- tryCatch(solve(vcov_mat), error = function(e) base_pinv(vcov_mat))
+    stat <- as.numeric(t(coefs) %*% inv_vcov %*% coefs)
+    stat <- max(0, stat)
+    df_diff <- length(coefs)
+    p_asymp <- stats::pchisq(stat, df = df_diff, lower.tail = FALSE)
+  }
+  
+  # Decide whether to run permutation test
+  do_perm <- if (identical(permutation, "auto")) {
+    (min_class <= 10 || n <= 150)
+  } else {
+    isTRUE(permutation)
+  }
+  
+  p_perm <- NA_real_
+  if (do_perm && n_perm > 0) {
+    perm_stats <- numeric(n_perm)
+    for (b in seq_len(n_perm)) {
+      df_perm <- df_model
+      df_perm$hit <- sample(df_model$hit)
+      
+      m_null_b <- suppressWarnings(
+        stats::glm(hit ~ 1, data = df_perm, family = stats::binomial(link = "logit"))
+      )
+      if (degree_used == 1) {
+        m_sp_b <- suppressWarnings(
+          stats::glm(hit ~ x + y, data = df_perm, family = stats::binomial(link = "logit"))
+        )
+      } else {
+        m_sp_b <- suppressWarnings(
+          stats::glm(hit ~ stats::poly(x, y, degree = degree_used, raw = TRUE), 
+                     data = df_perm, family = stats::binomial(link = "logit"))
+        )
+      }
+      
+      dev_diff <- stats::deviance(m_null_b) - stats::deviance(m_sp_b)
+      perm_stats[b] <- max(0, dev_diff)
+    }
+    # Finite-sample exact permutation p-value
+    p_perm <- (1 + sum(perm_stats >= stat)) / (n_perm + 1)
+  }
+  
+  # Active reported p-value
+  final_p <- if (!is.na(p_perm)) p_perm else p_asymp
+  
+  decision <- if (final_p >= 0.05) {
+    "Spatial conditional coverage holds (Fail to reject H0; no geographic bias)."
+  } else {
+    "Spatial conditional coverage violated (Reject H0; coverage varies across space)."
+  }
+  
+  res <- list(
+    statistic = round(stat, 4),
+    df = df_diff,
+    p_value = final_p,
+    p_asymptotic = p_asymp,
+    p_perm = p_perm,
+    empirical_coverage = emp_cov,
+    nominal_coverage = nom_cov,
+    decision = decision,
+    hit_indicator = hit,
+    method = paste0("Spatial Conditional Coverage (", test, ", degree = ", degree_used, 
+                    if (!is.na(p_perm)) paste0(", B = ", n_perm, " perms)") else ")"),
+    degree_used = degree_used,
+    model = m_spatial
+  )
+  class(res) <- "spconform_coverage_test"
+  return(res)
+}
+
+#' @export
+print.spconform_coverage_test <- function(x, ...) {
+  cat("-----------------------------------------------------------\n")
+  cat("  spconform: Spatial Conditional Coverage Test\n")
+  cat("-----------------------------------------------------------\n")
+  cat("Test Method:           ", x$method, "\n", sep = "")
+  cat(sprintf("Nominal Target:        %.1f%%\n", x$nominal_coverage * 100))
+  cat(sprintf("Empirical Coverage:    %.1f%%\n", x$empirical_coverage * 100))
+  cat(sprintf("Test Statistic (Chi2): %.4f (df = %d)\n", x$statistic, x$df))
+  cat("p-value:               ", format.pval(x$p_value, eps = 1e-4, digits = 4), 
+      if (!is.na(x$p_perm)) " (permutation exact)" else " (asymptotic)", "\n", sep = "")
+  if (!is.na(x$p_perm)) {
+    cat("  - Asymptotic p-value: ", format.pval(x$p_asymptotic, eps = 1e-4, digits = 4), "\n", sep = "")
+    cat("  - Permutation p-value: ", format.pval(x$p_perm, eps = 1e-4, digits = 4), "\n", sep = "")
+  }
+  cat("Status:                ", if (x$p_value >= 0.05) "PASS (H0 accepted)" else "FAIL (H0 rejected)", "\n", sep = "")
+  cat("Conclusion:            ", x$decision, "\n", sep = "")
+  cat("-----------------------------------------------------------\n")
+  invisible(x)
+}
+
+
+#' Geary's C Test for Spatial Autocorrelation
+#'
+#' Computes Geary's C statistic to test for local spatial autocorrelation and
+#' spatial variance discontinuities in conformal prediction residuals or interval widths.
+#' Follows Cliff and Ord (1981) analytical moments under randomization.
+#'
+#' @param x Numeric vector of values (e.g. residuals, interval widths, or nonconformity scores).
+#' @param coords Numeric matrix or data frame of spatial coordinates (N x 2).
+#' @param bandwidth Optional numeric spatial bandwidth. Defaults to the median pairwise distance.
+#' @param alternative Character string specifying the alternative hypothesis:
+#'   \code{"two.sided"} (default), \code{"greater"} (positive spatial autocorrelation, C < 1),
+#'   or \code{"less"} (negative spatial autocorrelation / spatial discontinuity, C > 1).
+#'
+#' @return An object of class \code{"spconform_geary"} containing:
+#' \describe{
+#'   \item{C}{Observed Geary's C statistic.}
+#'   \item{expected}{Expected value under the randomization null hypothesis (1.0).}
+#'   \item{variance}{Analytical variance of C under randomization.}
+#'   \item{z_score}{Standardized test statistic.}
+#'   \item{p_value}{Asymptotic p-value.}
+#'   \item{alternative}{The alternative hypothesis specified.}
+#' }
+#' @export
+#'
+#' @examples
+#' set.seed(123)
+#' coords <- matrix(runif(80 * 2), 80, 2)
+#' resids <- rnorm(80)
+#' geary_res <- spatial_geary(resids, coords)
+#' print(geary_res)
+spatial_geary <- function(x, coords, bandwidth = NULL, 
+                          alternative = c("two.sided", "greater", "less")) {
+  alternative <- match.arg(alternative)
+  
+  x <- as.numeric(x)
+  n <- length(x)
+  if (n < 4) {
+    stop("Geary's C test requires at least n = 4 observations.")
+  }
+  
+  coords <- as.matrix(coords)
+  if (nrow(coords) != n || ncol(coords) < 2) {
+    stop("nrow(coords) must equal length(x) with at least 2 columns.")
+  }
+  
+  # Remove missing values
+  valid <- !is.na(x) & !is.na(coords[, 1]) & !is.na(coords[, 2])
+  if (sum(valid) < n) {
+    x <- x[valid]
+    coords <- coords[valid, , drop = FALSE]
+    n <- length(x)
+  }
+  
+  # Compute pairwise Euclidean distance matrix
+  dist_mat <- as.matrix(stats::dist(coords))
+  
+  # Spatial bandwidth h
+  if (is.null(bandwidth) || bandwidth <= 0) {
+    d_vals <- dist_mat[lower.tri(dist_mat)]
+    bandwidth <- stats::median(d_vals[d_vals > 0])
+  }
+  
+  # Gaussian spatial weight matrix: w_ij = exp(-d_ij^2 / (2 * h^2))
+  W_mat <- exp(- (dist_mat^2) / (2 * bandwidth^2))
+  diag(W_mat) <- 0
+  
+  S0 <- sum(W_mat)
+  if (S0 == 0) {
+    stop("Sum of spatial weights is zero; check coordinate scales or bandwidth.")
+  }
+  
+  # Deviations from mean
+  z <- scale(x, scale = TRUE)
+  zz <- sum(z^2)
+  if (zz == 0) {
+    stop("Variance of x is zero; cannot compute Geary's C.")
+  }
+  
+  # Numerator of Geary's C: sum_i sum_j w_ij (x_i - x_j)^2
+  diff_mat <- outer(as.numeric(z), as.numeric(z), "-")^2
+  C_obs <- ((n - 1) / (2 * S0)) * (sum(W_mat * diff_mat) / zz)
+  
+  # Expected value under H0
+  E_C <- 1.0
+  
+  # Exact Analytical Variance under Randomization (Cliff and Ord 1973, 1981)
+  S02 <- S0 * S0
+  S1 <- 2 * sum(W_mat^2)
+  S2 <- 4 * sum(rowSums(W_mat)^2)
+  
+  K <- (n * sum(z^4)) / (zz^2)
+  n1 <- n - 1
+  n2 <- n - 2
+  n3 <- n - 3
+  nn <- n * n
+  
+  VC <- (n1 * S1 * (nn - 3 * n + 3 - K * n1))
+  VC <- VC - ((1 / 4) * (n1 * S2 * (nn + 3 * n - 6 - K * (nn - n + 2))))
+  VC <- VC + (S02 * (nn - 3 - K * (n1^2)))
+  VC <- VC / (n * n2 * n3 * S02)
+  VC <- max(VC, 1e-12) # Numerical floor safeguard
+  
+  # Standardized test statistic:
+  z_score <- (E_C - C_obs) / sqrt(VC)
+  
+  p_val <- switch(alternative,
+    "two.sided" = 2 * stats::pnorm(abs(z_score), lower.tail = FALSE),
+    "greater"   = stats::pnorm(z_score, lower.tail = FALSE), # positive spatial autocorr (C < 1)
+    "less"      = stats::pnorm(z_score, lower.tail = TRUE)    # negative spatial autocorr (C > 1)
+  )
+  
+  res <- list(
+    C = round(C_obs, 4),
+    expected = E_C,
+    variance = round(VC, 6),
+    z_score = round(z_score, 4),
+    p_value = p_val,
+    bandwidth = round(bandwidth, 4),
+    alternative = alternative,
+    sample_size = n
+  )
+  class(res) <- "spconform_geary"
+  return(res)
+}
+
+#' @export
+print.spconform_geary <- function(x, ...) {
+  cat("-----------------------------------------------------------\n")
+  cat("  spconform: Geary's C Spatial Autocorrelation Test\n")
+  cat("-----------------------------------------------------------\n")
+  cat(sprintf("Observed Geary's C:    %.4f\n", x$C))
+  cat(sprintf("Expectation (H0):      %.4f\n", x$expected))
+  cat(sprintf("Analytical Variance:   %.6f\n", x$variance))
+  cat(sprintf("Standardized z-score:  %.4f\n", x$z_score))
+  cat("Asymptotic p-value:    ", format.pval(x$p_value, eps = 1e-4, digits = 4), "\n", sep = "")
+  cat(sprintf("Spatial Bandwidth:     %.4f\n", x$bandwidth))
+  cat("Alternative:           ", x$alternative, " (", 
+      if (x$C < 1) "positive spatial autocorrelation / clustering" else "negative spatial autocorrelation / local disparity",
+      ")\n", sep = "")
+  cat("Status:                ", if (x$p_value < 0.05) "SIGNIFICANT (Spatial structure detected)" else "NOT SIGNIFICANT (Spatial randomness)", "\n", sep = "")
+  cat("-----------------------------------------------------------\n")
+  invisible(x)
+}
+
+
+#' Local Indicators of Spatial Association (Anselin's LISA / Local Moran's I)
+#'
+#' Computes Local Moran's I_i statistics for each observation to detect spatial clusters
+#' (hotspots/coldspots) and spatial outliers of conformal prediction uncertainty,
+#' following Luc Anselin (1995). Supports direct diagnostics of prediction residuals,
+#' interval widths (uncertainty zoning), or raw numeric vectors, with multiple testing
+#' adjustments (FDR / Bonferroni).
+#'
+#' @param object An object of class \code{"spconform"} or a numeric vector.
+#' @param y_true Optional numeric vector of true test responses (required when
+#'   \code{object} is of class \code{"spconform"} and \code{target = "residuals"}).
+#' @param coords Optional numeric matrix or data frame of spatial coordinates (N x 2).
+#'   Extracted automatically if present in \code{object$coords}.
+#' @param target Character string specifying the diagnostic target when \code{object}
+#'   is of class \code{"spconform"}: \code{"residuals"} (absolute errors |y - y_hat| for
+#'   identifying systematic local model failure) or \code{"widths"} (interval widths for
+#'   spatial uncertainty zoning).
+#' @param bandwidth Optional numeric spatial bandwidth. Defaults to the median pairwise distance.
+#' @param p_adjust_method Method for p-value adjustment across the N multiple hypothesis
+#'   tests (passed to \code{stats::p.adjust}): \code{"fdr"} (default, Benjamini & Hochberg),
+#'   \code{"bonferroni"}, \code{"holm"}, or \code{"none"}.
+#' @param significance_level Alpha threshold for declaring a local cluster significant
+#'   (default: 0.05).
+#'
+#' @return An object of class \code{"spconform_lisa"} containing:
+#' \describe{
+#'   \item{Ii}{Numeric vector of Local Moran's I_i statistics.}
+#'   \item{expected}{Expected value under conditional randomization.}
+#'   \item{variance}{Analytical variance of I_i under randomization.}
+#'   \item{z_score}{Standardized z-scores for each location.}
+#'   \item{p_raw}{Raw asymptotic two-sided p-values.}
+#'   \item{p_adjusted}{Adjusted p-values under the chosen multiple testing method.}
+#'   \item{quadrant}{Character vector classifying each location into:
+#'     \code{"High-High"}, \code{"Low-Low"}, \code{"High-Low"}, \code{"Low-High"},
+#'     or \code{"Not Significant"}.}
+#'   \item{spatial_lag}{Spatially lagged values of centered x.}
+#'   \item{coords}{Spatial coordinates matrix.}
+#'   \item{bandwidth}{Spatial bandwidth used.}
+#'   \item{target}{The diagnostic target evaluated.}
+#'   \item{p_adjust_method}{Multiple testing correction method applied.}
+#' }
+#' @export
+#'
+#' @examples
+#' set.seed(123)
+#' coords <- matrix(runif(60 * 2), 60, 2)
+#' resids <- rnorm(60)
+#' lisa_res <- spatial_lisa(resids, coords = coords)
+#' print(lisa_res)
+spatial_lisa <- function(object, coords = NULL, y_true = NULL,
+                         target = c("residuals", "widths"),
+                         bandwidth = NULL, 
+                         p_adjust_method = c("fdr", "bonferroni", "holm", "none"),
+                         significance_level = 0.05) {
+  target <- match.arg(target)
+  p_adjust_method <- match.arg(p_adjust_method)
+  
+  if (inherits(object, "spconform")) {
+    if (is.null(coords)) {
+      if (!is.null(object$s0)) {
+        coords <- object$s0
+      } else if (!is.null(object$coords)) {
+        coords <- object$coords
+      } else {
+        stop("Spatial coordinates must be provided via 'coords' or present in 'object$s0'.")
+      }
+    }
+    
+    if (target == "residuals") {
+      if (is.null(y_true)) {
+        stop("'y_true' must be provided when target = 'residuals'.")
+      }
+      if (length(y_true) != length(object$pred)) {
+        stop("length(y_true) must match length(object$pred).")
+      }
+      x <- abs(y_true - object$pred) # Absolute prediction errors
+      target_label <- "Absolute Residuals |Y - Y_hat| (Model Bias Diagnostic)"
+    } else {
+      x <- object$upper - object$lower # Prediction interval widths
+      target_label <- "Interval Widths (Spatial Uncertainty Zoning)"
+    }
+  } else if (is.numeric(object)) {
+    x <- as.numeric(object)
+    if (is.null(coords)) {
+      stop("When 'object' is a numeric vector, 'coords' must be provided.")
+    }
+    target_label <- "Numeric Vector"
+  } else {
+    stop("'object' must be an object of class 'spconform' or a numeric vector.")
+  }
+  
+  n <- length(x)
+  if (n < 5) {
+    stop("LISA test requires at least n = 5 observations.")
+  }
+  
+  coords <- as.matrix(coords)
+  if (nrow(coords) != n || ncol(coords) < 2) {
+    stop("nrow(coords) must equal length of data with at least 2 coordinate columns.")
+  }
+  
+  # Remove missing values
+  valid <- !is.na(x) & !is.na(coords[, 1]) & !is.na(coords[, 2])
+  if (sum(valid) < n) {
+    x <- x[valid]
+    coords <- coords[valid, , drop = FALSE]
+    n <- length(x)
+  }
+  
+  # Compute pairwise Euclidean distance matrix
+  dist_mat <- as.matrix(stats::dist(coords))
+  
+  # Spatial bandwidth h
+  if (is.null(bandwidth) || bandwidth <= 0) {
+    d_vals <- dist_mat[lower.tri(dist_mat)]
+    bandwidth <- stats::median(d_vals[d_vals > 0])
+  }
+  
+  # Gaussian spatial weight matrix: w_ij = exp(-d_ij^2 / (2 * h^2))
+  W_mat <- exp(- (dist_mat^2) / (2 * bandwidth^2))
+  diag(W_mat) <- 0 # Strict zero diagonal
+  
+  # Row-standardize weights so sum_j w_ij = 1
+  row_sums <- rowSums(W_mat)
+  row_sums[row_sums == 0] <- 1
+  W_std <- W_mat / row_sums
+  
+  # Centered variable z_i = x_i - mean(x)
+  x_bar <- mean(x)
+  z <- x - x_bar
+  m2 <- sum(z^2) / n
+  if (m2 == 0) {
+    stop("Variance of diagnostic variable is zero; cannot compute LISA.")
+  }
+  
+  # Spatial lag: lag_i = sum_j w_std_ij * z_j
+  spatial_lag <- as.numeric(W_std %*% z)
+  
+  # Local Moran's I_i = (z_i / m2) * lag_i
+  I_i <- (z / m2) * spatial_lag
+  
+  # Sample kurtosis b2 = (1/n * sum(z^4)) / (m2^2)
+  b2 <- (sum(z^4) / n) / (m2^2)
+  
+  # Analytical Conditional Variance (Anselin 1995, eq. 8-10):
+  E_Ii <- - 1 / (n - 1)
+  w_i2 <- rowSums(W_std^2)
+  
+  term1 <- w_i2 * (n - b2) / (n - 1)
+  term2 <- (1 - w_i2) * (2 * b2 - n) / ((n - 1) * (n - 2))
+  var_Ii <- term1 + term2 - (E_Ii^2)
+  var_Ii <- pmax(var_Ii, 1e-12) # Floor safeguard
+  
+  # Standardized z-score
+  z_score <- (I_i - E_Ii) / sqrt(var_Ii)
+  
+  # Asymptotic two-sided p-values
+  p_raw <- 2 * stats::pnorm(abs(z_score), lower.tail = FALSE)
+  
+  # Multiple testing correction
+  p_adj <- stats::p.adjust(p_raw, method = p_adjust_method)
+  
+  # Quadrant classification:
+  quad_raw <- ifelse(z >= 0 & spatial_lag >= 0, "High-High",
+              ifelse(z < 0 & spatial_lag < 0, "Low-Low",
+              ifelse(z >= 0 & spatial_lag < 0, "High-Low", "Low-High")))
+  
+  quadrant <- ifelse(p_adj < significance_level, quad_raw, "Not Significant")
+  quadrant <- factor(quadrant, levels = c("High-High", "Low-Low", "High-Low", "Low-High", "Not Significant"))
+  
+  res <- list(
+    Ii = round(I_i, 4),
+    expected = round(E_Ii, 4),
+    variance = round(var_Ii, 6),
+    z_score = round(z_score, 4),
+    p_raw = p_raw,
+    p_adjusted = p_adj,
+    quadrant = quadrant,
+    spatial_lag = round(spatial_lag, 4),
+    z = round(z, 4),
+    coords = coords,
+    bandwidth = round(bandwidth, 4),
+    target = target_label,
+    p_adjust_method = p_adjust_method,
+    significance_level = significance_level,
+    n = n
+  )
+  class(res) <- "spconform_lisa"
+  return(res)
+}
+
+#' @export
+print.spconform_lisa <- function(x, ...) {
+  cat("-----------------------------------------------------------\n")
+  cat("  spconform: Anselin's Local Moran's I (LISA) Test\n")
+  cat("-----------------------------------------------------------\n")
+  cat("Diagnostic Target:            ", x$target, "\n", sep = "")
+  cat(sprintf("Number of Spatial Locations:  %d\n", x$n))
+  cat(sprintf("Spatial Bandwidth (h):        %.4f\n", x$bandwidth))
+  cat("Multiple Testing Adjustment:  ", x$p_adjust_method, "\n", sep = "")
+  cat(sprintf("Significance Alpha Level:     %.2f\n", x$significance_level))
+  cat("-----------------------------------------------------------\n")
+  cat("LISA Cluster Classification Breakdown:\n")
+  counts <- table(x$quadrant)
+  pcts <- prop.table(counts) * 100
+  for (nm in names(counts)) {
+    cat(sprintf("  %-16s : %3d (%5.1f%%)\n", nm, counts[nm], pcts[nm]))
+  }
+  cat("-----------------------------------------------------------\n")
+  invisible(x)
+}
+
+#' @export
+plot.spconform_lisa <- function(x, ...) {
+  oldpar <- graphics::par(no.readonly = TRUE)
+  on.exit(graphics::par(oldpar))
+  
+  graphics::par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3, 1))
+  
+  q_colors <- c(
+    "High-High"        = "#D73027", # Deep Red (Hotspot)
+    "Low-Low"          = "#4575B4", # Deep Blue (Coldspot)
+    "High-Low"         = "#FDAE61", # Orange (Spatial Outlier)
+    "Low-High"         = "#ABD9E9", # Light Blue (Spatial Outlier)
+    "Not Significant"  = "#E0E0E0"  # Neutral Light Gray
+  )
+  
+  pt_cols <- q_colors[as.character(x$quadrant)]
+  
+  # Panel 1: LISA Cluster Map
+  plot(x$coords[, 1], x$coords[, 2], col = pt_cols, pch = 19, cex = 1.4,
+       xlab = "Easting (X)", ylab = "Northing (Y)",
+       main = paste("LISA Map:", if (grepl("Residuals", x$target)) "Model Residuals" else "Uncertainty Zoning"))
+  graphics::grid(col = "gray85")
+  graphics::points(x$coords[, 1], x$coords[, 2], col = "gray30", pch = 1, cex = 1.4)
+  
+  graphics::legend("topleft", legend = names(q_colors), col = q_colors,
+                   pch = 19, pt.cex = 1.2, bty = "n", cex = 0.8)
+  
+  # Panel 2: Moran Scatterplot (z vs Spatial Lag)
+  plot(x$z, x$spatial_lag, col = pt_cols, pch = 19, cex = 1.3,
+       xlab = "Standardized Value (z)", ylab = "Spatial Lag Wz",
+       main = "Moran Scatterplot")
+  graphics::grid(col = "gray85")
+  graphics::abline(h = 0, v = 0, lty = 2, col = "gray50")
+  fit_moran <- stats::lm(x$spatial_lag ~ x$z)
+  graphics::abline(fit_moran, col = "black", lwd = 2)
+  graphics::points(x$z, x$spatial_lag, col = "gray30", pch = 1, cex = 1.3)
+}
+
+#' Directional Anisotropy Test for Spatial Dependence
+#'
+#' Tests whether spatial autocorrelation in conformal prediction residuals or interval
+#' widths exhibits directional anisotropy (i.e. spatial dependence varying with geographic
+#' orientation, such as river corridors or prevailing winds). Formally tests H0 (Isotropy)
+#' versus H1 (Anisotropy) using directional semivariance ANOVA and calculates the
+#' principal axis of spatial continuity and the geometric anisotropy ratio.
+#'
+#' @param object An object of class \code{"spconform"} or a numeric vector of values.
+#' @param coords Optional numeric matrix or data frame of spatial coordinates (N x 2).
+#'   Extracted automatically if present in \code{object$s0} or \code{object$coords}.
+#' @param y_true Optional numeric vector of true responses (used when \code{target = "residuals"}).
+#' @param target Diagnostic target: \code{"residuals"} (default, |y - y_hat|) or \code{"widths"}.
+#' @param n_directions Integer number of directional bins (default: 4, corresponding to
+#'   0 deg [E-W], 45 deg [NE-SW], 90 deg [N-S], and 135 deg [NW-SE]).
+#' @param max_dist Maximum pairwise distance lag considered (default: 0.5 * max pairwise distance).
+#' @param n_perm Number of spatial coordinate rotation permutations for finite-sample testing (default: 299).
+#'
+#' @return An object of class \code{"spconform_anisotropy"} containing:
+#' \describe{
+#'   \item{F_statistic}{The ANOVA F test statistic testing directional heterogeneity.}
+#'   \item{p_value}{Reported p-value (permutation exact if active, otherwise asymptotic).}
+#'   \item{p_asymptotic}{Asymptotic F-distribution p-value.}
+#'   \item{p_perm}{Permutation p-value.}
+#'   \item{anisotropy_ratio}{Ratio of maximum to minimum directional semivariance.}
+#'   \item{principal_angle}{Estimated angle (degrees) of maximum spatial continuity.}
+#'   \item{directional_table}{Summary data frame of directional semivariances and sample pair counts.}
+#'   \item{decision}{Verbal interpretation of the isotropy/anisotropy hypothesis.}
+#'   \item{target}{Target variable analyzed.}
+#' }
+#' @export
+#'
+#' @examples
+#' set.seed(123)
+#' coords <- matrix(runif(60 * 2), 60, 2)
+#' resids <- rnorm(60)
+#' aniso_res <- spatial_anisotropy(resids, coords = coords)
+#' print(aniso_res)
+spatial_anisotropy <- function(object, coords = NULL, y_true = NULL,
+                               target = c("residuals", "widths"),
+                               n_directions = 4,
+                               max_dist = NULL,
+                               n_perm = 299) {
+  target <- match.arg(target)
+  
+  if (inherits(object, "spconform")) {
+    if (is.null(coords)) {
+      if (!is.null(object$s0)) {
+        coords <- object$s0
+      } else if (!is.null(object$coords)) {
+        coords <- object$coords
+      } else {
+        stop("Spatial coordinates must be provided via 'coords' or present in 'object$s0'.")
+      }
+    }
+    if (target == "residuals") {
+      if (is.null(y_true)) {
+        stop("'y_true' must be provided when target = 'residuals'.")
+      }
+      x <- abs(y_true - object$pred)
+      target_label <- "Absolute Residuals |Y - Y_hat|"
+    } else {
+      x <- object$upper - object$lower
+      target_label <- "Prediction Interval Widths"
+    }
+  } else if (is.numeric(object)) {
+    x <- as.numeric(object)
+    if (is.null(coords)) {
+      stop("When 'object' is a numeric vector, 'coords' must be provided.")
+    }
+    target_label <- "Numeric Values"
+  } else {
+    stop("'object' must be an object of class 'spconform' or a numeric vector.")
+  }
+  
+  n <- length(x)
+  if (n < 8) {
+    stop("Anisotropy test requires at least n = 8 observations.")
+  }
+  
+  coords <- as.matrix(coords)
+  valid <- !is.na(x) & !is.na(coords[, 1]) & !is.na(coords[, 2])
+  if (sum(valid) < n) {
+    x <- x[valid]
+    coords <- coords[valid, , drop = FALSE]
+    n <- length(x)
+  }
+  
+  # Pairwise differences and angles
+  # All unique pairs (i, j) with i < j
+  pair_idx <- which(lower.tri(matrix(0, n, n)), arr.ind = TRUE)
+  i_idx <- pair_idx[, 1]
+  j_idx <- pair_idx[, 2]
+  
+  dx <- coords[j_idx, 1] - coords[i_idx, 1]
+  dy <- coords[j_idx, 2] - coords[i_idx, 2]
+  dist_pairs <- sqrt(dx^2 + dy^2)
+  
+  # Filter by max_dist
+  if (is.null(max_dist) || max_dist <= 0) {
+    max_dist <- 0.5 * max(dist_pairs)
+  }
+  valid_dist <- (dist_pairs > 0) & (dist_pairs <= max_dist)
+  
+  dx <- dx[valid_dist]
+  dy <- dy[valid_dist]
+  dist_pairs <- dist_pairs[valid_dist]
+  sq_diff <- (x[j_idx[valid_dist]] - x[i_idx[valid_dist]])^2
+  
+  # Azimuth angle in degrees: [0, 180)
+  # atan2(dy, dx) returns angle in radians [-pi, pi]
+  angles_rad <- atan2(dy, dx)
+  angles_deg <- (angles_rad * 180 / pi) %% 180
+  
+  # Directional bins:
+  # If n_directions == 4:
+  # 0 deg (E-W): [0, 22.5) U [157.5, 180)
+  # 45 deg (NE-SW): [22.5, 67.5)
+  # 90 deg (N-S): [67.5, 112.5)
+  # 135 deg (NW-SE): [112.5, 157.5)
+  dir_labels <- c("0 deg (E-W)", "45 deg (NE-SW)", "90 deg (N-S)", "135 deg (NW-SE)")
+  dir_centers <- c(0, 45, 90, 135)
+  
+  dir_bin <- integer(length(angles_deg))
+  for (k in seq_along(angles_deg)) {
+    ang <- angles_deg[k]
+    if (ang < 22.5 || ang >= 157.5) {
+      dir_bin[k] <- 1 # 0 deg
+    } else if (ang >= 22.5 && ang < 67.5) {
+      dir_bin[k] <- 2 # 45 deg
+    } else if (ang >= 67.5 && ang < 112.5) {
+      dir_bin[k] <- 3 # 90 deg
+    } else {
+      dir_bin[k] <- 4 # 135 deg
+    }
+  }
+  dir_factor <- factor(dir_bin, levels = 1:4, labels = dir_labels)
+  
+  df_pairs <- data.frame(gamma = 0.5 * sq_diff, dist = dist_pairs, direction = dir_factor)
+  
+  # Summary table of directional semivariances
+  dir_summary <- data.frame(
+    Direction = dir_labels,
+    Angle_Deg = dir_centers,
+    Pairs = as.numeric(table(dir_factor)),
+    Mean_Distance = round(as.numeric(tapply(df_pairs$dist, df_pairs$direction, mean, default = 0)), 2),
+    Semivariance = round(as.numeric(tapply(df_pairs$gamma, df_pairs$direction, mean, default = 0)), 4)
+  )
+  
+  valid_dirs <- dir_summary$Semivariance[dir_summary$Pairs > 5]
+  if (length(valid_dirs) >= 2) {
+    aniso_ratio <- max(valid_dirs) / (min(valid_dirs) + 1e-12)
+    max_idx <- which.max(dir_summary$Semivariance)
+    princ_angle <- dir_summary$Angle_Deg[max_idx]
+  } else {
+    aniso_ratio <- 1.0
+    princ_angle <- 0
+  }
+  
+  # ANOVA Model for Anisotropy Test:
+  # Isotropic model: gamma ~ dist
+  # Anisotropic model: gamma ~ dist + direction
+  m_iso <- stats::lm(gamma ~ dist, data = df_pairs)
+  m_aniso <- stats::lm(gamma ~ dist + direction, data = df_pairs)
+  
+  anv <- stats::anova(m_iso, m_aniso)
+  f_stat <- anv$F[2]
+  df_num <- anv$Df[2]
+  df_den <- anv$Res.Df[2]
+  p_asymp <- anv[["Pr(>F)"]][2]
+  if (is.na(f_stat)) {
+    f_stat <- 0
+    p_asymp <- 1.0
+  }
+  
+  # Permutation test: rotate/shuffle coordinate pairs
+  p_perm <- NA_real_
+  if (n_perm > 0) {
+    perm_f <- numeric(n_perm)
+    for (b in seq_len(n_perm)) {
+      df_b <- df_pairs
+      df_b$direction <- sample(df_pairs$direction)
+      m_b <- stats::lm(gamma ~ dist + direction, data = df_b)
+      anv_b <- stats::anova(m_iso, m_b)
+      perm_f[b] <- max(0, anv_b$F[2], na.rm = TRUE)
+    }
+    p_perm <- (1 + sum(perm_f >= f_stat)) / (n_perm + 1)
+  }
+  
+  final_p <- if (!is.na(p_perm)) p_perm else p_asymp
+  
+  decision <- if (final_p >= 0.05) {
+    "Spatial isotropy confirmed (Fail to reject H0; no significant directional bias)."
+  } else {
+    sprintf("Directional anisotropy detected (Reject H0; principal orientation at %d deg).", princ_angle)
+  }
+  
+  res <- list(
+    F_statistic = round(f_stat, 4),
+    df = c(df_num, df_den),
+    p_value = final_p,
+    p_asymptotic = p_asymp,
+    p_perm = p_perm,
+    anisotropy_ratio = round(aniso_ratio, 3),
+    principal_angle = princ_angle,
+    directional_table = dir_summary,
+    decision = decision,
+    target = target_label,
+    n_pairs = nrow(df_pairs),
+    max_dist = max_dist
+  )
+  class(res) <- "spconform_anisotropy"
+  return(res)
+}
+
+#' @export
+print.spconform_anisotropy <- function(x, ...) {
+  cat("-----------------------------------------------------------\n")
+  cat("  spconform: Directional Anisotropy Test\n")
+  cat("-----------------------------------------------------------\n")
+  cat("Diagnostic Target:            ", x$target, "\n", sep = "")
+  cat(sprintf("Number of Coordinate Pairs:   %d (max dist = %.2f)\n", x$n_pairs, x$max_dist))
+  cat(sprintf("Test Statistic (ANOVA F):     %.4f (df1 = %d, df2 = %d)\n", 
+              x$F_statistic, x$df[1], x$df[2]))
+  cat("p-value:                      ", format.pval(x$p_value, eps = 1e-4, digits = 4), 
+      if (!is.na(x$p_perm)) " (permutation exact)" else " (asymptotic)", "\n", sep = "")
+  if (!is.na(x$p_perm)) {
+    cat("  - Asymptotic p-value:        ", format.pval(x$p_asymptotic, eps = 1e-4, digits = 4), "\n", sep = "")
+    cat("  - Permutation p-value:       ", format.pval(x$p_perm, eps = 1e-4, digits = 4), "\n", sep = "")
+  }
+  cat(sprintf("Geometric Anisotropy Ratio:   %.3f\n", x$anisotropy_ratio))
+  cat(sprintf("Principal Continuity Axis:    %d degrees\n", x$principal_angle))
+  cat("Status:                       ", if (x$p_value >= 0.05) "PASS (Spatial Isotropy holds)" else "FAIL (Directional Anisotropy detected)", "\n", sep = "")
+  cat("Conclusion:                   ", x$decision, "\n", sep = "")
+  cat("-----------------------------------------------------------\n")
+  cat("Directional Semivariance Summary:\n")
+  print(x$directional_table, row.names = FALSE)
+  cat("-----------------------------------------------------------\n")
+  invisible(x)
+}
+
+#' @export
+plot.spconform_anisotropy <- function(x, ...) {
+  oldpar <- graphics::par(no.readonly = TRUE)
+  on.exit(graphics::par(oldpar))
+  
+  graphics::par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3, 1))
+  
+  tab <- x$directional_table
+  cols <- c("#2B83BA", "#ABDDA4", "#FDAE61", "#D7191C")
+  
+  # Panel 1: Directional Semivariance Barplot
+  bp <- graphics::barplot(tab$Semivariance, names.arg = c("0 deg", "45 deg", "90 deg", "135 deg"),
+                          col = cols, border = "gray30",
+                          xlab = "Azimuth Direction", ylab = "Mean Semivariance gamma(h)",
+                          main = "Directional Semivariances",
+                          ylim = c(0, max(tab$Semivariance) * 1.25))
+  graphics::grid(nx = NA, ny = NULL, col = "gray85")
+  graphics::text(bp, tab$Semivariance, labels = round(tab$Semivariance, 3), pos = 3, cex = 0.9)
+  
+  # Panel 2: Polar Radar / Rose Diagram of Anisotropy
+  angles_rad <- c(tab$Angle_Deg * pi / 180, (tab$Angle_Deg[1] + 180) * pi / 180)
+  radii <- c(tab$Semivariance, tab$Semivariance[1])
+  
+  # Convert to Cartesian for simple base R polar plotting
+  xs <- radii * cos(angles_rad)
+  ys <- radii * sin(angles_rad)
+  
+  lim <- max(radii) * 1.3
+  plot(0, 0, type = "n", xlim = c(-lim, lim), ylim = c(-lim, lim),
+       xlab = "East - West", ylab = "North - South",
+       main = "Anisotropy Polar Ellipse", asp = 1, axes = FALSE)
+  
+  # Circular grid lines
+  for (r_grid in seq(lim / 3, lim, length.out = 3)) {
+    ang_seq <- seq(0, 2 * pi, length.out = 100)
+    graphics::lines(r_grid * cos(ang_seq), r_grid * sin(ang_seq), lty = 3, col = "gray80")
+    graphics::text(r_grid * 0.7, 0, labels = round(r_grid, 2), cex = 0.7, col = "gray50")
+  }
+  graphics::abline(h = 0, v = 0, lty = 2, col = "gray60")
+  
+  # Draw polygon
+  all_xs <- c(xs, -xs)
+  all_ys <- c(ys, -ys)
+  graphics::polygon(all_xs, all_ys, col = grDevices::adjustcolor("#2B83BA", alpha.f = 0.35),
+                    border = "#2B83BA", lwd = 2)
+  graphics::points(all_xs, all_ys, pch = 19, col = "#D7191C", cex = 1.2)
+  
+  graphics::text(lim * 0.9, 0, "East (0 deg)", pos = 4, cex = 0.8)
+  graphics::text(0, lim * 0.9, "North (90 deg)", pos = 3, cex = 0.8)
+}
+
+
+#' Spatial Mantel Test for Conformal Score Autocorrelation and Whitening
+#'
+#' Evaluates whether prediction nonconformity scores (or model residuals) exhibit
+#' significant spatial autocorrelation by computing the matrix correlation between
+#' geographical distances and score discrepancies via finite-sample matrix permutation.
+#'
+#' @param object An object of class \code{"spconform"} or numeric vector of scores/residuals.
+#' @param coords Numeric matrix of spatial coordinates (\eqn{n \times 2}). If \code{NULL} and
+#'   \code{object} is an \code{spconform} object, extracted from \code{object$s0}.
+#' @param y_true Optional numeric vector of true observed values to compute residuals if \code{object}
+#'   is an \code{spconform} object.
+#' @param n_permutations Integer; number of Monte Carlo matrix permutations (default 999).
+#' @param alternative Character specifying the alternative hypothesis: \code{"greater"} (default, positive spatial correlation),
+#'   \code{"two.sided"}, or \code{"less"}.
+#' @param seed Optional integer seed for reproducible permutation testing.
+#'
+#' @return An object of class \code{"spconform_mantel"} containing:
+#' \describe{
+#'   \item{mantel_r}{Observed Mantel matrix correlation statistic \eqn{r_M \in [-1, 1]}.}
+#'   \item{p_value}{Monte Carlo permutation p-value.}
+#'   \item{z_score}{Standardized z-score relative to the permutation null distribution.}
+#'   \item{perm_r}{Numeric vector of permutation correlation values under \eqn{H_0}.}
+#'   \item{alternative}{The alternative hypothesis evaluated.}
+#'   \item{n}{Number of spatial locations.}
+#'   \item{n_pairs}{Number of pairwise matrix distance comparisons \eqn{n(n-1)/2}.}
+#'   \item{is_whitened}{Logical; \code{TRUE} if p-value >= 0.05 (H0 of spatial independence is accepted, confirming spatial whitening).}
+#'   \item{decision}{Human-readable conclusion.}
+#' }
+#'
+#' @references
+#' Mantel, N. (1967). The detection of disease clustering and a generalized regression approach.
+#' \emph{Cancer Research}, 27(2), 209--220.
+#'
+#' Legendre, P. and Fortin, M. J. (2010). Comparison of the Mantel test and alternative approaches
+#' for detecting complex multivariate relationships in the spatial analysis of genetic data.
+#' \emph{Molecular Ecology Resources}, 10(5), 831--844.
+#'
+#' @examples
+#' set.seed(42)
+#' n <- 50
+#' coords <- matrix(runif(n * 2, 0, 10), n, 2)
+#' # Spatially correlated field
+#' scores <- sin(coords[, 1] * 0.5) + rnorm(n, sd = 0.2)
+#' res <- spatial_mantel(scores, coords = coords, n_permutations = 199, seed = 123)
+#' print(res)
+#'
+#' @importFrom stats dist cor sd median
+#' @importFrom graphics hist abline legend
+#' @export
+spatial_mantel <- function(object, coords = NULL, y_true = NULL,
+                           n_permutations = 999,
+                           alternative = c("greater", "two.sided", "less"),
+                           seed = NULL) {
+  alternative <- match.arg(alternative)
+
+  # 1. Extract scores and coordinates
+  if (inherits(object, "spconform")) {
+    if (!is.null(y_true)) {
+      y_true <- as.numeric(y_true)
+      if (length(y_true) != length(object$pred)) {
+        stop("length(y_true) must match length(object$pred).")
+      }
+      scores <- abs(y_true - object$pred)
+    } else {
+      scores <- object$upper - object$lower
+    }
+    if (is.null(coords)) coords <- object$s0
+  } else {
+    scores <- as.numeric(object)
+  }
+
+  if (is.null(coords)) {
+    stop("Spatial coordinates 'coords' must be provided.")
+  }
+  coords <- as.matrix(coords)
+  n <- length(scores)
+
+  if (nrow(coords) != n) {
+    stop("nrow(coords) must equal length of scores/residuals.")
+  }
+  if (n < 5) {
+    stop("Need at least 5 spatial locations to compute Mantel test.")
+  }
+
+  # 2. Form Distance Matrices
+  D_geo <- as.matrix(stats::dist(coords))
+  D_score <- as.matrix(stats::dist(scores))
+
+  lower_idx <- lower.tri(D_geo)
+  v_geo <- D_geo[lower_idx]
+  v_score <- D_score[lower_idx]
+  M <- length(v_score)
+
+  sd_geo <- stats::sd(v_geo)
+  sd_score <- stats::sd(v_score)
+
+  if (sd_geo <= 1e-12 || sd_score <= 1e-12) {
+    return(structure(
+      list(
+        mantel_r = 0, p_value = 1, z_score = 0,
+        perm_r = rep(0, n_permutations), alternative = alternative,
+        n = n, n_pairs = M, is_whitened = TRUE,
+        decision = "Zero variance in pairwise distances; spatial randomness assumed."
+      ),
+      class = "spconform_mantel"
+    ))
+  }
+
+  r_obs <- stats::cor(v_geo, v_score)
+
+  # 3. Fast Invariant Permutation Loop
+  # Since off-diagonal multiset is invariant under permutation of indices:
+  # mean_geo and sd_geo are strictly constant across all permutations!
+  y_std <- (v_score - mean(v_score)) / (sd_score * (M - 1))
+  mean_geo <- mean(v_geo)
+
+  if (!is.null(seed)) set.seed(seed)
+  perm_r <- numeric(n_permutations)
+
+  for (b in seq_len(n_permutations)) {
+    p_idx <- sample.int(n)
+    D_perm <- D_geo[p_idx, p_idx]
+    v_perm <- D_perm[lower_idx]
+    vp_std <- (v_perm - mean_geo) / sd_geo
+    perm_r[b] <- sum(vp_std * y_std)
+  }
+
+  # 4. Monte Carlo p-value
+  if (alternative == "greater") {
+    p_val <- (1 + sum(perm_r >= r_obs)) / (n_permutations + 1)
+  } else if (alternative == "two.sided") {
+    p_val <- (1 + sum(abs(perm_r) >= abs(r_obs))) / (n_permutations + 1)
+  } else {
+    p_val <- (1 + sum(perm_r <= r_obs)) / (n_permutations + 1)
+  }
+
+  z_sc <- if (stats::sd(perm_r) > 1e-12) (r_obs - mean(perm_r)) / stats::sd(perm_r) else 0
+
+  is_white <- (p_val >= 0.05)
+  decision <- if (is_white) {
+    "Spatial independence accepted (p >= 0.05). Conformal calibration successfully whitened spatial correlation."
+  } else {
+    sprintf("Significant spatial correlation detected (r_M = %+.4f, p = %.4f). Residuals retain spatial clustering.", r_obs, p_val)
+  }
+
+  structure(
+    list(
+      mantel_r = r_obs,
+      p_value = p_val,
+      z_score = z_sc,
+      perm_r = perm_r,
+      alternative = alternative,
+      n = n,
+      n_pairs = M,
+      is_whitened = is_white,
+      decision = decision
+    ),
+    class = "spconform_mantel"
+  )
+}
+
+#' Print Method for spconform_mantel Objects
+#' @param x An object of class \code{"spconform_mantel"}.
+#' @param ... Additional arguments.
+#' @export
+print.spconform_mantel <- function(x, ...) {
+  cat("-----------------------------------------------------------\n")
+  cat("  spconform: Spatial Mantel Test (Whitening & Autocorrelation)\n")
+  cat("-----------------------------------------------------------\n")
+  cat(sprintf("Number of Locations (n)     : %d (%d pairwise comparisons)\n", x$n, x$n_pairs))
+  cat(sprintf("Mantel Matrix Correlation   : %+.4f (r_M)\n", x$mantel_r))
+  cat(sprintf("Permutation Z-Score         : %+.4f\n", x$z_score))
+  cat(sprintf("Monte Carlo Permutations    : %d\n", length(x$perm_r)))
+  cat("Alternative Hypothesis      : ", x$alternative, "
+", sep = "")
+  cat(sprintf("Permutation p-value         : %.4f\n", x$p_value))
+  cat("-----------------------------------------------------------\n")
+  cat("Whitening Status:             ",
+      if (x$is_whitened) "PASSED (Spatial independence / Whitened)"
+      else "WARNING (Spatial autocorrelation detected)", "\n", sep = "")
+  cat("Conclusion:                   ", x$decision, "\n", sep = "")
+  cat("-----------------------------------------------------------\n")
+  invisible(x)
+}
+
+#' Plot Method for spconform_mantel Objects
+#'
+#' Displays the Monte Carlo permutation distribution under H0 and observed Mantel r.
+#'
+#' @param x An object of class \code{"spconform_mantel"}.
+#' @param ... Additional graphical arguments.
+#' @importFrom graphics hist abline legend
+#' @export
+plot.spconform_mantel <- function(x, ...) {
+  xlims <- range(c(x$perm_r, x$mantel_r))
+  xlims <- c(min(xlims[1], -0.1), max(xlims[2], 0.1))
+
+  graphics::hist(x$perm_r, breaks = 30, col = "gray85", border = "gray50",
+                 xlim = xlims, xlab = "Mantel r (Matrix Correlation)",
+                 main = sprintf("Mantel Permutation Null Distribution (n = %d)", x$n), ...)
+  graphics::abline(v = x$mantel_r, col = "#D7191C", lwd = 2.5, lty = 1)
+  graphics::abline(v = mean(x$perm_r), col = "blue", lwd = 1.5, lty = 2)
+
+  graphics::legend("topright",
+                   legend = c(sprintf("Observed r_M = %+.3f (p = %.4f)", x$mantel_r, x$p_value),
+                              "Null Expectation E(r_M) = 0"),
+                   col = c("#D7191C", "blue"), lwd = c(2.5, 1.5), lty = c(1, 2),
+                   bty = "n", cex = 0.85)
+  invisible(x)
+}
+
+
+#' Bivariate Cross-L Ripley Hotspot Conformal Audit
+#'
+#' Evaluates the spatial attraction or repulsion between conformal prediction failures
+#' (miscoverage events) and localized uncertainty hotspots (wide prediction intervals)
+#' using Besag's variance-stabilized bivariate cross-L function with Monte Carlo simulation envelopes.
+#'
+#' @param object An object of class \code{"spconform"} or a numeric matrix of interval bounds (n x 2).
+#' @param coords Numeric matrix of spatial coordinates (\eqn{n \times 2}). If \code{NULL} and
+#'   \code{object} is an \code{spconform} object, extracted from \code{object$s0}.
+#' @param y_true Numeric vector of true observed responses.
+#' @param width_quantile Numeric probability threshold defining uncertainty hotspots (default 0.75, top quartile).
+#' @param r_vec Optional numeric vector of spatial radii. If \code{NULL}, chosen automatically up to one-third of domain diameter.
+#' @param n_sim Integer; number of Monte Carlo simulations to construct null envelopes under spatial independence (default 199).
+#' @param seed Optional integer seed for reproducible simulation envelopes.
+#'
+#' @details
+#' Conformal miscoverage events (points where Y is not in C(s)) can be characterized as:
+#' \enumerate{
+#'   \item \strong{Honest Uncertainty (Spatial Attraction)}: Failures occur in regions where intervals are wide
+#'     (\eqn{L_{12}(r) > L_{\text{upper}}(r)}). The model accurately anticipates its own uncertainty.
+#'   \item \strong{Pathological Overconfidence (Spatial Repulsion)}: Failures systematically occur away from wide intervals
+#'     (\eqn{L_{12}(r) < L_{\text{lower}}(r)}), indicating deceptive confidence in narrow intervals.
+#'   \item \strong{Spatial Randomness}: Failures occur independently of width hotspots across all spatial scales.
+#' }
+#'
+#' @return An object of class \code{"spconform_cross_l"} containing:
+#' \describe{
+#'   \item{r}{Vector of evaluation radii.}
+#'   \item{l_obs}{Observed Besag's cross-L function \eqn{L_{12}(r) - r}.}
+#'   \item{l_upper}{Upper Monte Carlo simulation envelope (97.5th percentile).}
+#'   \item{l_lower}{Lower Monte Carlo simulation envelope (2.5th percentile).}
+#'   \item{l_median}{Median simulation envelope.}
+#'   \item{n_miss}{Number of miscoverage points.}
+#'   \item{n_hotspots}{Number of width hotspot points.}
+#'   \item{n_total}{Total evaluation points.}
+#'   \item{pattern}{Classification: \code{"Spatial Attraction (Honest Uncertainty)"}, \code{"Spatial Repulsion (Overconfidence)"}, or \code{"Spatial Randomness"}.}
+#'   \item{decision}{Human-readable conclusion.}
+#' }
+#'
+#' @references
+#' Besag, J. (1977). Contribution to the discussion of Dr Ripley's paper.
+#' \emph{Journal of the Royal Statistical Society: Series B}, 39(2), 193--195.
+#'
+#' Ripley, B. D. (1976). The second-order analysis of stationary point processes.
+#' \emph{Journal of Applied Probability}, 13(2), 255--266.
+#'
+#' @examples
+#' set.seed(42)
+#' n <- 50
+#' coords <- matrix(runif(n * 2, 0, 10), n, 2)
+#' y <- sin(coords[, 1]) + rnorm(n, sd = 0.3)
+#' pfun <- function(st, yt, sn) rep(mean(yt), nrow(sn))
+#' fit <- scp_geostatistical(coords[1:35, ], y[1:35], coords[36:50, ], pfun, alpha = 0.1)
+#' res <- spatial_cross_l(fit, y_true = y[36:50], n_sim = 99, seed = 123)
+#' print(res)
+#'
+#' @importFrom stats dist quantile median
+#' @importFrom graphics plot lines polygon abline legend
+#' @importFrom grDevices adjustcolor
+#' @export
+spatial_cross_l <- function(object, coords = NULL, y_true = NULL,
+                            width_quantile = 0.75,
+                            r_vec = NULL, n_sim = 199, seed = NULL) {
+  if (is.null(y_true)) {
+    stop("'y_true' must be provided to evaluate empirical coverage.")
+  }
+  y_true <- as.numeric(y_true)
+
+  if (inherits(object, "spconform")) {
+    pred <- as.numeric(object$pred)
+    lower <- as.numeric(object$lower)
+    upper <- as.numeric(object$upper)
+    if (is.null(coords)) coords <- object$s0
+  } else if (is.matrix(object) && ncol(object) >= 2) {
+    lower <- object[, 1]
+    upper <- object[, 2]
+    pred  <- (lower + upper) / 2
+  } else {
+    stop("'object' must be an 'spconform' object or a 2-column matrix of [lower, upper] bounds.")
+  }
+
+  if (is.null(coords)) {
+    stop("Spatial coordinates 'coords' must be provided.")
+  }
+  coords <- as.matrix(coords)
+  n <- length(y_true)
+
+  if (nrow(coords) != n || length(lower) != n || length(upper) != n) {
+    stop("Dimensions of coords, y_true, and prediction bounds must match.")
+  }
+  if (n < 10) {
+    stop("Need at least 10 spatial locations to compute spatial cross-L analysis.")
+  }
+
+  # 1. Identify miscoverage points (Pattern 1) and width hotspots (Pattern 2)
+  covered <- (y_true >= lower) & (y_true <= upper)
+  miss_idx <- which(!covered)
+  n_miss <- length(miss_idx)
+
+  widths <- upper - lower
+  q_thresh <- stats::quantile(widths, probs = width_quantile, na.rm = TRUE)
+  hot_idx <- which(widths >= q_thresh)
+  n_hot <- length(hot_idx)
+
+  # Check edge cases (0 missed points or 0 hotspots)
+  if (n_miss == 0) {
+    return(structure(
+      list(
+        r = numeric(0), l_obs = numeric(0), l_upper = numeric(0),
+        l_lower = numeric(0), l_median = numeric(0),
+        n_miss = 0, n_hotspots = n_hot, n_total = n,
+        pattern = "Perfect Empirical Coverage",
+        decision = "Perfect empirical coverage (100%). Zero miscoverage failures observed; no clustering."
+      ),
+      class = "spconform_cross_l"
+    ))
+  }
+
+  # Bounding box area
+  x_range <- max(coords[, 1]) - min(coords[, 1])
+  y_range <- max(coords[, 2]) - min(coords[, 2])
+  area_s  <- max(1e-6, x_range * y_range)
+
+  # Distance matrix
+  d_mat <- as.matrix(stats::dist(coords))
+  max_dist <- max(d_mat) / 3.0
+
+  if (is.null(r_vec)) {
+    r_vec <- seq(max_dist / 12, max_dist, length.out = 15)
+  }
+
+  # 2. Observed Bivariate Cross-K and Cross-L
+  calc_cross_l <- function(idx1, idx2, d_matrix, domain_area, radii) {
+    d_sub <- d_matrix[idx1, idx2, drop = FALSE]
+    n1 <- length(idx1)
+    n2 <- length(idx2)
+    k_vals <- numeric(length(radii))
+    denom <- max(1, n1 * n2)
+
+    for (k in seq_along(radii)) {
+      count <- sum(d_sub <= radii[k])
+      k_vals[k] <- (domain_area / denom) * count
+    }
+    sqrt(k_vals / pi) - radii
+  }
+
+  l_obs <- calc_cross_l(miss_idx, hot_idx, d_mat, area_s, r_vec)
+
+  # 3. Monte Carlo Simulation Envelopes under H0 (Random marking)
+  if (!is.null(seed)) set.seed(seed)
+  l_sim <- matrix(NA_real_, nrow = length(r_vec), ncol = n_sim)
+
+  for (b in seq_len(n_sim)) {
+    sim_miss <- sample.int(n, n_miss)
+    l_sim[, b] <- calc_cross_l(sim_miss, hot_idx, d_mat, area_s, r_vec)
+  }
+
+  l_upper  <- apply(l_sim, 1, stats::quantile, probs = 0.975)
+  l_lower  <- apply(l_sim, 1, stats::quantile, probs = 0.025)
+  l_median <- apply(l_sim, 1, stats::median)
+
+  # 4. Pattern Classification
+  n_attract <- sum(l_obs > l_upper)
+  n_repulse <- sum(l_obs < l_lower)
+
+  if (n_attract > n_repulse && n_attract >= 2) {
+    pattern <- "Spatial Attraction (Honest Uncertainty)"
+    decision <- "Miscoverage events are significantly clustered within hotspots of wide prediction intervals (p < 0.05). The model accurately flags its own localized uncertainty."
+  } else if (n_repulse > n_attract && n_repulse >= 2) {
+    pattern <- "Spatial Repulsion (Overconfidence)"
+    decision <- "Miscoverage events occur significantly away from width hotspots (p < 0.05). Model displays localized overconfidence in narrow intervals."
+  } else {
+    pattern <- "Spatial Randomness"
+    decision <- "Miscoverage events occur independently of interval width hotspots across all spatial scales (Fail to reject H0)."
+  }
+
+  structure(
+    list(
+      r = r_vec,
+      l_obs = l_obs,
+      l_upper = l_upper,
+      l_lower = l_lower,
+      l_median = l_median,
+      n_miss = n_miss,
+      n_hotspots = n_hot,
+      n_total = n,
+      pattern = pattern,
+      decision = decision
+    ),
+    class = "spconform_cross_l"
+  )
+}
+
+#' Print Method for spconform_cross_l Objects
+#' @param x An object of class \code{"spconform_cross_l"}.
+#' @param ... Additional arguments.
+#' @export
+print.spconform_cross_l <- function(x, ...) {
+  cat("-----------------------------------------------------------\n")
+  cat("  spconform: Bivariate Cross-L Ripley Hotspot Audit\n")
+  cat("-----------------------------------------------------------\n")
+  cat(sprintf("Total Test Locations (n)     : %d\n", x$n_total))
+  cat(sprintf("Miscoverage Failures (P1)    : %d (%.1f%%)\n", x$n_miss, 100 * x$n_miss / x$n_total))
+  cat(sprintf("Uncertainty Hotspots (P2)    : %d (%.1f%%)\n", x$n_hotspots, 100 * x$n_hotspots / x$n_total))
+  cat("-----------------------------------------------------------\n")
+  cat("Spatial Hotspot Pattern      : ", x$pattern, "\n", sep = "")
+  cat("Conclusion                   : ", x$decision, "\n", sep = "")
+  cat("-----------------------------------------------------------\n")
+  invisible(x)
+}
+
+#' Plot Method for spconform_cross_l Objects
+#'
+#' Visualizes the observed cross-L curve and Monte Carlo simulation envelope.
+#'
+#' @param x An object of class \code{"spconform_cross_l"}.
+#' @param ... Additional graphical arguments.
+#' @importFrom graphics plot lines polygon abline legend
+#' @importFrom grDevices adjustcolor
+#' @export
+plot.spconform_cross_l <- function(x, ...) {
+  if (length(x$r) == 0) {
+    graphics::plot(0, 0, type = "n", xlab = "Distance r", ylab = "L_12(r) - r",
+                   main = "Bivariate Cross-L: Perfect Coverage (No Failures)")
+    graphics::text(0, 0, "No miscoverage events to evaluate.", cex = 1.1)
+    return(invisible(x))
+  }
+
+  ylims <- range(c(x$l_obs, x$l_upper, x$l_lower, 0), na.rm = TRUE)
+  ylims <- c(ylims[1] - 0.1 * abs(ylims[1]), ylims[2] + 0.1 * abs(ylims[2]))
+
+  graphics::plot(x$r, x$l_obs, type = "n", ylim = ylims,
+                 xlab = "Spatial Distance Radius r",
+                 ylab = "Variance-Stabilized L_12(r) - r",
+                 main = "Conformal Cross-L Hotspot Audit (Miscoverage vs Width)", ...)
+
+  # Shaded simulation envelope under H0
+  graphics::polygon(c(x$r, rev(x$r)), c(x$l_upper, rev(x$l_lower)),
+                    col = grDevices::adjustcolor("#2B83BA", alpha.f = 0.25), border = NA)
+
+  # Envelope bounds and theoretical expectation
+  graphics::lines(x$r, x$l_upper, col = "#2B83BA", lty = 3)
+  graphics::lines(x$r, x$l_lower, col = "#2B83BA", lty = 3)
+  graphics::lines(x$r, x$l_median, col = "#2B83BA", lty = 2)
+  graphics::abline(h = 0, col = "black", lty = 2, lwd = 1.2)
+
+  # Observed curve
+  graphics::lines(x$r, x$l_obs, col = "#D7191C", lwd = 2.5)
+  graphics::points(x$r, x$l_obs, pch = 19, col = "#D7191C", cex = 0.8)
+
+  graphics::legend("topleft",
+                   legend = c("Observed Cross-L (Failures vs Hotspots)",
+                              "H0 Simulation Envelope (95% CI)",
+                              "Theoretical Zero (Random Marking)"),
+                   col = c("#D7191C", "#2B83BA", "black"),
+                   lwd = c(2.5, 2, 1.2), lty = c(1, 1, 2),
+                   bty = "n", cex = 0.85)
+  invisible(x)
+}
+
+#' Local Efficiency-Coverage Trade-off Surface for Spatial Conformal Prediction
+#'
+#' Computes and evaluates the local, spatially-varying trade-off between conditional
+#' coverage probability \eqn{\hat{c}(s)} and interval sharpness/efficiency \eqn{\hat{w}(s)}
+#' across continuous geographic space using Nadaraya-Watson kernel regression.
+#'
+#' Classifies spatial prediction regions into a four-quadrant diagnostic typology:
+#' \describe{
+#'   \item{Optimal ("Sweet Spot")}{High local coverage (\eqn{\ge 1 - \alpha}) with tight intervals (\eqn{\le \text{threshold}}).}
+#'   \item{Conservative}{High local coverage (\eqn{\ge 1 - \alpha}) achieved via inflated/wide intervals (\eqn{> \text{threshold}}).}
+#'   \item{Vulnerable}{Deficient local coverage (\eqn{< 1 - \alpha}) caused by overly optimistic narrow intervals (\eqn{\le \text{threshold}}).}
+#'   \item{Deficit}{Deficient local coverage (\eqn{< 1 - \alpha}) despite wide intervals (\eqn{> \text{threshold}}).}
+#' }
+#' In addition, computes the Efficiency-Coverage Disparity Index (ECDI) and the local
+#' rank trade-off correlation to diagnose whether interval widening is adaptively targeted.
+#'
+#' @param object An object of class \code{"spconform"}, \code{"spconform_classification"},
+#'   \code{"spconform_count"}, \code{"spconform_multivariate"}, or a numeric matrix of bounds.
+#' @param y_true Observed ground-truth responses (numeric, factor, or character vector).
+#' @param coords Optional numeric matrix of spatial coordinates (N x 2). If \code{NULL},
+#'   coordinates are extracted from \code{object$s0} or \code{object$coords}.
+#' @param alpha Nominal miscoverage level. Defaults to \code{object$alpha} if present, or 0.10.
+#' @param bandwidth Optional numeric spatial kernel smoothing bandwidth. If \code{NULL},
+#'   computed adaptively using the median \eqn{k}-nearest neighbor distance.
+#' @param grid_resolution Integer grid resolution for continuous 2D surface evaluation (default: 40).
+#'   Set to 0 or \code{NULL} to evaluate solely at observation locations.
+#' @param width_threshold Threshold for classifying narrow vs wide intervals. Options are
+#'   \code{"median"} (default), \code{"mean"}, or a user-specified numeric scalar.
+#' @param kernel Spatial kernel function: \code{"gaussian"} (default), \code{"epanechnikov"},
+#'   or \code{"exponential"}.
+#'
+#' @return An object of class \code{"spconform_ce_surface"} containing:
+#' \describe{
+#'   \item{local_coverage}{Numeric vector of leave-one-out kernel-smoothed coverage at observation locations.}
+#'   \item{local_width}{Numeric vector of leave-one-out kernel-smoothed width/size at observation locations.}
+#'   \item{zones}{Factor vector classifying each observation into one of the four quadrants.}
+#'   \item{zone_distribution}{Data frame detailing counts and percentages in each quadrant.}
+#'   \item{tradeoff_cor}{Spearman rank correlation between local width and local coverage.}
+#'   \item{cor_p_value}{P-value for the trade-off correlation test.}
+#'   \item{ecdi}{Efficiency-Coverage Disparity Index (mean width of miscovered vs covered points).}
+#'   \item{bandwidth}{Spatial kernel bandwidth \eqn{h} used.}
+#'   \item{nominal_coverage}{Target coverage \eqn{1 - \alpha}.}
+#'   \item{width_threshold}{Numerical threshold dividing narrow and wide intervals.}
+#'   \item{coords}{Observation coordinates matrix.}
+#'   \item{grid_surface}{List containing regular 2D evaluation grid coordinates and smoothed surface matrices.}
+#'   \item{efficiency_name}{Name of the efficiency metric used (e.g., Interval Width, Set Size).}
+#'   \item{diagnosis}{Scientific interpretation of the spatial efficiency-coverage profile.}
+#' }
+#' @export
+#'
+#' @examples
+#' set.seed(42)
+#' n <- 60
+#' coords <- matrix(runif(n * 2, 0, 10), n, 2)
+#' y <- sin(coords[, 1]) + rnorm(n, sd = 0.3)
+#' pfun <- function(st, yt, sn) rep(mean(yt), nrow(sn))
+#' fit <- scp_geostatistical(coords[1:40, ], y[1:40], coords[41:60, ], pfun, alpha = 0.1)
+#' ce <- conformal_ce_surface(fit, y_true = y[41:60])
+#' print(ce)
+#'
+#' @importFrom stats dist median cor cor.test
+#' @importFrom graphics plot points lines polygon abline legend image contour text
+#' @importFrom grDevices adjustcolor colorRampPalette
+conformal_ce_surface <- function(object, y_true, coords = NULL,
+                                 alpha = NULL,
+                                 bandwidth = NULL,
+                                 grid_resolution = 40,
+                                 width_threshold = c("median", "mean"),
+                                 kernel = c("gaussian", "epanechnikov", "exponential")) {
+  kernel <- match.arg(kernel)
+
+  # 1. Extract modality-specific coverage indicator and efficiency measure
+  if (inherits(object, "spconform_classification")) {
+    eff <- as.numeric(object$set_sizes)
+    eff_name <- "Prediction Set Size"
+    if (length(y_true) != length(eff)) {
+      stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+    }
+    covered <- as.numeric(sapply(seq_along(y_true), function(i) {
+      as.character(y_true[i]) %in% object$prediction_sets[[i]]
+    }))
+    if (is.null(coords)) coords <- object$s0
+    if (is.null(alpha)) alpha <- object$alpha
+  } else if (inherits(object, "spconform_count")) {
+    y_true <- as.numeric(y_true)
+    if (length(y_true) != length(object$pred)) {
+      stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+    }
+    eff <- as.numeric(object$upper - object$lower + 1)
+    eff_name <- "Count Span Width"
+    covered <- as.numeric((y_true >= object$lower) & (y_true <= object$upper))
+    if (is.null(coords)) coords <- object$s0
+    if (is.null(alpha)) alpha <- object$alpha
+  } else if (inherits(object, "spconform_multivariate")) {
+    y_true <- as.matrix(y_true)
+    if (nrow(y_true) != nrow(object$pred)) {
+      stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+    }
+    eff <- as.numeric(rowMeans(object$upper - object$lower))
+    eff_name <- "Mean Projected Width"
+    covered <- as.numeric(object$mahalanobis_dist <= object$cutoff)
+    if (is.null(coords)) coords <- object$s0
+    if (is.null(alpha)) alpha <- object$alpha
+  } else if (inherits(object, "spconform")) {
+    y_true <- as.numeric(y_true)
+    if (length(y_true) != length(object$pred)) {
+      stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+    }
+    eff <- as.numeric(object$upper - object$lower)
+    eff_name <- "Interval Width"
+    covered <- as.numeric((y_true >= object$lower) & (y_true <= object$upper))
+    if (is.null(coords)) {
+      if (!is.null(object$s0)) coords <- object$s0 else coords <- object$coords
+    }
+    if (is.null(alpha)) alpha <- object$alpha
+  } else if (is.matrix(object) && ncol(object) >= 2) {
+    y_true <- as.numeric(y_true)
+    if (length(y_true) != nrow(object)) {
+      stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+    }
+    eff <- as.numeric(object[, 2] - object[, 1])
+    eff_name <- "Interval Width"
+    covered <- as.numeric((y_true >= object[, 1]) & (y_true <= object[, 2]))
+    if (is.null(alpha)) alpha <- 0.10
+  } else {
+    stop("'object' must be an 'spconform' object or a 2-column matrix of [lower, upper] bounds.")
+  }
+
+  if (is.null(coords)) {
+    stop("Spatial coordinates 'coords' must be provided or present in 'object'.")
+  }
+  coords <- as.matrix(coords)
+  n <- length(covered)
+  if (nrow(coords) != n || length(eff) != n) {
+    stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+  }
+  if (n < 5) {
+    stop("Need at least 5 spatial locations to evaluate efficiency-coverage surface.")
+  }
+  if (is.null(alpha) || alpha <= 0 || alpha >= 1) {
+    alpha <- 0.10
+  }
+  nominal_cov <- 1 - alpha
+
+  # 2. Threshold for width
+  if (is.numeric(width_threshold)) {
+    w_thresh <- as.numeric(width_threshold)[1]
+  } else {
+    width_threshold <- match.arg(width_threshold, c("median", "mean"))
+    if (width_threshold == "median") {
+      w_thresh <- stats::median(eff, na.rm = TRUE)
+    } else {
+      w_thresh <- mean(eff, na.rm = TRUE)
+    }
+  }
+
+  # 3. Kernel Bandwidth
+  d_mat <- as.matrix(stats::dist(coords))
+  if (is.null(bandwidth) || bandwidth <= 0) {
+    k_nn <- max(2, min(12, round(sqrt(n))))
+    knn_dists <- apply(d_mat, 1, function(row) {
+      sort(row)[k_nn + 1]
+    })
+    bandwidth <- stats::median(knn_dists, na.rm = TRUE)
+    if (is.na(bandwidth) || bandwidth <= 1e-8) {
+      bandwidth <- max(d_mat) / 5
+    }
+  }
+
+  # Kernel function
+  kern_fun <- switch(kernel,
+    "gaussian"    = function(d, h) exp(-0.5 * (d / h)^2),
+    "epanechnikov"= function(d, h) pmax(0, 1 - (d / h)^2),
+    "exponential" = function(d, h) exp(-d / h)
+  )
+
+  # 4. Point-level Leave-One-Out (LOO) Nadaraya-Watson Estimates
+  local_cov   <- numeric(n)
+  local_width <- numeric(n)
+
+  for (i in seq_len(n)) {
+    d_i <- d_mat[i, -i]
+    w_i <- kern_fun(d_i, bandwidth)
+    w_sum <- sum(w_i)
+    if (w_sum > 1e-12) {
+      local_cov[i]   <- sum(w_i * covered[-i]) / w_sum
+      local_width[i] <- sum(w_i * eff[-i]) / w_sum
+    } else {
+      local_cov[i]   <- covered[i]
+      local_width[i] <- eff[i]
+    }
+  }
+
+  # 5. Zone Categorization
+  zone_levels <- c("Optimal", "Conservative", "Vulnerable", "Deficit")
+  zones_char <- character(n)
+  for (i in seq_len(n)) {
+    cov_ok <- (local_cov[i] >= nominal_cov)
+    wid_ok <- (local_width[i] <= w_thresh)
+
+    if (cov_ok && wid_ok) {
+      zones_char[i] <- "Optimal"
+    } else if (cov_ok && !wid_ok) {
+      zones_char[i] <- "Conservative"
+    } else if (!cov_ok && wid_ok) {
+      zones_char[i] <- "Vulnerable"
+    } else {
+      zones_char[i] <- "Deficit"
+    }
+  }
+  zones <- factor(zones_char, levels = zone_levels)
+
+  # Zone distribution table
+  zone_counts <- table(zones)
+  zone_dist <- data.frame(
+    Zone = zone_levels,
+    Count = as.integer(zone_counts),
+    Percentage = as.numeric(round(100 * zone_counts / n, 2)),
+    stringsAsFactors = FALSE
+  )
+
+  # 6. Diagnostic Trade-off Metrics
+  # Spearman correlation between local width and local coverage
+  if (stats::sd(local_width) > 1e-10 && stats::sd(local_cov) > 1e-10) {
+    ctest <- suppressWarnings(stats::cor.test(local_width, local_cov, method = "spearman"))
+    tradeoff_cor <- as.numeric(ctest$estimate)
+    cor_p_val    <- as.numeric(ctest$p.value)
+  } else {
+    tradeoff_cor <- 0
+    cor_p_val    <- 1.0
+  }
+
+  # Efficiency-Coverage Disparity Index (ECDI)
+  # Ratio of mean width among miscovered vs covered points
+  w_miss <- eff[covered == 0]
+  w_hit  <- eff[covered == 1]
+  if (length(w_miss) > 0 && length(w_hit) > 0 && mean(w_hit) > 1e-10) {
+    ecdi <- mean(w_miss) / mean(w_hit)
+  } else {
+    ecdi <- 1.0
+  }
+
+  # Scientific Diagnosis
+  vuln_pct <- zone_dist$Percentage[zone_dist$Zone == "Vulnerable"]
+  opt_pct  <- zone_dist$Percentage[zone_dist$Zone == "Optimal"]
+  def_pct  <- zone_dist$Percentage[zone_dist$Zone == "Deficit"]
+
+  if (vuln_pct > 25) {
+    diagnosis <- "High Spatial Vulnerability: Overly optimistic intervals induce local miscoverage."
+  } else if (def_pct > 20) {
+    diagnosis <- "Spatial Model Deficit: Wide intervals fail to guarantee local nominal coverage."
+  } else if (opt_pct >= 50 && tradeoff_cor >= 0.15) {
+    diagnosis <- "Healthy Adaptive Calibration: High spatial efficiency with well-targeted uncertainty."
+  } else if (opt_pct >= 50) {
+    diagnosis <- "Valid Uniform Coverage: High spatial efficiency across test domain."
+  } else {
+    diagnosis <- "Conservative Spatial Coverage: Valid coverage sustained via conservative width inflation."
+  }
+
+  # 7. Regular 2D Grid Surface (if requested)
+  grid_surface <- NULL
+  if (!is.null(grid_resolution) && grid_resolution >= 5) {
+    gx <- seq(min(coords[, 1]), max(coords[, 1]), length.out = grid_resolution)
+    gy <- seq(min(coords[, 2]), max(coords[, 2]), length.out = grid_resolution)
+    g_pts <- as.matrix(expand.grid(x = gx, y = gy))
+
+    # Pairwise distances from grid points to observations
+    g_diff_x <- outer(g_pts[, 1], coords[, 1], "-")
+    g_diff_y <- outer(g_pts[, 2], coords[, 2], "-")
+    g_dists  <- sqrt(g_diff_x^2 + g_diff_y^2)
+
+    g_weights <- kern_fun(g_dists, bandwidth)
+    g_wsum    <- rowSums(g_weights)
+    g_wsum[g_wsum < 1e-12] <- 1e-12
+
+    g_cov_vec   <- as.vector((g_weights %*% covered) / g_wsum)
+    g_width_vec <- as.vector((g_weights %*% eff) / g_wsum)
+
+    # Grid zones
+    g_cov_ok <- (g_cov_vec >= nominal_cov)
+    g_wid_ok <- (g_width_vec <= w_thresh)
+    g_zone_vec <- ifelse(g_cov_ok & g_wid_ok, "Optimal",
+                  ifelse(g_cov_ok & !g_wid_ok, "Conservative",
+                  ifelse(!g_cov_ok & g_wid_ok, "Vulnerable", "Deficit")))
+
+    grid_surface <- list(
+      x = gx,
+      y = gy,
+      coverage_matrix = matrix(g_cov_vec, nrow = grid_resolution, ncol = grid_resolution),
+      width_matrix    = matrix(g_width_vec, nrow = grid_resolution, ncol = grid_resolution),
+      zone_matrix     = matrix(match(g_zone_vec, zone_levels), nrow = grid_resolution, ncol = grid_resolution)
+    )
+  }
+
+  structure(
+    list(
+      local_coverage    = local_cov,
+      local_width       = local_width,
+      raw_covered       = covered,
+      raw_efficiency    = eff,
+      zones             = zones,
+      zone_distribution = zone_dist,
+      tradeoff_cor      = tradeoff_cor,
+      cor_p_value       = cor_p_val,
+      ecdi              = ecdi,
+      bandwidth         = bandwidth,
+      nominal_coverage  = nominal_cov,
+      width_threshold   = w_thresh,
+      coords            = coords,
+      grid_surface      = grid_surface,
+      efficiency_name   = eff_name,
+      diagnosis         = diagnosis,
+      n                 = n
+    ),
+    class = "spconform_ce_surface"
+  )
+}
+
+#' @rdname conformal_ce_surface
+#' @export
+spatial_ce_surface <- conformal_ce_surface
+
+#' Print Method for spconform_ce_surface Objects
+#'
+#' Displays a structured diagnostic summary of the spatial efficiency-coverage surface.
+#'
+#' @param x An object of class \code{"spconform_ce_surface"}.
+#' @param ... Additional arguments passed to print methods.
+#' @export
+print.spconform_ce_surface <- function(x, ...) {
+  cat("-----------------------------------------------------------\n")
+  cat("  spconform: Local Efficiency-Coverage Trade-off Surface\n")
+  cat("-----------------------------------------------------------\n")
+  cat(sprintf("Locations Evaluated (n)      : %d\n", x$n))
+  cat(sprintf("Target Nominal Coverage      : %.1f%%\n", 100 * x$nominal_coverage))
+  cat(sprintf("Observed Overall Coverage    : %.1f%%\n", 100 * mean(x$raw_covered)))
+  cat(sprintf("Spatial Kernel Bandwidth (h) : %.4f\n", x$bandwidth))
+  cat(sprintf("Efficiency Metric            : %s (Threshold = %.3f)\n", x$efficiency_name, x$width_threshold))
+  cat("-----------------------------------------------------------\n")
+  cat("Spatial Efficiency-Coverage Typology Breakdown:\n")
+  for (i in seq_len(nrow(x$zone_distribution))) {
+    row <- x$zone_distribution[i, ]
+    cat(sprintf("  - %-12s : %4d (%5.1f%%)\n", row$Zone, row$Count, row$Percentage))
+  }
+  cat("-----------------------------------------------------------\n")
+  cat(sprintf("Trade-off Correlation (rho)  : %+.3f (p = %.4f)\n", x$tradeoff_cor, x$cor_p_value))
+  cat(sprintf("Disparity Index (ECDI)       : %.3f\n", x$ecdi))
+  cat("Conclusion                   : ", x$diagnosis, "\n", sep = "")
+  cat("-----------------------------------------------------------\n")
+  invisible(x)
+}
+
+#' Plot Method for spconform_ce_surface Objects
+#'
+#' Generates 2D phase portrait and spatial distribution maps of the local
+#' efficiency-coverage surface.
+#'
+#' @param x An object of class \code{"spconform_ce_surface"}.
+#' @param type Character specifying the visualization:
+#'   \code{"phase"} (default, 2D phase portrait of width vs coverage),
+#'   \code{"map"} (spatial scatter of observations colored by zone),
+#'   \code{"coverage"} (spatial surface map of smoothed coverage), or
+#'   \code{"width"} (spatial surface map of smoothed width).
+#' @param ... Additional graphical arguments.
+#' @importFrom graphics plot points lines polygon abline legend image contour text
+#' @importFrom grDevices adjustcolor colorRampPalette
+#' @export
+plot.spconform_ce_surface <- function(x, type = c("phase", "map", "coverage", "width"), ...) {
+  type <- match.arg(type)
+
+  # Color scheme for the 4 zones
+  zone_cols <- c(
+    "Optimal"      = "#2CA02C", # Green
+    "Conservative" = "#1F77B4", # Blue
+    "Vulnerable"   = "#FF7F0E", # Orange
+    "Deficit"      = "#D62728"  # Red
+  )
+
+  if (type == "phase") {
+    # 2D Phase Portrait: Local Width vs Local Coverage
+    graphics::plot(x$local_width, x$local_coverage,
+                   col = zone_cols[as.character(x$zones)],
+                   pch = 19, cex = 1.1,
+                   xlab = paste("Local", x$efficiency_name),
+                   ylab = "Local Kernel-Smoothed Coverage",
+                   main = "Conformal Efficiency-Coverage (C-E) Phase Plane",
+                   ylim = c(0, 1.05), ...)
+
+    # Reference crosshairs
+    graphics::abline(h = x$nominal_coverage, col = "grey30", lty = 2, lwd = 1.5)
+    graphics::abline(v = x$width_threshold,  col = "grey30", lty = 2, lwd = 1.5)
+
+    # Quadrant annotations
+    graphics::legend("bottomright",
+                     legend = c(
+                       sprintf("Optimal (%s)", x$zone_distribution$Percentage[1]),
+                       sprintf("Conservative (%s)", x$zone_distribution$Percentage[2]),
+                       sprintf("Vulnerable (%s)", x$zone_distribution$Percentage[3]),
+                       sprintf("Deficit (%s)", x$zone_distribution$Percentage[4])
+                     ),
+                     col = zone_cols, pch = 19, bty = "n", cex = 0.85)
+
+  } else if (type == "map") {
+    # Spatial Map of Quadrant Classifications
+    graphics::plot(x$coords[, 1], x$coords[, 2],
+                   col = zone_cols[as.character(x$zones)],
+                   pch = 19, cex = 1.2,
+                   xlab = "Coordinate X", ylab = "Coordinate Y",
+                   main = "Spatial Efficiency-Coverage Typology Map", ...)
+
+    graphics::legend("topleft",
+                     legend = names(zone_cols),
+                     col = zone_cols, pch = 19, bty = "n", cex = 0.85)
+
+  } else if (type == "coverage") {
+    if (!is.null(x$grid_surface)) {
+      cov_pal <- grDevices::colorRampPalette(c("#D7191C", "#FDAE61", "#FFFFBF", "#ABD9E9", "#2C7BB6"))(50)
+      graphics::image(x$grid_surface$x, x$grid_surface$y, x$grid_surface$coverage_matrix,
+                      col = cov_pal, xlab = "Coordinate X", ylab = "Coordinate Y",
+                      main = "Local Conditional Coverage Surface", zlim = c(0, 1), ...)
+      graphics::contour(x$grid_surface$x, x$grid_surface$y, x$grid_surface$coverage_matrix,
+                        add = TRUE, col = "grey20", labcex = 0.8)
+      graphics::points(x$coords[, 1], x$coords[, 2], pch = 21, bg = ifelse(x$raw_covered == 1, "white", "black"), cex = 0.8)
+    } else {
+      cov_col <- grDevices::colorRampPalette(c("#D7191C", "#2C7BB6"))(20)
+      col_idx <- pmax(1, pmin(20, round(x$local_coverage * 19) + 1))
+      graphics::plot(x$coords[, 1], x$coords[, 2], col = cov_col[col_idx], pch = 19, cex = 1.2,
+                     xlab = "Coordinate X", ylab = "Coordinate Y",
+                     main = "Local Smoothed Coverage at Observations", ...)
+    }
+
+  } else if (type == "width") {
+    if (!is.null(x$grid_surface)) {
+      wid_pal <- grDevices::colorRampPalette(c("#2C7BB6", "#ABD9E9", "#FFFFBF", "#FDAE61", "#D7191C"))(50)
+      graphics::image(x$grid_surface$x, x$grid_surface$y, x$grid_surface$width_matrix,
+                      col = wid_pal, xlab = "Coordinate X", ylab = "Coordinate Y",
+                      main = paste("Local", x$efficiency_name, "Surface"), ...)
+      graphics::contour(x$grid_surface$x, x$grid_surface$y, x$grid_surface$width_matrix,
+                        add = TRUE, col = "grey20", labcex = 0.8)
+      graphics::points(x$coords[, 1], x$coords[, 2], pch = 19, col = "grey30", cex = 0.7)
+    } else {
+      wid_norm <- (x$local_width - min(x$local_width)) / (max(x$local_width) - min(x$local_width) + 1e-8)
+      wid_col  <- grDevices::colorRampPalette(c("#2C7BB6", "#D7191C"))(20)
+      col_idx  <- pmax(1, pmin(20, round(wid_norm * 19) + 1))
+      graphics::plot(x$coords[, 1], x$coords[, 2], col = wid_col[col_idx], pch = 19, cex = 1.2,
+                     xlab = "Coordinate X", ylab = "Coordinate Y",
+                     main = paste("Local", x$efficiency_name, "at Observations"), ...)
+    }
+  }
+
+  invisible(x)
+}
+
