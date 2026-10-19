@@ -53,6 +53,9 @@ reference:
     contents:
       - diagnose
       - coverage_report
+      - spatial_moran
+      - boundary_diagnostics
+      - strata_diagnostics
 
   - title: "Helper functions"
     desc: "Kernel weights and graph-distance utilities"
