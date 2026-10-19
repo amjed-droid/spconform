@@ -49,3 +49,4 @@
 ^texput\.log$
 ^page[0-9].*$
 ^response_page.*$
+^rjournal.*$
