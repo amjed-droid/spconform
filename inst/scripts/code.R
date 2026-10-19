@@ -258,13 +258,13 @@ cat("------------------------------------------------------------\n\n")
 saveRDS(diag_meuse, file = file.path(OUTPUT_DIR, "spconform_diagnostics.rds"))
 cat("Spatial diagnostics artifact saved to spconform_diagnostics.rds\n")
 
-#' # Part 3: Controlled Simulation Study (Manuscript Table 1)
+#' # Part 3: Controlled Simulation Study (Manuscript Table 4)
 #'
 #' We compare `scp_geostatistical()` against classical Gaussian-process (simple kriging)
 #' prediction intervals under: (A) correctly specified covariance (phi = 0.15), and
 #' (B) misspecified covariance (phi' = 0.45), across 100 Monte Carlo replications.
 
-sim_study_table1 <- function(n_reps = 100, seed = 123) {
+sim_study_table4 <- function(n_reps = 100, seed = 123) {
   set.seed(seed)
   n <- 200
   sigma2 <- 1
@@ -335,11 +335,11 @@ sim_study_table1 <- function(n_reps = 100, seed = 123) {
   tab4
 }
 
-table1_results <- sim_study_table1(n_reps = 100, seed = 123)
+table4_results <- sim_study_table4(n_reps = 100, seed = 123)
 cat("\n==================================================================================\n")
-cat("  REPLICATION: Manuscript Table 1 (Simulation Study: Kriging vs spconform)\n")
+cat("  REPLICATION: Manuscript Table 4 (Simulation Study: Kriging vs spconform)\n")
 cat("==================================================================================\n")
-print(table1_results)
+print(table4_results)
 cat("==================================================================================\n\n")
 
 #' # Part 4: Areal Lattice Conformal Prediction
@@ -413,11 +413,11 @@ rep_areal <- coverage_report(out_areal, agg$y)
 cat(sprintf("Areal empirical coverage: %.3f\n", rep_areal$coverage))
 cat(sprintf("Areal mean interval width: %.3f\n", rep_areal$mean_width))
 
-#' ## Table 3: Empirical Coverage and Interval Width on Meuse Dataset
+#' ## Table 6: Empirical Coverage and Interval Width on Meuse Dataset
 cat("\n==================================================================================\n")
-cat("  REPLICATION: Manuscript Table 3 (Empirical Coverage and Interval Width: Meuse)\n")
+cat("  REPLICATION: Manuscript Table 6 (Empirical Coverage and Interval Width: Meuse)\n")
 cat("==================================================================================\n")
-table3_results <- data.frame(
+table6_results <- data.frame(
   Dataset = c("Meuse (point-ref.)", "Meuse (grid)"),
   Type = c("Geostatistical", "Areal"),
   n = c(n, n_cells),
@@ -432,7 +432,7 @@ table3_results <- data.frame(
   ),
   check.names = FALSE
 )
-print(table3_results)
+print(table6_results)
 cat("==================================================================================\n\n")
 #'
 #' Cross-validation across 50 random splits on the areal lattice, evaluating training 
@@ -609,11 +609,11 @@ sens_summary <- data.frame(
                        c(mean(res_lm$width), mean(res_gam$width), mean(res_rf$width)),
                        c(sd(res_lm$width), sd(res_gam$width), sd(res_rf$width)))
 )
-table2_results <- sens_summary
+table5_results <- sens_summary
 cat("\n==================================================================================\n")
-cat("  REPLICATION: Manuscript Table 2 (Sensitivity Across Base Predictors)\n")
+cat("  REPLICATION: Manuscript Table 5 (Sensitivity Across Base Predictors)\n")
 cat("==================================================================================\n")
-print(table2_results)
+print(table5_results)
 cat("==================================================================================\n\n")
 
 #' # Part 6B: Software Extensibility with Custom Modeling Workflows
@@ -715,11 +715,11 @@ summary_tab <- data.frame(
                  round(rep_areal$mean_width, 3),
                  round(mean(wids_st), 3))
 )
-table4_results <- summary_tab
+table7_results <- summary_tab
 cat("\n==================================================================================\n")
-cat("  REPLICATION: Manuscript Table 4 (Summary Across All Benchmark Datasets)\n")
+cat("  REPLICATION: Manuscript Table 7 (Summary Across All Benchmark Datasets)\n")
 cat("==================================================================================\n")
-print(table4_results)
+print(table7_results)
 cat("==================================================================================\n\n")
 
 cat("\nOutputs successfully produced in destination folder:\n")
