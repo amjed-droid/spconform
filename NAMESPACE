@@ -5,6 +5,7 @@ S3method(as.data.frame,spconform_diagnose)
 S3method(plot,spconform)
 S3method(plot,spconform_anisotropy)
 S3method(plot,spconform_boundary)
+S3method(plot,spconform_ce_surface)
 S3method(plot,spconform_classification)
 S3method(plot,spconform_count)
 S3method(plot,spconform_cross_l)
@@ -17,6 +18,7 @@ S3method(predict,spconform)
 S3method(print,spconform)
 S3method(print,spconform_anisotropy)
 S3method(print,spconform_boundary)
+S3method(print,spconform_ce_surface)
 S3method(print,spconform_classification)
 S3method(print,spconform_count)
 S3method(print,spconform_coverage_report)
@@ -36,6 +38,7 @@ S3method(summary,spconform_classification)
 S3method(summary,spconform_count)
 export(areal_neighbor_weights)
 export(boundary_diagnostics)
+export(conformal_ce_surface)
 export(coverage_report)
 export(diagnose)
 export(estimate_anisotropic_transform)
@@ -46,6 +49,7 @@ export(scp_count)
 export(scp_geostatistical)
 export(scp_multivariate)
 export(spatial_anisotropy)
+export(spatial_ce_surface)
 export(spatial_conditional_coverage)
 export(spatial_cross_l)
 export(spatial_geary)
@@ -56,12 +60,15 @@ export(spatial_moran)
 export(strata_diagnostics)
 importFrom(grDevices,
   adjustcolor,
-  chull
+  chull,
+  colorRampPalette
 )
 importFrom(graphics,
   abline,
   barplot,
+  contour,
   hist,
+  image,
   layout,
   legend,
   lines,
@@ -74,6 +81,7 @@ importFrom(graphics,
 )
 importFrom(stats,
   cor,
+  cor.test,
   cov,
   dist,
   median,

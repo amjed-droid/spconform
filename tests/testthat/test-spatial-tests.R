@@ -227,3 +227,84 @@ test_that("spatial_cross_l evaluates bivariate hotspot attraction and repulsion"
   expect_error(spatial_cross_l(bounds_perfect[1:5, ], coords = coords[1:5, ], y_true = y_true[1:5]),
                "Need at least 10 spatial locations")
 })
+
+test_that("conformal_ce_surface computes local efficiency-coverage trade-off correctly", {
+  set.seed(42)
+  n <- 50
+  coords <- matrix(runif(n * 2, 0, 10), n, 2)
+  y_true <- sin(coords[, 1]) + rnorm(n, sd = 0.3)
+  pfun <- function(st, yt, sn) rep(mean(yt), nrow(sn))
+
+  # 1. Geostatistical continuous evaluation
+  fit <- scp_geostatistical(coords[1:35, ], y_true[1:35], coords[36:50, ], pfun, alpha = 0.1)
+  ce <- conformal_ce_surface(fit, y_true = y_true[36:50], grid_resolution = 20)
+
+  expect_s3_class(ce, "spconform_ce_surface")
+  expect_equal(ce$n, 15)
+  expect_equal(length(ce$local_coverage), 15)
+  expect_equal(length(ce$local_width), 15)
+  expect_equal(levels(ce$zones), c("Optimal", "Conservative", "Vulnerable", "Deficit"))
+  expect_equal(sum(ce$zone_distribution$Percentage), 100, tolerance = 0.5)
+  expect_true(is.numeric(ce$tradeoff_cor))
+  expect_true(is.numeric(ce$ecdi))
+  expect_true(!is.null(ce$grid_surface))
+  expect_equal(dim(ce$grid_surface$coverage_matrix), c(20, 20))
+
+  # Alias check
+  ce_alias <- spatial_ce_surface(fit, y_true = y_true[36:50], grid_resolution = 0)
+  expect_s3_class(ce_alias, "spconform_ce_surface")
+  expect_null(ce_alias$grid_surface)
+
+  # 2. Print and plot methods execute cleanly across all types
+  expect_output(print(ce), "spconform: Local Efficiency-Coverage Trade-off Surface")
+
+  temp_pdf <- tempfile(fileext = ".pdf")
+  pdf(temp_pdf)
+  expect_silent(plot(ce, type = "phase"))
+  expect_silent(plot(ce, type = "map"))
+  expect_silent(plot(ce, type = "coverage"))
+  expect_silent(plot(ce, type = "width"))
+  expect_silent(plot(ce_alias, type = "coverage"))
+  expect_silent(plot(ce_alias, type = "width"))
+  dev.off()
+  unlink(temp_pdf)
+
+  # 3. Classification modality
+  fit_cl <- list(
+    prediction_sets = list(c("A"), c("A", "B"), c("B"), c("A"), c("B")),
+    set_sizes = c(1, 2, 1, 1, 1),
+    alpha = 0.1,
+    s0 = coords[1:5, ]
+  )
+  class(fit_cl) <- "spconform_classification"
+  ce_cl <- conformal_ce_surface(fit_cl, y_true = c("A", "A", "B", "B", "A"), grid_resolution = 10)
+  expect_s3_class(ce_cl, "spconform_ce_surface")
+  expect_equal(ce_cl$efficiency_name, "Prediction Set Size")
+
+  # 4. Count modality
+  fit_cnt <- list(
+    pred = rep(5, 5),
+    lower = c(2, 3, 1, 4, 2),
+    upper = c(8, 7, 6, 9, 7),
+    alpha = 0.1,
+    s0 = coords[1:5, ]
+  )
+  class(fit_cnt) <- "spconform_count"
+  ce_cnt <- conformal_ce_surface(fit_cnt, y_true = c(4, 5, 2, 12, 6), grid_resolution = 10)
+  expect_s3_class(ce_cnt, "spconform_ce_surface")
+  expect_equal(ce_cnt$efficiency_name, "Count Span Width")
+
+  # 5. Raw matrix of bounds
+  mat_bounds <- cbind(lower = c(-1, -2, -1, -3, -2), upper = c(1, 2, 1, 3, 2))
+  ce_mat <- conformal_ce_surface(mat_bounds, y_true = c(0, 0, 0, 5, 0), coords = coords[1:5, ])
+  expect_s3_class(ce_mat, "spconform_ce_surface")
+
+  # 6. Error handling
+  expect_error(conformal_ce_surface(mat_bounds[1:3, ], y_true = c(0, 0, 0), coords = coords[1:3, ]),
+               "Need at least 5 spatial locations")
+  expect_error(conformal_ce_surface(mat_bounds, y_true = c(0, 0), coords = coords[1:5, ]),
+               "Dimensions of coords, y_true, and prediction intervals/sets must match")
+  expect_error(conformal_ce_surface(list(), y_true = c(0, 0)),
+               "must be an 'spconform' object")
+})
+

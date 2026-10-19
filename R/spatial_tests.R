@@ -1398,3 +1398,457 @@ plot.spconform_cross_l <- function(x, ...) {
                    bty = "n", cex = 0.85)
   invisible(x)
 }
+
+#' Local Efficiency-Coverage Trade-off Surface for Spatial Conformal Prediction
+#'
+#' Computes and evaluates the local, spatially-varying trade-off between conditional
+#' coverage probability \eqn{\hat{c}(s)} and interval sharpness/efficiency \eqn{\hat{w}(s)}
+#' across continuous geographic space using Nadaraya-Watson kernel regression.
+#'
+#' Classifies spatial prediction regions into a four-quadrant diagnostic typology:
+#' \describe{
+#'   \item{Optimal ("Sweet Spot")}{High local coverage (\eqn{\ge 1 - \alpha}) with tight intervals (\eqn{\le \text{threshold}}).}
+#'   \item{Conservative}{High local coverage (\eqn{\ge 1 - \alpha}) achieved via inflated/wide intervals (\eqn{> \text{threshold}}).}
+#'   \item{Vulnerable}{Deficient local coverage (\eqn{< 1 - \alpha}) caused by overly optimistic narrow intervals (\eqn{\le \text{threshold}}).}
+#'   \item{Deficit}{Deficient local coverage (\eqn{< 1 - \alpha}) despite wide intervals (\eqn{> \text{threshold}}).}
+#' }
+#' In addition, computes the Efficiency-Coverage Disparity Index (ECDI) and the local
+#' rank trade-off correlation to diagnose whether interval widening is adaptively targeted.
+#'
+#' @param object An object of class \code{"spconform"}, \code{"spconform_classification"},
+#'   \code{"spconform_count"}, \code{"spconform_multivariate"}, or a numeric matrix of bounds.
+#' @param y_true Observed ground-truth responses (numeric, factor, or character vector).
+#' @param coords Optional numeric matrix of spatial coordinates (N x 2). If \code{NULL},
+#'   coordinates are extracted from \code{object$s0} or \code{object$coords}.
+#' @param alpha Nominal miscoverage level. Defaults to \code{object$alpha} if present, or 0.10.
+#' @param bandwidth Optional numeric spatial kernel smoothing bandwidth. If \code{NULL},
+#'   computed adaptively using the median \eqn{k}-nearest neighbor distance.
+#' @param grid_resolution Integer grid resolution for continuous 2D surface evaluation (default: 40).
+#'   Set to 0 or \code{NULL} to evaluate solely at observation locations.
+#' @param width_threshold Threshold for classifying narrow vs wide intervals. Options are
+#'   \code{"median"} (default), \code{"mean"}, or a user-specified numeric scalar.
+#' @param kernel Spatial kernel function: \code{"gaussian"} (default), \code{"epanechnikov"},
+#'   or \code{"exponential"}.
+#'
+#' @return An object of class \code{"spconform_ce_surface"} containing:
+#' \describe{
+#'   \item{local_coverage}{Numeric vector of leave-one-out kernel-smoothed coverage at observation locations.}
+#'   \item{local_width}{Numeric vector of leave-one-out kernel-smoothed width/size at observation locations.}
+#'   \item{zones}{Factor vector classifying each observation into one of the four quadrants.}
+#'   \item{zone_distribution}{Data frame detailing counts and percentages in each quadrant.}
+#'   \item{tradeoff_cor}{Spearman rank correlation between local width and local coverage.}
+#'   \item{cor_p_value}{P-value for the trade-off correlation test.}
+#'   \item{ecdi}{Efficiency-Coverage Disparity Index (mean width of miscovered vs covered points).}
+#'   \item{bandwidth}{Spatial kernel bandwidth \eqn{h} used.}
+#'   \item{nominal_coverage}{Target coverage \eqn{1 - \alpha}.}
+#'   \item{width_threshold}{Numerical threshold dividing narrow and wide intervals.}
+#'   \item{coords}{Observation coordinates matrix.}
+#'   \item{grid_surface}{List containing regular 2D evaluation grid coordinates and smoothed surface matrices.}
+#'   \item{efficiency_name}{Name of the efficiency metric used (e.g., Interval Width, Set Size).}
+#'   \item{diagnosis}{Scientific interpretation of the spatial efficiency-coverage profile.}
+#' }
+#' @export
+#'
+#' @examples
+#' set.seed(42)
+#' n <- 60
+#' coords <- matrix(runif(n * 2, 0, 10), n, 2)
+#' y <- sin(coords[, 1]) + rnorm(n, sd = 0.3)
+#' pfun <- function(st, yt, sn) rep(mean(yt), nrow(sn))
+#' fit <- scp_geostatistical(coords[1:40, ], y[1:40], coords[41:60, ], pfun, alpha = 0.1)
+#' ce <- conformal_ce_surface(fit, y_true = y[41:60])
+#' print(ce)
+#'
+#' @importFrom stats dist median cor cor.test
+#' @importFrom graphics plot points lines polygon abline legend image contour text
+#' @importFrom grDevices adjustcolor colorRampPalette
+conformal_ce_surface <- function(object, y_true, coords = NULL,
+                                 alpha = NULL,
+                                 bandwidth = NULL,
+                                 grid_resolution = 40,
+                                 width_threshold = c("median", "mean"),
+                                 kernel = c("gaussian", "epanechnikov", "exponential")) {
+  kernel <- match.arg(kernel)
+
+  # 1. Extract modality-specific coverage indicator and efficiency measure
+  if (inherits(object, "spconform_classification")) {
+    eff <- as.numeric(object$set_sizes)
+    eff_name <- "Prediction Set Size"
+    if (length(y_true) != length(eff)) {
+      stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+    }
+    covered <- as.numeric(sapply(seq_along(y_true), function(i) {
+      as.character(y_true[i]) %in% object$prediction_sets[[i]]
+    }))
+    if (is.null(coords)) coords <- object$s0
+    if (is.null(alpha)) alpha <- object$alpha
+  } else if (inherits(object, "spconform_count")) {
+    y_true <- as.numeric(y_true)
+    if (length(y_true) != length(object$pred)) {
+      stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+    }
+    eff <- as.numeric(object$upper - object$lower + 1)
+    eff_name <- "Count Span Width"
+    covered <- as.numeric((y_true >= object$lower) & (y_true <= object$upper))
+    if (is.null(coords)) coords <- object$s0
+    if (is.null(alpha)) alpha <- object$alpha
+  } else if (inherits(object, "spconform_multivariate")) {
+    y_true <- as.matrix(y_true)
+    if (nrow(y_true) != nrow(object$pred)) {
+      stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+    }
+    eff <- as.numeric(rowMeans(object$upper - object$lower))
+    eff_name <- "Mean Projected Width"
+    covered <- as.numeric(object$mahalanobis_dist <= object$cutoff)
+    if (is.null(coords)) coords <- object$s0
+    if (is.null(alpha)) alpha <- object$alpha
+  } else if (inherits(object, "spconform")) {
+    y_true <- as.numeric(y_true)
+    if (length(y_true) != length(object$pred)) {
+      stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+    }
+    eff <- as.numeric(object$upper - object$lower)
+    eff_name <- "Interval Width"
+    covered <- as.numeric((y_true >= object$lower) & (y_true <= object$upper))
+    if (is.null(coords)) {
+      if (!is.null(object$s0)) coords <- object$s0 else coords <- object$coords
+    }
+    if (is.null(alpha)) alpha <- object$alpha
+  } else if (is.matrix(object) && ncol(object) >= 2) {
+    y_true <- as.numeric(y_true)
+    if (length(y_true) != nrow(object)) {
+      stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+    }
+    eff <- as.numeric(object[, 2] - object[, 1])
+    eff_name <- "Interval Width"
+    covered <- as.numeric((y_true >= object[, 1]) & (y_true <= object[, 2]))
+    if (is.null(alpha)) alpha <- 0.10
+  } else {
+    stop("'object' must be an 'spconform' object or a 2-column matrix of [lower, upper] bounds.")
+  }
+
+  if (is.null(coords)) {
+    stop("Spatial coordinates 'coords' must be provided or present in 'object'.")
+  }
+  coords <- as.matrix(coords)
+  n <- length(covered)
+  if (nrow(coords) != n || length(eff) != n) {
+    stop("Dimensions of coords, y_true, and prediction intervals/sets must match.")
+  }
+  if (n < 5) {
+    stop("Need at least 5 spatial locations to evaluate efficiency-coverage surface.")
+  }
+  if (is.null(alpha) || alpha <= 0 || alpha >= 1) {
+    alpha <- 0.10
+  }
+  nominal_cov <- 1 - alpha
+
+  # 2. Threshold for width
+  if (is.numeric(width_threshold)) {
+    w_thresh <- as.numeric(width_threshold)[1]
+  } else {
+    width_threshold <- match.arg(width_threshold, c("median", "mean"))
+    if (width_threshold == "median") {
+      w_thresh <- stats::median(eff, na.rm = TRUE)
+    } else {
+      w_thresh <- mean(eff, na.rm = TRUE)
+    }
+  }
+
+  # 3. Kernel Bandwidth
+  d_mat <- as.matrix(stats::dist(coords))
+  if (is.null(bandwidth) || bandwidth <= 0) {
+    k_nn <- max(2, min(12, round(sqrt(n))))
+    knn_dists <- apply(d_mat, 1, function(row) {
+      sort(row)[k_nn + 1]
+    })
+    bandwidth <- stats::median(knn_dists, na.rm = TRUE)
+    if (is.na(bandwidth) || bandwidth <= 1e-8) {
+      bandwidth <- max(d_mat) / 5
+    }
+  }
+
+  # Kernel function
+  kern_fun <- switch(kernel,
+    "gaussian"    = function(d, h) exp(-0.5 * (d / h)^2),
+    "epanechnikov"= function(d, h) pmax(0, 1 - (d / h)^2),
+    "exponential" = function(d, h) exp(-d / h)
+  )
+
+  # 4. Point-level Leave-One-Out (LOO) Nadaraya-Watson Estimates
+  local_cov   <- numeric(n)
+  local_width <- numeric(n)
+
+  for (i in seq_len(n)) {
+    d_i <- d_mat[i, -i]
+    w_i <- kern_fun(d_i, bandwidth)
+    w_sum <- sum(w_i)
+    if (w_sum > 1e-12) {
+      local_cov[i]   <- sum(w_i * covered[-i]) / w_sum
+      local_width[i] <- sum(w_i * eff[-i]) / w_sum
+    } else {
+      local_cov[i]   <- covered[i]
+      local_width[i] <- eff[i]
+    }
+  }
+
+  # 5. Zone Categorization
+  zone_levels <- c("Optimal", "Conservative", "Vulnerable", "Deficit")
+  zones_char <- character(n)
+  for (i in seq_len(n)) {
+    cov_ok <- (local_cov[i] >= nominal_cov)
+    wid_ok <- (local_width[i] <= w_thresh)
+
+    if (cov_ok && wid_ok) {
+      zones_char[i] <- "Optimal"
+    } else if (cov_ok && !wid_ok) {
+      zones_char[i] <- "Conservative"
+    } else if (!cov_ok && wid_ok) {
+      zones_char[i] <- "Vulnerable"
+    } else {
+      zones_char[i] <- "Deficit"
+    }
+  }
+  zones <- factor(zones_char, levels = zone_levels)
+
+  # Zone distribution table
+  zone_counts <- table(zones)
+  zone_dist <- data.frame(
+    Zone = zone_levels,
+    Count = as.integer(zone_counts),
+    Percentage = as.numeric(round(100 * zone_counts / n, 2)),
+    stringsAsFactors = FALSE
+  )
+
+  # 6. Diagnostic Trade-off Metrics
+  # Spearman correlation between local width and local coverage
+  if (stats::sd(local_width) > 1e-10 && stats::sd(local_cov) > 1e-10) {
+    ctest <- suppressWarnings(stats::cor.test(local_width, local_cov, method = "spearman"))
+    tradeoff_cor <- as.numeric(ctest$estimate)
+    cor_p_val    <- as.numeric(ctest$p.value)
+  } else {
+    tradeoff_cor <- 0
+    cor_p_val    <- 1.0
+  }
+
+  # Efficiency-Coverage Disparity Index (ECDI)
+  # Ratio of mean width among miscovered vs covered points
+  w_miss <- eff[covered == 0]
+  w_hit  <- eff[covered == 1]
+  if (length(w_miss) > 0 && length(w_hit) > 0 && mean(w_hit) > 1e-10) {
+    ecdi <- mean(w_miss) / mean(w_hit)
+  } else {
+    ecdi <- 1.0
+  }
+
+  # Scientific Diagnosis
+  vuln_pct <- zone_dist$Percentage[zone_dist$Zone == "Vulnerable"]
+  opt_pct  <- zone_dist$Percentage[zone_dist$Zone == "Optimal"]
+  def_pct  <- zone_dist$Percentage[zone_dist$Zone == "Deficit"]
+
+  if (vuln_pct > 25) {
+    diagnosis <- "High Spatial Vulnerability: Overly optimistic intervals induce local miscoverage."
+  } else if (def_pct > 20) {
+    diagnosis <- "Spatial Model Deficit: Wide intervals fail to guarantee local nominal coverage."
+  } else if (opt_pct >= 50 && tradeoff_cor >= 0.15) {
+    diagnosis <- "Healthy Adaptive Calibration: High spatial efficiency with well-targeted uncertainty."
+  } else if (opt_pct >= 50) {
+    diagnosis <- "Valid Uniform Coverage: High spatial efficiency across test domain."
+  } else {
+    diagnosis <- "Conservative Spatial Coverage: Valid coverage sustained via conservative width inflation."
+  }
+
+  # 7. Regular 2D Grid Surface (if requested)
+  grid_surface <- NULL
+  if (!is.null(grid_resolution) && grid_resolution >= 5) {
+    gx <- seq(min(coords[, 1]), max(coords[, 1]), length.out = grid_resolution)
+    gy <- seq(min(coords[, 2]), max(coords[, 2]), length.out = grid_resolution)
+    g_pts <- as.matrix(expand.grid(x = gx, y = gy))
+
+    # Pairwise distances from grid points to observations
+    g_diff_x <- outer(g_pts[, 1], coords[, 1], "-")
+    g_diff_y <- outer(g_pts[, 2], coords[, 2], "-")
+    g_dists  <- sqrt(g_diff_x^2 + g_diff_y^2)
+
+    g_weights <- kern_fun(g_dists, bandwidth)
+    g_wsum    <- rowSums(g_weights)
+    g_wsum[g_wsum < 1e-12] <- 1e-12
+
+    g_cov_vec   <- as.vector((g_weights %*% covered) / g_wsum)
+    g_width_vec <- as.vector((g_weights %*% eff) / g_wsum)
+
+    # Grid zones
+    g_cov_ok <- (g_cov_vec >= nominal_cov)
+    g_wid_ok <- (g_width_vec <= w_thresh)
+    g_zone_vec <- ifelse(g_cov_ok & g_wid_ok, "Optimal",
+                  ifelse(g_cov_ok & !g_wid_ok, "Conservative",
+                  ifelse(!g_cov_ok & g_wid_ok, "Vulnerable", "Deficit")))
+
+    grid_surface <- list(
+      x = gx,
+      y = gy,
+      coverage_matrix = matrix(g_cov_vec, nrow = grid_resolution, ncol = grid_resolution),
+      width_matrix    = matrix(g_width_vec, nrow = grid_resolution, ncol = grid_resolution),
+      zone_matrix     = matrix(match(g_zone_vec, zone_levels), nrow = grid_resolution, ncol = grid_resolution)
+    )
+  }
+
+  structure(
+    list(
+      local_coverage    = local_cov,
+      local_width       = local_width,
+      raw_covered       = covered,
+      raw_efficiency    = eff,
+      zones             = zones,
+      zone_distribution = zone_dist,
+      tradeoff_cor      = tradeoff_cor,
+      cor_p_value       = cor_p_val,
+      ecdi              = ecdi,
+      bandwidth         = bandwidth,
+      nominal_coverage  = nominal_cov,
+      width_threshold   = w_thresh,
+      coords            = coords,
+      grid_surface      = grid_surface,
+      efficiency_name   = eff_name,
+      diagnosis         = diagnosis,
+      n                 = n
+    ),
+    class = "spconform_ce_surface"
+  )
+}
+
+#' @rdname conformal_ce_surface
+#' @export
+spatial_ce_surface <- conformal_ce_surface
+
+#' Print Method for spconform_ce_surface Objects
+#'
+#' Displays a structured diagnostic summary of the spatial efficiency-coverage surface.
+#'
+#' @param x An object of class \code{"spconform_ce_surface"}.
+#' @param ... Additional arguments passed to print methods.
+#' @export
+print.spconform_ce_surface <- function(x, ...) {
+  cat("-----------------------------------------------------------\n")
+  cat("  spconform: Local Efficiency-Coverage Trade-off Surface\n")
+  cat("-----------------------------------------------------------\n")
+  cat(sprintf("Locations Evaluated (n)      : %d\n", x$n))
+  cat(sprintf("Target Nominal Coverage      : %.1f%%\n", 100 * x$nominal_coverage))
+  cat(sprintf("Observed Overall Coverage    : %.1f%%\n", 100 * mean(x$raw_covered)))
+  cat(sprintf("Spatial Kernel Bandwidth (h) : %.4f\n", x$bandwidth))
+  cat(sprintf("Efficiency Metric            : %s (Threshold = %.3f)\n", x$efficiency_name, x$width_threshold))
+  cat("-----------------------------------------------------------\n")
+  cat("Spatial Efficiency-Coverage Typology Breakdown:\n")
+  for (i in seq_len(nrow(x$zone_distribution))) {
+    row <- x$zone_distribution[i, ]
+    cat(sprintf("  - %-12s : %4d (%5.1f%%)\n", row$Zone, row$Count, row$Percentage))
+  }
+  cat("-----------------------------------------------------------\n")
+  cat(sprintf("Trade-off Correlation (rho)  : %+.3f (p = %.4f)\n", x$tradeoff_cor, x$cor_p_value))
+  cat(sprintf("Disparity Index (ECDI)       : %.3f\n", x$ecdi))
+  cat("Conclusion                   : ", x$diagnosis, "\n", sep = "")
+  cat("-----------------------------------------------------------\n")
+  invisible(x)
+}
+
+#' Plot Method for spconform_ce_surface Objects
+#'
+#' Generates 2D phase portrait and spatial distribution maps of the local
+#' efficiency-coverage surface.
+#'
+#' @param x An object of class \code{"spconform_ce_surface"}.
+#' @param type Character specifying the visualization:
+#'   \code{"phase"} (default, 2D phase portrait of width vs coverage),
+#'   \code{"map"} (spatial scatter of observations colored by zone),
+#'   \code{"coverage"} (spatial surface map of smoothed coverage), or
+#'   \code{"width"} (spatial surface map of smoothed width).
+#' @param ... Additional graphical arguments.
+#' @importFrom graphics plot points lines polygon abline legend image contour text
+#' @importFrom grDevices adjustcolor colorRampPalette
+#' @export
+plot.spconform_ce_surface <- function(x, type = c("phase", "map", "coverage", "width"), ...) {
+  type <- match.arg(type)
+
+  # Color scheme for the 4 zones
+  zone_cols <- c(
+    "Optimal"      = "#2CA02C", # Green
+    "Conservative" = "#1F77B4", # Blue
+    "Vulnerable"   = "#FF7F0E", # Orange
+    "Deficit"      = "#D62728"  # Red
+  )
+
+  if (type == "phase") {
+    # 2D Phase Portrait: Local Width vs Local Coverage
+    graphics::plot(x$local_width, x$local_coverage,
+                   col = zone_cols[as.character(x$zones)],
+                   pch = 19, cex = 1.1,
+                   xlab = paste("Local", x$efficiency_name),
+                   ylab = "Local Kernel-Smoothed Coverage",
+                   main = "Conformal Efficiency-Coverage (C-E) Phase Plane",
+                   ylim = c(0, 1.05), ...)
+
+    # Reference crosshairs
+    graphics::abline(h = x$nominal_coverage, col = "grey30", lty = 2, lwd = 1.5)
+    graphics::abline(v = x$width_threshold,  col = "grey30", lty = 2, lwd = 1.5)
+
+    # Quadrant annotations
+    graphics::legend("bottomright",
+                     legend = c(
+                       sprintf("Optimal (%s)", x$zone_distribution$Percentage[1]),
+                       sprintf("Conservative (%s)", x$zone_distribution$Percentage[2]),
+                       sprintf("Vulnerable (%s)", x$zone_distribution$Percentage[3]),
+                       sprintf("Deficit (%s)", x$zone_distribution$Percentage[4])
+                     ),
+                     col = zone_cols, pch = 19, bty = "n", cex = 0.85)
+
+  } else if (type == "map") {
+    # Spatial Map of Quadrant Classifications
+    graphics::plot(x$coords[, 1], x$coords[, 2],
+                   col = zone_cols[as.character(x$zones)],
+                   pch = 19, cex = 1.2,
+                   xlab = "Coordinate X", ylab = "Coordinate Y",
+                   main = "Spatial Efficiency-Coverage Typology Map", ...)
+
+    graphics::legend("topleft",
+                     legend = names(zone_cols),
+                     col = zone_cols, pch = 19, bty = "n", cex = 0.85)
+
+  } else if (type == "coverage") {
+    if (!is.null(x$grid_surface)) {
+      cov_pal <- grDevices::colorRampPalette(c("#D7191C", "#FDAE61", "#FFFFBF", "#ABD9E9", "#2C7BB6"))(50)
+      graphics::image(x$grid_surface$x, x$grid_surface$y, x$grid_surface$coverage_matrix,
+                      col = cov_pal, xlab = "Coordinate X", ylab = "Coordinate Y",
+                      main = "Local Conditional Coverage Surface", zlim = c(0, 1), ...)
+      graphics::contour(x$grid_surface$x, x$grid_surface$y, x$grid_surface$coverage_matrix,
+                        add = TRUE, col = "grey20", labcex = 0.8)
+      graphics::points(x$coords[, 1], x$coords[, 2], pch = 21, bg = ifelse(x$raw_covered == 1, "white", "black"), cex = 0.8)
+    } else {
+      cov_col <- grDevices::colorRampPalette(c("#D7191C", "#2C7BB6"))(20)
+      col_idx <- pmax(1, pmin(20, round(x$local_coverage * 19) + 1))
+      graphics::plot(x$coords[, 1], x$coords[, 2], col = cov_col[col_idx], pch = 19, cex = 1.2,
+                     xlab = "Coordinate X", ylab = "Coordinate Y",
+                     main = "Local Smoothed Coverage at Observations", ...)
+    }
+
+  } else if (type == "width") {
+    if (!is.null(x$grid_surface)) {
+      wid_pal <- grDevices::colorRampPalette(c("#2C7BB6", "#ABD9E9", "#FFFFBF", "#FDAE61", "#D7191C"))(50)
+      graphics::image(x$grid_surface$x, x$grid_surface$y, x$grid_surface$width_matrix,
+                      col = wid_pal, xlab = "Coordinate X", ylab = "Coordinate Y",
+                      main = paste("Local", x$efficiency_name, "Surface"), ...)
+      graphics::contour(x$grid_surface$x, x$grid_surface$y, x$grid_surface$width_matrix,
+                        add = TRUE, col = "grey20", labcex = 0.8)
+      graphics::points(x$coords[, 1], x$coords[, 2], pch = 19, col = "grey30", cex = 0.7)
+    } else {
+      wid_norm <- (x$local_width - min(x$local_width)) / (max(x$local_width) - min(x$local_width) + 1e-8)
+      wid_col  <- grDevices::colorRampPalette(c("#2C7BB6", "#D7191C"))(20)
+      col_idx  <- pmax(1, pmin(20, round(wid_norm * 19) + 1))
+      graphics::plot(x$coords[, 1], x$coords[, 2], col = wid_col[col_idx], pch = 19, cex = 1.2,
+                     xlab = "Coordinate X", ylab = "Coordinate Y",
+                     main = paste("Local", x$efficiency_name, "at Observations"), ...)
+    }
+  }
+
+  invisible(x)
+}
+

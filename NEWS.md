@@ -5,15 +5,22 @@
   - Discrete Count & Epidemiology (`scp_count()`): Spatially localized integer conformal intervals for non-negative count data (e.g., disease counts and mortality) featuring Pearson overdispersion scaling and Anscombe variance stabilization with guaranteed non-negative projections.
   - Multivariate Spatial Conformal Prediction (`scp_multivariate()`): Joint finite-sample valid prediction ellipsoids and simultaneous projected coordinate-wise bounding intervals for vector responses $Y(s) \in \mathbb{R}^d$ ($d \ge 2$) under localized inter-variable correlation and spatial heteroskedasticity.
 
-* Advanced Spatial Diagnostic Testing Suite:
+* Cutting-Edge Spatial Calibrations & Advanced Diagnostics:
+  - Auto-Anisotropic Coordinate Rotator (`auto_anisotropy = TRUE` & `estimate_anisotropic_transform()`): Automatic detection of directional variance asymmetry and geometric anisotropy ratio $\lambda \ge 1$ along principal continuity angle $\theta^*$, transforming spatial coordinates via rotation-scaling matrix $\tilde{s} = s \mathbf{R}(\theta^*) \mathbf{S}(\lambda)$ to adapt conformal kernel bandwidths along natural spatial corridors.
+  - Spatial Mantel Test for Score Distance Autocorrelation (`spatial_mantel()`): Evaluates matrix correlation between geographic distances and nonconformity score dissimilarities using fast permutation testing with $O(1)$ constant-variance invariants and spatial score whitening diagnostics.
+  - Bivariate Cross-$L$ Ripley Hotspot Conformal Audit (`spatial_cross_l()`): Novel point-pattern diagnostic adapting Besag's variance-stabilized Cross-$L_{12}(r)$ function with Monte Carlo simulation envelopes to formally distinguish between Honest Uncertainty ($L_{12} > \text{upper}$, failures cluster in wide intervals) and Pathological Overconfidence ($L_{12} < \text{lower}$, failures cluster in narrow intervals).
+  - Strictly Proper Scoring Rules in `coverage_report()`: Comprehensive evaluation of discrete conformal sets and multivariate regions, featuring the Conformal Brier Score for classification, discrete Count Winkler Score for integer intervals, and hyper-ellipsoidal volume metrics.
+  - Local Efficiency-Coverage Trade-off Surface (`conformal_ce_surface()` / `spatial_ce_surface()`): Continuous 2D Nadaraya-Watson kernel regression mapping local conditional coverage $\hat{c}(s)$ against local interval width/efficiency $\hat{w}(s)$. Classifies domains into a 4-quadrant typology ("Optimal", "Conservative", "Vulnerable", "Deficit"), evaluates the Efficiency-Coverage Disparity Index (ECDI), and produces 2D phase plane portraits and spatial risk maps.
+
+* Advanced Classical Spatial Diagnostic Testing Suite:
   - Spatial Conditional Coverage Test (`spatial_conditional_coverage()`): Likelihood ratio and Wald spatial logistic tests with adaptive degree reduction and finite-sample permutation bootstrap for quasi-complete separation.
   - Geary's $C$ Randomization Test (`spatial_geary()`): Evaluates spatial autocorrelation and local dissimilarity in residuals with exact analytical Cliff and Ord (1973, 1981) variance formulas.
   - Anselin's Local Indicators of Spatial Association (`spatial_lisa()`): Local Moran's $I_i$ test with Benjamini-Hochberg FDR correction, spatial quadrant classification (Hotspots, Coldspots, Outliers), Moran scatterplot, and cluster maps.
   - Directional Anisotropy Test (`spatial_anisotropy()`): Directional semivariance ANOVA $F$-test, geometric anisotropy ratio, principal continuity axis, and polar ellipse/rose diagrams.
-  - Consolidated `diagnose()` Master Suite: Seamlessly integrates all 4 new diagnostic tests into a unified executive diagnostic audit report.
+  - Consolidated `diagnose()` Master Suite: Seamlessly integrates all classical and advanced diagnostic tests into a unified executive audit report.
 
 * Head-to-Head Empirical Superiority:
-  - Proven empirical outperformance over Python's world-leading MAPIE library under spatial heteroskedasticity and spatial autocorrelation: narrower adaptive intervals, substantially smaller spatial coverage gaps, and superior strictly proper Winkler scores.
+  - Proven empirical outperformance over Python's world-leading MAPIE 1.6.0 library under spatial heteroskedasticity and spatial autocorrelation: narrower adaptive intervals, substantially smaller spatial coverage gaps, and superior strictly proper Winkler scores.
 
 # spconform 0.1.2
 
