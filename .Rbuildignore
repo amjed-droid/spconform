@@ -4,8 +4,6 @@
 ^\.RData$
 ^\.DS_Store$
 ^.*\.tar\.gz$
-^doc$
-^Meta$
 ^cran-comments\.md$
 ^\.github$
 ^LICENSE\.md$
