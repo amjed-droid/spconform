@@ -96,16 +96,19 @@ and spatial autocorrelation diagnostics.</p></dd>
 <dd><p>List with coverage, mean width, median width, sd width, Winkler score, and sample size.</p></dd>
 
   <dt>conditional</dt>
-<dd><p>Data frame of coverage and widths partitioned by spatial quadrant.</p></dd>
+<dd><p>Data frame of coverage and widths partitioned by spatial quadrant (class <code>"spconform_strata"</code>).</p></dd>
 
   <dt>boundary</dt>
-<dd><p>List comparing empirical metrics between interior and boundary units.</p></dd>
+<dd><p>Object of class <code>"spconform_boundary"</code> comparing edge vs interior units.</p></dd>
 
   <dt>spatial_autocorr</dt>
-<dd><p>List containing Moran's I statistic, expected value, z-score, and p-value.</p></dd>
+<dd><p>Object of class <code>"spconform_moran"</code> with Moran's I statistics.</p></dd>
 
   <dt>scores</dt>
 <dd><p>Summary of nonconformity score moments and quantiles.</p></dd>
+
+  <dt>raw_scores</dt>
+<dd><p>Numeric vector of nonconformity scores.</p></dd>
 
   <dt>alpha</dt>
 <dd><p>Miscoverage level of the evaluated object.</p></dd>
@@ -114,30 +117,32 @@ and spatial autocorrelation diagnostics.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The diagnostic suite performs five rigorous audits on the prediction intervals:</p><ol><li><p><strong>Marginal Validity &amp; Sharpness</strong>: Evaluates empirical coverage
-    \(\frac{1}{m}\sum \mathbf{1}(Y_i \in C(s_i))\), mean/median interval width,
-    and the strictly proper <strong>Winkler Interval Score (WIS)</strong>:
-    $$\text{WIS}_\alpha(l, u, y) = (u - l) + \frac{2}{\alpha}(l - y)\mathbf{1}(y &lt; l) + \frac{2}{\alpha}(y - u)\mathbf{1}(y &gt; u)$$</p></li>
-<li><p><strong>Conditional Spatial Stratification</strong>: Partitions the 2D spatial domain
-    into \(\text{n\_bins} \times \text{n\_bins}\) equal-area quadrants and assesses local coverage.</p></li>
-<li><p><strong>Convex Hull Boundary Proximity</strong>: Assesses whether edge-effect
-    extrapolations degrade coverage near the boundary of the spatial domain.</p></li>
-<li><p><strong>Spatial Autocorrelation (Moran's I)</strong>: Evaluates whether prediction
-    miscoverages or nonconformity scores exhibit residual spatial clustering via Moran's \(I\).</p></li>
+    <p>The diagnostic suite coordinates modular audits across the prediction intervals:</p><ol><li><p><strong>Marginal Validity &amp; Sharpness</strong>: Evaluates empirical coverage
+    and the strictly proper Winkler Interval Score (WIS; Winkler 1972).</p></li>
+<li><p><strong>Conditional Spatial Stratification</strong>: Calls <code><a href="strata_diagnostics.html">strata_diagnostics</a></code>
+    to evaluate local coverage across quadrants.</p></li>
+<li><p><strong>Convex Hull Boundary Proximity</strong>: Calls <code><a href="boundary_diagnostics.html">boundary_diagnostics</a></code>
+    to test whether edge-effect extrapolations degrade calibration.</p></li>
+<li><p><strong>Spatial Autocorrelation (Moran's I)</strong>: Calls <code><a href="spatial_moran.html">spatial_moran</a></code>
+    to test for residual spatial dependence.</p></li>
 <li><p><strong>Score Distribution</strong>: Analyzes empirical quantiles and normality/QQ structure.</p></li>
 </ol></div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Winkler, R. L. (1972). "A Decision-Theoretic Approach to Interval Estimation."
-<em>Journal of the American Statistical Association</em>, 67(337), 187-191.</p>
-<p>Mao, R., Martin, R., and Reich, B. J. (2023). "Valid Conformal Prediction
-for Dependent Data." <em>Journal of the American Statistical Association</em>,
-<a href="https://doi.org/10.1080/01621459.2022.2147531" class="external-link">doi:10.1080/01621459.2022.2147531</a>
+    <p>Winkler, R. L. (1972). A Decision-Theoretic Approach to Interval Estimation.
+<em>Journal of the American Statistical Association</em>, 67(337), 187–191.</p>
+<p>Mao, H., Martin, R., and Reich, B. J. (2024). Valid Conformal Prediction
+for Dependent Data. <em>Journal of the American Statistical Association</em>,
+119(546), 1269–1281. <a href="https://doi.org/10.1080/01621459.2022.2147531" class="external-link">doi:10.1080/01621459.2022.2147531</a>
+.</p>
+<p>Susmann, H. P. (2024). Adaptive Conformal Prediction for Spatial Data.
+<em>Computo</em>, <a href="https://doi.org/10.57750/edan-5f53" class="external-link">doi:10.57750/edan-5f53</a>
 .</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="scp_geostatistical.html">scp_geostatistical</a></code>, <code><a href="scp_areal.html">scp_areal</a></code>, <code><a href="coverage_report.html">coverage_report</a></code></p></div>
+    <div class="dont-index"><p><code><a href="spatial_moran.html">spatial_moran</a></code>, <code><a href="boundary_diagnostics.html">boundary_diagnostics</a></code>,
+  <code><a href="strata_diagnostics.html">strata_diagnostics</a></code>, <code><a href="scp_geostatistical.html">scp_geostatistical</a></code>, <code><a href="scp_areal.html">scp_areal</a></code></p></div>
     </div>
 
     <div class="section level2">
@@ -155,18 +160,19 @@ for Dependent Data." <em>Journal of the American Statistical Association</em>,
 <span class="r-in"><span><span class="va">diag_res</span> <span class="op">&lt;-</span> <span class="fu">diagnose</span><span class="op">(</span><span class="va">out</span>, y_true <span class="op">=</span> <span class="va">y_te</span>, s_test <span class="op">=</span> <span class="va">s_te</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diag_res</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ======================================================================</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              spconform Comprehensive Diagnostic Audit Report          </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   spconform Diagnostic Audit Report</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ======================================================================</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &gt;&gt; 1. Marginal Validity &amp; Prediction Sharpness:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    * [PASS] Empirical Coverage : 0.900 (Target Nominal &gt;= 0.900)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    * Mean Interval Width    : 1.3169 (Median = 1.3565, SD = 0.0559)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    * Winkler Interval Score : 1.4317 (Strictly Proper Loss)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    * Total Target Units     : n = 30 (Covered = 27, Miscovered = 3)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &gt;&gt; 1. Marginal Coverage Validity &amp; Sharpness:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    - Target Nominal Level  :  90.0%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    - Empirical Coverage    :  90.0% (27 of 30 covered)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    - Interval Width        : Mean = 1.317 | Median = 1.356 | SD = 0.056</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    - Winkler Score (WIS)   : Mean = 1.432 (Proper Interval Score)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &gt;&gt; 2. Spatial Residual Autocorrelation (Moran's I Audit):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    * [NOTE] Moran's I Statistic: 0.1376 (Expected = -0.0345, z = 5.16, p-value = 0.0000)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    * Conclusion: Moderate spatial residual structure detected; localized weights active.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &gt;&gt; 2. Spatial Autocorrelation Audit (Moran's I on Residuals):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    - Moran's I Statistic   : +0.1376 (Expected = -0.0345)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    - Standardized Z-Score  : +5.1604 (p-value = 0.0000)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    - Residual Pattern      : Warning (Significant spatial clustering detected, p &lt; 0.05)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &gt;&gt; 3. Conditional Coverage across Spatial Quadrants:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    - Strata Q1-1   : Cov =  75.0% | Mean Width =  1.357 | WIS =  1.547 (n = 4)</span>
@@ -189,6 +195,22 @@ for Dependent Data." <em>Journal of the American Statistical Association</em>,
 <span class="r-out co"><span class="r-pr">#&gt;</span> &gt;&gt; 5. Nonconformity Score Distribution Moments:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    * Mean = 0.6585 | Median = 0.6782 | SD = 0.0280 | Q90 = 0.6784 | Q95 = 0.6891</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ======================================================================</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Programmatic access to modular components</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">diag_res</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     bin n coverage mean_width mean_winkler</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Q1-1 4     0.75   1.356630     1.547029</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  Q1-2 5     0.80   1.356775     1.414175</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  Q1-3 2     1.00   1.395844     1.395844</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Q2-1 2     1.00   1.305993     1.305993</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5  Q2-2 2     1.00   1.255501     1.255501</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6  Q2-3 3     1.00   1.356581     1.356581</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  Q3-2 2     1.00   1.255501     1.255501</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  Q3-3 1     1.00   1.356484     1.356484</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  Q3-4 4     1.00   1.305993     1.305993</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 Q4-2 1     1.00   1.248659     1.248659</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 Q4-3 2     0.50   1.243038     2.439982</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 Q4-4 2     1.00   1.243038     1.243038</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

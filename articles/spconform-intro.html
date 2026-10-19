@@ -226,18 +226,19 @@ geometric analysis.</p>
 <span><span class="co"># S3 print method displays text summary including Moran's I</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diag_res</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ======================================================================</span></span>
-<span><span class="co">#&gt;              spconform Comprehensive Diagnostic Audit Report          </span></span>
+<span><span class="co">#&gt;   spconform Diagnostic Audit Report</span></span>
 <span><span class="co">#&gt; ======================================================================</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; &gt;&gt; 1. Marginal Validity &amp; Prediction Sharpness:</span></span>
-<span><span class="co">#&gt;    * [PASS] Empirical Coverage : 0.979 (Target Nominal &gt;= 0.900)</span></span>
-<span><span class="co">#&gt;    * Mean Interval Width    : 2.0079 (Median = 2.1986, SD = 0.2521)</span></span>
-<span><span class="co">#&gt;    * Winkler Interval Score : 2.0148 (Strictly Proper Loss)</span></span>
-<span><span class="co">#&gt;    * Total Target Units     : n = 47 (Covered = 46, Miscovered = 1)</span></span>
+<span><span class="co">#&gt; &gt;&gt; 1. Marginal Coverage Validity &amp; Sharpness:</span></span>
+<span><span class="co">#&gt;    - Target Nominal Level  :  90.0%</span></span>
+<span><span class="co">#&gt;    - Empirical Coverage    :  97.9% (46 of 47 covered)</span></span>
+<span><span class="co">#&gt;    - Interval Width        : Mean = 2.008 | Median = 2.199 | SD = 0.252</span></span>
+<span><span class="co">#&gt;    - Winkler Score (WIS)   : Mean = 2.015 (Proper Interval Score)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; &gt;&gt; 2. Spatial Residual Autocorrelation (Moran's I Audit):</span></span>
-<span><span class="co">#&gt;    * [NOTE] Moran's I Statistic: 0.0578 (Expected = -0.0217, z = 3.74, p-value = 0.0002)</span></span>
-<span><span class="co">#&gt;    * Conclusion: Moderate spatial residual structure detected; localized weights active.</span></span>
+<span><span class="co">#&gt; &gt;&gt; 2. Spatial Autocorrelation Audit (Moran's I on Residuals):</span></span>
+<span><span class="co">#&gt;    - Moran's I Statistic   : +0.0578 (Expected = -0.0217)</span></span>
+<span><span class="co">#&gt;    - Standardized Z-Score  : +3.7398 (p-value = 0.0002)</span></span>
+<span><span class="co">#&gt;    - Residual Pattern      : Warning (Significant spatial clustering detected, p &lt; 0.05)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; &gt;&gt; 3. Conditional Coverage across Spatial Quadrants:</span></span>
 <span><span class="co">#&gt;    - Strata Q1-1   : Cov =  87.5% | Mean Width =  1.880 | WIS =  1.920 (n = 8)</span></span>

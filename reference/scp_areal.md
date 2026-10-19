@@ -72,6 +72,18 @@ small (e.g., an isolated unit with no neighbours), the procedure falls
 back to an unweighted quantile over all other units and issues a
 warning.
 
+## References
+
+Mao, H., Martin, R., and Reich, B. J. (2024). Valid Conformal Prediction
+for Dependent Data. *Journal of the American Statistical Association*,
+119(546), 1269–1281.
+[doi:10.1080/01621459.2022.2147531](https://doi.org/10.1080/01621459.2022.2147531)
+.
+
+Susmann, H. P. (2024). Adaptive Conformal Prediction for Spatial Data.
+*Computo*, [doi:10.57750/edan-5f53](https://doi.org/10.57750/edan-5f53)
+.
+
 ## Examples
 
 ``` r

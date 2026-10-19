@@ -117,8 +117,14 @@ exchangeability argument.
 
 ## References
 
-Mao, H., Martin, R., and Reich, B. J. (2020). Valid model-free spatial
-prediction. *arXiv:2006.15640*.
+Mao, H., Martin, R., and Reich, B. J. (2024). Valid Conformal Prediction
+for Dependent Data. *Journal of the American Statistical Association*,
+119(546), 1269–1281.
+[doi:10.1080/01621459.2022.2147531](https://doi.org/10.1080/01621459.2022.2147531)
+.
+
+Shafer, G. and Vovk, V. (2008). A Tutorial on Conformal Prediction.
+*Journal of Machine Learning Research*, 9, 371–421.
 
 ## Examples
 

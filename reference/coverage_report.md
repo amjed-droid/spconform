@@ -47,6 +47,12 @@ A named list with:
 
 .
 
+## References
+
+Winkler, R. L. (1972). A Decision-Theoretic Approach to Interval
+Estimation. *Journal of the American Statistical Association*, 67(337),
+187–191.
+
 ## Examples
 
 ``` r

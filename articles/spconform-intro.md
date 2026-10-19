@@ -167,18 +167,19 @@ diag_res <- diagnose(out, y_true = y_test, s_test = s_test, plot = FALSE)
 # S3 print method displays text summary including Moran's I
 print(diag_res)
 #> ======================================================================
-#>              spconform Comprehensive Diagnostic Audit Report          
+#>   spconform Diagnostic Audit Report
 #> ======================================================================
 #> 
-#> >> 1. Marginal Validity & Prediction Sharpness:
-#>    * [PASS] Empirical Coverage : 0.979 (Target Nominal >= 0.900)
-#>    * Mean Interval Width    : 2.0079 (Median = 2.1986, SD = 0.2521)
-#>    * Winkler Interval Score : 2.0148 (Strictly Proper Loss)
-#>    * Total Target Units     : n = 47 (Covered = 46, Miscovered = 1)
+#> >> 1. Marginal Coverage Validity & Sharpness:
+#>    - Target Nominal Level  :  90.0%
+#>    - Empirical Coverage    :  97.9% (46 of 47 covered)
+#>    - Interval Width        : Mean = 2.008 | Median = 2.199 | SD = 0.252
+#>    - Winkler Score (WIS)   : Mean = 2.015 (Proper Interval Score)
 #> 
-#> >> 2. Spatial Residual Autocorrelation (Moran's I Audit):
-#>    * [NOTE] Moran's I Statistic: 0.0578 (Expected = -0.0217, z = 3.74, p-value = 0.0002)
-#>    * Conclusion: Moderate spatial residual structure detected; localized weights active.
+#> >> 2. Spatial Autocorrelation Audit (Moran's I on Residuals):
+#>    - Moran's I Statistic   : +0.0578 (Expected = -0.0217)
+#>    - Standardized Z-Score  : +3.7398 (p-value = 0.0002)
+#>    - Residual Pattern      : Warning (Significant spatial clustering detected, p < 0.05)
 #> 
 #> >> 3. Conditional Coverage across Spatial Quadrants:
 #>    - Strata Q1-1   : Cov =  87.5% | Mean Width =  1.880 | WIS =  1.920 (n = 8)

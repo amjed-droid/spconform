@@ -56,20 +56,25 @@ An S3 object of class `"spconform_diagnose"` containing:
 
 - conditional:
 
-  Data frame of coverage and widths partitioned by spatial quadrant.
+  Data frame of coverage and widths partitioned by spatial quadrant
+  (class `"spconform_strata"`).
 
 - boundary:
 
-  List comparing empirical metrics between interior and boundary units.
+  Object of class `"spconform_boundary"` comparing edge vs interior
+  units.
 
 - spatial_autocorr:
 
-  List containing Moran's I statistic, expected value, z-score, and
-  p-value.
+  Object of class `"spconform_moran"` with Moran's I statistics.
 
 - scores:
 
   Summary of nonconformity score moments and quantiles.
+
+- raw_scores:
+
+  Numeric vector of nonconformity scores.
 
 - alpha:
 
@@ -77,47 +82,50 @@ An S3 object of class `"spconform_diagnose"` containing:
 
 ## Details
 
-The diagnostic suite performs five rigorous audits on the prediction
+The diagnostic suite coordinates modular audits across the prediction
 intervals:
 
-1.  **Marginal Validity & Sharpness**: Evaluates empirical coverage
-    \\\frac{1}{m}\sum \mathbf{1}(Y_i \in C(s_i))\\, mean/median interval
-    width, and the strictly proper **Winkler Interval Score (WIS)**:
-    \$\$\text{WIS}\_\alpha(l, u, y) = (u - l) + \frac{2}{\alpha}(l -
-    y)\mathbf{1}(y \< l) + \frac{2}{\alpha}(y - u)\mathbf{1}(y \> u)\$\$
+1.  **Marginal Validity & Sharpness**: Evaluates empirical coverage and
+    the strictly proper Winkler Interval Score (WIS; Winkler 1972).
 
-2.  **Conditional Spatial Stratification**: Partitions the 2D spatial
-    domain into \\\text{n\\bins} \times \text{n\\bins}\\ equal-area
-    quadrants and assesses local coverage.
+2.  **Conditional Spatial Stratification**: Calls
+    [`strata_diagnostics`](https://amjed-droid.github.io/spconform/reference/strata_diagnostics.md)
+    to evaluate local coverage across quadrants.
 
-3.  **Convex Hull Boundary Proximity**: Assesses whether edge-effect
-    extrapolations degrade coverage near the boundary of the spatial
-    domain.
+3.  **Convex Hull Boundary Proximity**: Calls
+    [`boundary_diagnostics`](https://amjed-droid.github.io/spconform/reference/boundary_diagnostics.md)
+    to test whether edge-effect extrapolations degrade calibration.
 
-4.  **Spatial Autocorrelation (Moran's I)**: Evaluates whether
-    prediction miscoverages or nonconformity scores exhibit residual
-    spatial clustering via Moran's \\I\\.
+4.  **Spatial Autocorrelation (Moran's I)**: Calls
+    [`spatial_moran`](https://amjed-droid.github.io/spconform/reference/spatial_moran.md)
+    to test for residual spatial dependence.
 
 5.  **Score Distribution**: Analyzes empirical quantiles and
     normality/QQ structure.
 
 ## References
 
-Winkler, R. L. (1972). "A Decision-Theoretic Approach to Interval
-Estimation." *Journal of the American Statistical Association*, 67(337),
-187-191.
+Winkler, R. L. (1972). A Decision-Theoretic Approach to Interval
+Estimation. *Journal of the American Statistical Association*, 67(337),
+187–191.
 
-Mao, R., Martin, R., and Reich, B. J. (2023). "Valid Conformal
-Prediction for Dependent Data." *Journal of the American Statistical
-Association*,
+Mao, H., Martin, R., and Reich, B. J. (2024). Valid Conformal Prediction
+for Dependent Data. *Journal of the American Statistical Association*,
+119(546), 1269–1281.
 [doi:10.1080/01621459.2022.2147531](https://doi.org/10.1080/01621459.2022.2147531)
+.
+
+Susmann, H. P. (2024). Adaptive Conformal Prediction for Spatial Data.
+*Computo*, [doi:10.57750/edan-5f53](https://doi.org/10.57750/edan-5f53)
 .
 
 ## See also
 
+[`spatial_moran`](https://amjed-droid.github.io/spconform/reference/spatial_moran.md),
+[`boundary_diagnostics`](https://amjed-droid.github.io/spconform/reference/boundary_diagnostics.md),
+[`strata_diagnostics`](https://amjed-droid.github.io/spconform/reference/strata_diagnostics.md),
 [`scp_geostatistical`](https://amjed-droid.github.io/spconform/reference/scp_geostatistical.md),
-[`scp_areal`](https://amjed-droid.github.io/spconform/reference/scp_areal.md),
-[`coverage_report`](https://amjed-droid.github.io/spconform/reference/coverage_report.md)
+[`scp_areal`](https://amjed-droid.github.io/spconform/reference/scp_areal.md)
 
 ## Examples
 
@@ -135,18 +143,19 @@ out <- scp_geostatistical(s_tr, y_tr, s_te, pfun, alpha = 0.1)
 diag_res <- diagnose(out, y_true = y_te, s_test = s_te, plot = FALSE)
 print(diag_res)
 #> ======================================================================
-#>              spconform Comprehensive Diagnostic Audit Report          
+#>   spconform Diagnostic Audit Report
 #> ======================================================================
 #> 
-#> >> 1. Marginal Validity & Prediction Sharpness:
-#>    * [PASS] Empirical Coverage : 0.900 (Target Nominal >= 0.900)
-#>    * Mean Interval Width    : 1.3169 (Median = 1.3565, SD = 0.0559)
-#>    * Winkler Interval Score : 1.4317 (Strictly Proper Loss)
-#>    * Total Target Units     : n = 30 (Covered = 27, Miscovered = 3)
+#> >> 1. Marginal Coverage Validity & Sharpness:
+#>    - Target Nominal Level  :  90.0%
+#>    - Empirical Coverage    :  90.0% (27 of 30 covered)
+#>    - Interval Width        : Mean = 1.317 | Median = 1.356 | SD = 0.056
+#>    - Winkler Score (WIS)   : Mean = 1.432 (Proper Interval Score)
 #> 
-#> >> 2. Spatial Residual Autocorrelation (Moran's I Audit):
-#>    * [NOTE] Moran's I Statistic: 0.1376 (Expected = -0.0345, z = 5.16, p-value = 0.0000)
-#>    * Conclusion: Moderate spatial residual structure detected; localized weights active.
+#> >> 2. Spatial Autocorrelation Audit (Moran's I on Residuals):
+#>    - Moran's I Statistic   : +0.1376 (Expected = -0.0345)
+#>    - Standardized Z-Score  : +5.1604 (p-value = 0.0000)
+#>    - Residual Pattern      : Warning (Significant spatial clustering detected, p < 0.05)
 #> 
 #> >> 3. Conditional Coverage across Spatial Quadrants:
 #>    - Strata Q1-1   : Cov =  75.0% | Mean Width =  1.357 | WIS =  1.547 (n = 4)
@@ -169,4 +178,20 @@ print(diag_res)
 #> >> 5. Nonconformity Score Distribution Moments:
 #>    * Mean = 0.6585 | Median = 0.6782 | SD = 0.0280 | Q90 = 0.6784 | Q95 = 0.6891
 #> ======================================================================
+
+# Programmatic access to modular components
+as.data.frame(diag_res)
+#>     bin n coverage mean_width mean_winkler
+#> 1  Q1-1 4     0.75   1.356630     1.547029
+#> 2  Q1-2 5     0.80   1.356775     1.414175
+#> 3  Q1-3 2     1.00   1.395844     1.395844
+#> 4  Q2-1 2     1.00   1.305993     1.305993
+#> 5  Q2-2 2     1.00   1.255501     1.255501
+#> 6  Q2-3 3     1.00   1.356581     1.356581
+#> 7  Q3-2 2     1.00   1.255501     1.255501
+#> 8  Q3-3 1     1.00   1.356484     1.356484
+#> 9  Q3-4 4     1.00   1.305993     1.305993
+#> 10 Q4-2 1     1.00   1.248659     1.248659
+#> 11 Q4-3 2     0.50   1.243038     2.439982
+#> 12 Q4-4 2     1.00   1.243038     1.243038
 ```

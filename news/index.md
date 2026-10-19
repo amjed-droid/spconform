@@ -56,7 +56,8 @@ CRAN release: 2026-09-24
 - Enhanced spatial diagnostics:
   - [`diagnose()`](https://amjed-droid.github.io/spconform/reference/diagnose.md)
     now returns a classed `spconform_diagnose` object with dedicated
-    `print.spconform_diagnose()` and
+    [`print.spconform_diagnose()`](https://amjed-droid.github.io/spconform/reference/print.spconform_diagnose.md)
+    and
     [`plot.spconform_diagnose()`](https://amjed-droid.github.io/spconform/reference/plot.spconform_diagnose.md)
     methods.
   - Added Moran’s $`I`$ test on prediction residuals and conformal
