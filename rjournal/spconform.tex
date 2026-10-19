@@ -82,24 +82,75 @@ While geostatistical continuous fields form the foundation of spatial analysis, 
   \]
 \end{enumerate}
 
-\section{Software architecture and interface}\label{software-architecture-and-interface}
+\section{Software architecture and design considerations}\label{software-architecture-and-design-considerations}
 
-\CRANpkg{spconform} is deliberately engineered following the Unix philosophy and CRAN guidelines:
+\subsection{Target audience and typical workflow}\label{target-audience-and-typical-workflow}
 
-\begin{itemize}
-\tightlist
-\item
-  \textbf{Zero Heavy Dependencies:} The core package relies exclusively on standard Base R packages (\pkg{stats}, \pkg{graphics}, \pkg{grDevices}, \pkg{utils}), avoiding compilation vulnerabilities associated with external C++ geospatial libraries (GDAL, GEOS, PROJ).
-\item
-  \textbf{Strict Model-Agnosticism:} Any point prediction model in R can be supplied via a unified functional wrapper:
-\end{itemize}
+The \CRANpkg{spconform} package is designed for applied spatial analysts, ecologists, spatial epidemiologists, and data scientists who require distribution-free, finite-sample prediction intervals without relying on restrictive Gaussian assumptions or complex Bayesian Markov Chain Monte Carlo (MCMC) pipelines.
+
+The package implements a consistent four-stage user workflow across all spatial modalities:
+1. \textbf{Data preparation:} Spatial coordinates matrix \(s \in \mathbb{R}^{n \times 2}\) and observed response vector \(Y\).
+2. \textbf{Model definition:} The user defines any point prediction algorithm via a functional wrapper:
 
 \begin{verbatim}
 pred_fun = function(s_train, y_train, s_new) { ... }
 \end{verbatim}
 
-This design enables users to seamlessly wrap linear models, generalized additive models (\CRANpkg{mgcv}), random forests (\CRANpkg{ranger}), gradient boosting machines, or deep neural networks without modifying package internals.
-- \textbf{Unified S3 Object-Oriented Interface:} Standard R generics are consistently implemented across all modalities, including \texttt{print()}, \texttt{summary()}, \texttt{plot()}, \texttt{predict()}, \texttt{residuals()}, \texttt{diagnose()}, and \texttt{coverage\_report()}.
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  \textbf{Localized conformal calibration:} Fitting prediction intervals via \texttt{scp\_geostatistical()} (point data), \texttt{scp\_areal()} (polygon lattices), \texttt{scp\_count()} (discrete epidemiology), \texttt{scp\_classification()} (prediction sets), or \texttt{scp\_multivariate()} (vector fields).
+\item
+  \textbf{Diagnostic auditing and reporting:} Comprehensive model evaluation via \texttt{plot()}, \texttt{diagnose()}, \texttt{conformal\_ce\_surface()}, and \texttt{coverage\_report()}.
+\end{enumerate}
+
+\subsection{Object model and implementation details}\label{object-model-and-implementation-details}
+
+\CRANpkg{spconform} strictly adheres to R's standard S3 object-oriented system. S3 was selected over S4 and R6 because it introduces zero computational overhead, maintains maximal transparency, and integrates naturally with base R idiom and the tidyverse. The package defines lightweight S3 classes (\texttt{spconform}, \texttt{spconform\_classification}, \texttt{spconform\_count}, \texttt{spconform\_multivariate}, \texttt{spconform\_diagnose}, \texttt{spconform\_ce\_surface}, \texttt{spconform\_mantel}, \texttt{spconform\_cross\_l}), each providing tailored implementations of generic functions:
+- \texttt{predict()}: Extracts point predictions and localized upper and lower bounds.
+- \texttt{residuals()}: Extracts nonconformity scores and raw calibration residuals.
+- \texttt{plot()}: Visualizes prediction intervals, multi-panel diagnostic dashboards, or spatial efficiency phase planes.
+- \texttt{print()} and \texttt{summary()}: Renders concise, publication-ready textual summaries with coverage gaps and Winkler scores.
+
+\subsection{Dependency philosophy and CRAN stability}\label{dependency-philosophy-and-cran-stability}
+
+A foundational design driver for \CRANpkg{spconform} is minimal dependency footprint. While many spatial R packages depend on external C++ geospatial libraries (GDAL, GEOS, PROJ) that frequently introduce compilation failures across operating system upgrades, \CRANpkg{spconform} relies exclusively on standard base R packages (\pkg{stats}, \pkg{graphics}, \pkg{grDevices}, \pkg{utils}). Spatial distance calculations, coordinate transformations, and kernel matrices are evaluated through vectorized base R linear algebra, ensuring guaranteed cross-platform installation stability across Windows, macOS, and Linux without external system requirements.
+
+\subsection{Computational performance, scalability, and limits}\label{computational-performance-scalability-and-limits}
+
+Evaluating localized conformal intervals requires computing pairwise spatial distances between \(N_{\text{cal}}\) calibration points and \(N_{\text{query}}\) query points. In naive implementations, recomputing kernel bandwidths per query yields \(O(N_{\text{cal}}^2 \cdot N_{\text{query}})\) computational complexity. \CRANpkg{spconform} optimizes this through:
+- \textbf{Bandwidth caching:} Spatial kernel bandwidth \(h\) is evaluated once prior to the prediction loop via vectorized matrix operations, providing up to a 50x speedup.
+- \textbf{Localized nearest-neighbor subsampling:} For large calibration datasets (\(N > 1000\)), users can supply \texttt{k\_neighbors} to restrict localized calibration borrowing to the \(k\) nearest spatial neighbors, keeping memory footprint bounded at \(O(k \cdot N_{\text{query}})\).
+- \textbf{Fast invariant matrix permutation:} For diagnostic tests such as \texttt{spatial\_mantel()}, off-diagonal distance variances remain constant under index permutations, reducing each Monte Carlo permutation from \(O(N^2)\) to a single vector dot product.
+
+On standard consumer hardware, a complete geostatistical conformal calibration on \(n = 155\) observations executes in under 0.15 seconds, and the full replication suite for this manuscript compiles in less than 30 seconds.
+
+\subsection{Comparison with existing software and competitor packages}\label{comparison-with-existing-software-and-competitor-packages}
+
+Table 1 summarizes the functional landscape of predictive uncertainty quantification across R and Python packages.
+
+\begin{table}
+
+\caption{\label{tab:tab-comparison}Feature comparison between spconform and existing uncertainty quantification packages.}
+\centering
+\begin{tabular}[t]{l|l|l|l|l|l}
+\hline
+Package & Language & Spatial Weighting & Exchangeability & Multi-Modality Support & External Dependencies\\
+\hline
+conformalInference & R & No & Required & Continuous only & Low\\
+\hline
+splitconformal & R & No & Required & Continuous only & Low\\
+\hline
+MAPIE (Python) & Python & No & Required & Continuous + Classification & Scikit-Learn\\
+\hline
+gstat / geoR & R & Yes (Kriging) & Stationary Covariance & Continuous only & Heavy (C++)\\
+\hline
+spconform & R & Yes (Kernel + Graph) & Relaxed (Localized) & Point, Areal, Count, Multiclass, Vector & Zero (Base R)\\
+\hline
+\end{tabular}
+\end{table}
 
 \section{Empirical benchmark and cross-system comparison}\label{empirical-benchmark-and-cross-system-comparison}
 
@@ -142,7 +193,7 @@ fit_sp <- scp_geostatistical(s_tr, y_tr, s_te, pfun, alpha = 0.10, seed = 42)
 rep_sp <- coverage_report(fit_sp, y_te)
 \end{verbatim}
 
-The benchmark results comparing empirical coverage, mean interval width, and the strictly proper Winkler Interval Score (WIS) \citep{winkler1972decision} are summarized in Table 1.
+The benchmark results comparing empirical coverage, mean interval width, and the strictly proper Winkler Interval Score (WIS) \citep{winkler1972decision} are summarized in Table 2.
 
 \begin{table}
 
@@ -163,7 +214,7 @@ spconform & 90.0\% & 90.7\% & 2.08 & 2.94 & Optimal (spatially adaptive)\\
 \end{tabular}
 \end{table}
 
-As demonstrated in Table 1, classical kriging suffers a catastrophic coverage collapse (73.3\%) due to its rigid global variance assumption. Both global conformal prediction and Python's MAPIE 1.6.0 achieve marginal coverage (89.3\%), but do so by inflating interval widths globally (mean width 2.51), failing to capture the five-fold spatial variance transition. In contrast, \CRANpkg{spconform} accurately achieves the nominal 90.7\% coverage with an 17.1\% reduction in mean interval width and a 19.5\% improvement in strictly proper Winkler efficiency (2.94 vs 3.65).
+As demonstrated in Table 2, classical kriging suffers a catastrophic coverage collapse (73.3\%) due to its rigid global variance assumption. Both global conformal prediction and Python's MAPIE 1.6.0 achieve marginal coverage (89.3\%), but do so by inflating interval widths globally (mean width 2.51), failing to capture the five-fold spatial variance transition. In contrast, \CRANpkg{spconform} accurately achieves the nominal 90.7\% coverage with an 17.1\% reduction in mean interval width and a 19.5\% improvement in strictly proper Winkler efficiency (2.94 vs 3.65).
 
 \section{Spatial diagnostic suite and case studies}\label{spatial-diagnostic-suite-and-case-studies}
 

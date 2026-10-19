@@ -14,6 +14,19 @@ library(spconform)
 library(sp)
 
 
+## ----tab-comparison, echo=FALSE-----------------------------------------------
+comp_df <- data.frame(
+  Package = c("conformalInference", "splitconformal", "MAPIE (Python)", "gstat / geoR", "spconform"),
+  Language = c("R", "R", "Python", "R", "R"),
+  Spatial_Weighting = c("No", "No", "No", "Yes (Kriging)", "Yes (Kernel + Graph)"),
+  Exchangeability = c("Required", "Required", "Required", "Stationary Covariance", "Relaxed (Localized)"),
+  Multi_Modality = c("Continuous only", "Continuous only", "Continuous + Classification", "Continuous only", "Point, Areal, Count, Multiclass, Vector"),
+  External_Deps = c("Low", "Low", "Scikit-Learn", "Heavy (C++)", "Zero (Base R)")
+)
+colnames(comp_df) <- c("Package", "Language", "Spatial Weighting", "Exchangeability", "Multi-Modality Support", "External Dependencies")
+knitr::kable(comp_df, caption = "Feature comparison between spconform and existing uncertainty quantification packages.")
+
+
 ## ----sim-benchmark, echo=TRUE-------------------------------------------------
 set.seed(42)
 n <- 250

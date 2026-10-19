@@ -159,7 +159,7 @@ margin-left: 2em;
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","date","description","draft","author","type","output","bibliography","journal","slug","pdf_url","creative_commons","packages","CTV","csl"]}},"value":[{"type":"character","attributes":{},"value":["Spconform: Spatially Localized Conformal Prediction and Spatial Diagnostic Auditing in R"]},{"type":"character","attributes":{},"value":["2026-10-19"]},{"type":"character","attributes":{},"value":["\nQuantifying predictive uncertainty for spatial data is critical across environmental monitoring, spatial epidemiology, and geosciences. Standard geostatistical interpolation methods such as Gaussian kriging rely on correctly specified covariance structures and stationarity, suffering substantial coverage breakdown under model misspecification. Although conformal prediction guarantees distribution-free, finite-sample predictive validity, its foundational assumption of exchangeability is systematically violated in the presence of spatial autocorrelation and heteroskedasticity. The spconform package resolves this foundational challenge on CRAN by providing distribution-free, model-agnostic, localized conformal calibration for geostatistical, areal lattice, count, multiclass classification, and multivariate spatial data. Built in Base R with zero heavy external dependencies, spconform introduces adaptive directional anisotropy rotation, five advanced spatial diagnostic audits, and demonstrates superior local coverage and interval efficiency compared to non-spatial conformal tools and Python's MAPIE library. This article presents the methodological foundations, software architecture, cross-system benchmarks, and reproducible case studies.\n"]},{"type":"logical","attributes":{},"value":[false]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","affiliation","address","email"]}},"value":[{"type":"character","attributes":{},"value":["Ahmed Sattar Jabbar"]},{"type":"character","attributes":{},"value":["Mustansiriyah University"]},{"type":"character","attributes":{},"value":["Department of Statistics, College of Administration and Economics","Baghdad, Iraq"]},{"type":"character","attributes":{},"value":["ahmed.state.me@gmail.com"]}]}]},{"type":"character","attributes":{},"value":["package"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained","toc"]}},"value":[{"type":"logical","attributes":{},"value":[true]},{"type":"logical","attributes":{},"value":[false]}]}]},{"type":"character","attributes":{},"value":["RJreferences.bib"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","issn","firstpage","lastpage"]}},"value":[{"type":"character","attributes":{},"value":["The R Journal"]},{"type":"character","attributes":{},"value":["2073-4859"]},{"type":"double","attributes":{},"value":[1]},{"type":"NULL"}]},{"type":"character","attributes":{},"value":["spconform"]},{"type":"character","attributes":{},"value":["spconform.pdf"]},{"type":"character","attributes":{},"value":["CC BY"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["cran","bioc"]}},"value":[{"type":"character","attributes":{},"value":["spconform","mgcv","ranger"]},{"type":"list","attributes":{},"value":[]}]},{"type":"character","attributes":{},"value":["Bayesian","Econometrics","Environmetrics","MachineLearning","MixedModels","Spatial","Survival"]},{"type":"character","attributes":{},"value":["D:/R-4.6.1/library/rjtools/rjournal.csl"]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","date","description","draft","author","type","output","bibliography","journal","slug","pdf_url","creative_commons","packages","CTV","csl"]}},"value":[{"type":"character","attributes":{},"value":["Spconform: Spatially Localized Conformal Prediction and Spatial Diagnostic Auditing in R"]},{"type":"character","attributes":{},"value":["2026-10-19"]},{"type":"character","attributes":{},"value":["\nQuantifying predictive uncertainty for spatial data is critical across environmental monitoring, spatial epidemiology, and geosciences. Standard geostatistical interpolation methods such as Gaussian kriging rely on correctly specified covariance structures and stationarity, suffering substantial coverage breakdown under model misspecification. Although conformal prediction guarantees distribution-free, finite-sample predictive validity, its foundational assumption of exchangeability is systematically violated in the presence of spatial autocorrelation and heteroskedasticity. The spconform package resolves this foundational challenge on CRAN by providing distribution-free, model-agnostic, localized conformal calibration for geostatistical, areal lattice, count, multiclass classification, and multivariate spatial data. Built in Base R with zero heavy external dependencies, spconform introduces adaptive directional anisotropy rotation, five advanced spatial diagnostic audits, and demonstrates superior local coverage and interval efficiency compared to non-spatial conformal tools and Python's MAPIE library. This article presents the methodological foundations, software architecture, cross-system benchmarks, and reproducible case studies.\n"]},{"type":"logical","attributes":{},"value":[false]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","affiliation","address","email"]}},"value":[{"type":"character","attributes":{},"value":["Ahmed Sattar Jabbar"]},{"type":"character","attributes":{},"value":["Mustansiriyah University"]},{"type":"character","attributes":{},"value":["Department of Statistics, College of Administration and Economics","Baghdad, Iraq"]},{"type":"character","attributes":{},"value":["ahmed.state.me@gmail.com"]}]}]},{"type":"character","attributes":{},"value":["package"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained","toc"]}},"value":[{"type":"logical","attributes":{},"value":[true]},{"type":"logical","attributes":{},"value":[false]}]}]},{"type":"character","attributes":{},"value":["RJreferences.bib"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","issn","firstpage","lastpage"]}},"value":[{"type":"character","attributes":{},"value":["The R Journal"]},{"type":"character","attributes":{},"value":["2073-4859"]},{"type":"double","attributes":{},"value":[1]},{"type":"NULL"}]},{"type":"character","attributes":{},"value":["spconform"]},{"type":"character","attributes":{},"value":["spconform.pdf"]},{"type":"character","attributes":{},"value":["CC BY"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["cran","bioc"]}},"value":[{"type":"character","attributes":{},"value":["spconform"]},{"type":"list","attributes":{},"value":[]}]},{"type":"list","attributes":{},"value":[]},{"type":"character","attributes":{},"value":["D:/R-4.6.1/library/rjtools/rjournal.csl"]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   
@@ -2648,15 +2648,98 @@ This transformation stretches distances perpendicular to the principal axis, ens
 R_i(s_0) = \sqrt{(Y(s_i) - \hat{\mu}(s_i))^\top \hat{\mathbf{\Sigma}}(s_0)^{-1} (Y(s_i) - \hat{\mu}(s_i))}.
 \]</span></li>
 </ol>
-<h2 data-number="4" id="software-architecture-and-interface"><span class="header-section-number">4</span> Software architecture and interface</h2>
-<p><a href="https://cran.r-project.org/package=spconform">spconform</a> is deliberately engineered following the Unix philosophy and CRAN guidelines:</p>
-<ul>
-<li><strong>Zero Heavy Dependencies:</strong> The core package relies exclusively on standard Base R packages (<a href="#">stats</a>, <a href="#">graphics</a>, <a href="#">grDevices</a>, <a href="#">utils</a>), avoiding compilation vulnerabilities associated with external C++ geospatial libraries (GDAL, GEOS, PROJ).</li>
-<li><strong>Strict Model-Agnosticism:</strong> Any point prediction model in R can be supplied via a unified functional wrapper:</li>
-</ul>
+<h2 data-number="4" id="software-architecture-and-design-considerations"><span class="header-section-number">4</span> Software architecture and design considerations</h2>
+<h3 data-number="4.1" id="target-audience-and-typical-workflow"><span class="header-section-number">4.1</span> Target audience and typical workflow</h3>
+<p>The <a href="https://cran.r-project.org/package=spconform">spconform</a> package is designed for applied spatial analysts, ecologists, spatial epidemiologists, and data scientists who require distribution-free, finite-sample prediction intervals without relying on restrictive Gaussian assumptions or complex Bayesian Markov Chain Monte Carlo (MCMC) pipelines.</p>
+<p>The package implements a consistent four-stage user workflow across all spatial modalities:
+1. <strong>Data preparation:</strong> Spatial coordinates matrix <span class="math inline">\(s \in \mathbb{R}^{n \times 2}\)</span> and observed response vector <span class="math inline">\(Y\)</span>.
+2. <strong>Model definition:</strong> The user defines any point prediction algorithm via a functional wrapper:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pred_fun <span class="ot">=</span> <span class="cf">function</span>(s_train, y_train, s_new) { ... }</span></code></pre></div>
-<p>This design enables users to seamlessly wrap linear models, generalized additive models (<a href="https://cran.r-project.org/package=mgcv">mgcv</a>), random forests (<a href="https://cran.r-project.org/package=ranger">ranger</a>), gradient boosting machines, or deep neural networks without modifying package internals.
-- <strong>Unified S3 Object-Oriented Interface:</strong> Standard R generics are consistently implemented across all modalities, including <code>print()</code>, <code>summary()</code>, <code>plot()</code>, <code>predict()</code>, <code>residuals()</code>, <code>diagnose()</code>, and <code>coverage_report()</code>.</p>
+<ol start="3" type="1">
+<li><strong>Localized conformal calibration:</strong> Fitting prediction intervals via <code>scp_geostatistical()</code> (point data), <code>scp_areal()</code> (polygon lattices), <code>scp_count()</code> (discrete epidemiology), <code>scp_classification()</code> (prediction sets), or <code>scp_multivariate()</code> (vector fields).</li>
+<li><strong>Diagnostic auditing and reporting:</strong> Comprehensive model evaluation via <code>plot()</code>, <code>diagnose()</code>, <code>conformal_ce_surface()</code>, and <code>coverage_report()</code>.</li>
+</ol>
+<h3 data-number="4.2" id="object-model-and-implementation-details"><span class="header-section-number">4.2</span> Object model and implementation details</h3>
+<p><a href="https://cran.r-project.org/package=spconform">spconform</a> strictly adheres to R’s standard S3 object-oriented system. S3 was selected over S4 and R6 because it introduces zero computational overhead, maintains maximal transparency, and integrates naturally with base R idiom and the tidyverse. The package defines lightweight S3 classes (<code>spconform</code>, <code>spconform_classification</code>, <code>spconform_count</code>, <code>spconform_multivariate</code>, <code>spconform_diagnose</code>, <code>spconform_ce_surface</code>, <code>spconform_mantel</code>, <code>spconform_cross_l</code>), each providing tailored implementations of generic functions:
+- <code>predict()</code>: Extracts point predictions and localized upper and lower bounds.
+- <code>residuals()</code>: Extracts nonconformity scores and raw calibration residuals.
+- <code>plot()</code>: Visualizes prediction intervals, multi-panel diagnostic dashboards, or spatial efficiency phase planes.
+- <code>print()</code> and <code>summary()</code>: Renders concise, publication-ready textual summaries with coverage gaps and Winkler scores.</p>
+<h3 data-number="4.3" id="dependency-philosophy-and-cran-stability"><span class="header-section-number">4.3</span> Dependency philosophy and CRAN stability</h3>
+<p>A foundational design driver for <a href="https://cran.r-project.org/package=spconform">spconform</a> is minimal dependency footprint. While many spatial R packages depend on external C++ geospatial libraries (GDAL, GEOS, PROJ) that frequently introduce compilation failures across operating system upgrades, <a href="https://cran.r-project.org/package=spconform">spconform</a> relies exclusively on standard base R packages (<a href="#">stats</a>, <a href="#">graphics</a>, <a href="#">grDevices</a>, <a href="#">utils</a>). Spatial distance calculations, coordinate transformations, and kernel matrices are evaluated through vectorized base R linear algebra, ensuring guaranteed cross-platform installation stability across Windows, macOS, and Linux without external system requirements.</p>
+<h3 data-number="4.4" id="computational-performance-scalability-and-limits"><span class="header-section-number">4.4</span> Computational performance, scalability, and limits</h3>
+<p>Evaluating localized conformal intervals requires computing pairwise spatial distances between <span class="math inline">\(N_{\text{cal}}\)</span> calibration points and <span class="math inline">\(N_{\text{query}}\)</span> query points. In naive implementations, recomputing kernel bandwidths per query yields <span class="math inline">\(O(N_{\text{cal}}^2 \cdot N_{\text{query}})\)</span> computational complexity. <a href="https://cran.r-project.org/package=spconform">spconform</a> optimizes this through:
+- <strong>Bandwidth caching:</strong> Spatial kernel bandwidth <span class="math inline">\(h\)</span> is evaluated once prior to the prediction loop via vectorized matrix operations, providing up to a 50x speedup.
+- <strong>Localized nearest-neighbor subsampling:</strong> For large calibration datasets (<span class="math inline">\(N &gt; 1000\)</span>), users can supply <code>k_neighbors</code> to restrict localized calibration borrowing to the <span class="math inline">\(k\)</span> nearest spatial neighbors, keeping memory footprint bounded at <span class="math inline">\(O(k \cdot N_{\text{query}})\)</span>.
+- <strong>Fast invariant matrix permutation:</strong> For diagnostic tests such as <code>spatial_mantel()</code>, off-diagonal distance variances remain constant under index permutations, reducing each Monte Carlo permutation from <span class="math inline">\(O(N^2)\)</span> to a single vector dot product.</p>
+<p>On standard consumer hardware, a complete geostatistical conformal calibration on <span class="math inline">\(n = 155\)</span> observations executes in under 0.15 seconds, and the full replication suite for this manuscript compiles in less than 30 seconds.</p>
+<h3 data-number="4.5" id="comparison-with-existing-software-and-competitor-packages"><span class="header-section-number">4.5</span> Comparison with existing software and competitor packages</h3>
+<p>Table 1 summarizes the functional landscape of predictive uncertainty quantification across R and Python packages.</p>
+<div class="layout-chunk" data-layout="l-body">
+<table style="width:100%;">
+<caption><span id="tab:tab-comparison">Table 1: </span>Feature comparison between spconform and existing uncertainty quantification packages.</caption>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 6%" />
+<col style="width: 15%" />
+<col style="width: 16%" />
+<col style="width: 30%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Package</th>
+<th style="text-align: left;">Language</th>
+<th style="text-align: left;">Spatial Weighting</th>
+<th style="text-align: left;">Exchangeability</th>
+<th style="text-align: left;">Multi-Modality Support</th>
+<th style="text-align: left;">External Dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">conformalInference</td>
+<td style="text-align: left;">R</td>
+<td style="text-align: left;">No</td>
+<td style="text-align: left;">Required</td>
+<td style="text-align: left;">Continuous only</td>
+<td style="text-align: left;">Low</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">splitconformal</td>
+<td style="text-align: left;">R</td>
+<td style="text-align: left;">No</td>
+<td style="text-align: left;">Required</td>
+<td style="text-align: left;">Continuous only</td>
+<td style="text-align: left;">Low</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MAPIE (Python)</td>
+<td style="text-align: left;">Python</td>
+<td style="text-align: left;">No</td>
+<td style="text-align: left;">Required</td>
+<td style="text-align: left;">Continuous + Classification</td>
+<td style="text-align: left;">Scikit-Learn</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">gstat / geoR</td>
+<td style="text-align: left;">R</td>
+<td style="text-align: left;">Yes (Kriging)</td>
+<td style="text-align: left;">Stationary Covariance</td>
+<td style="text-align: left;">Continuous only</td>
+<td style="text-align: left;">Heavy (C++)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">spconform</td>
+<td style="text-align: left;">R</td>
+<td style="text-align: left;">Yes (Kernel + Graph)</td>
+<td style="text-align: left;">Relaxed (Localized)</td>
+<td style="text-align: left;">Point, Areal, Count, Multiclass, Vector</td>
+<td style="text-align: left;">Zero (Base R)</td>
+</tr>
+</tbody>
+</table>
+</div>
 <h2 data-number="5" id="empirical-benchmark-and-cross-system-comparison"><span class="header-section-number">5</span> Empirical benchmark and cross-system comparison</h2>
 <p>To evaluate the empirical performance of <a href="https://cran.r-project.org/package=spconform">spconform</a>, we conduct a controlled benchmark comparing four distinct spatial uncertainty paradigms:
 1. <strong>Classical Gaussian Kriging</strong> (parametric geostatistical model with exponential variogram).
@@ -2695,10 +2778,10 @@ where the localized noise standard deviation varies five-fold across the geograp
 <span><span class="va">rep_sp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amjed-droid.github.io/spconform/reference/coverage_report.html">coverage_report</a></span><span class="op">(</span><span class="va">fit_sp</span>, <span class="va">y_te</span><span class="op">)</span></span></code></pre>
 </div>
 </div>
-<p>The benchmark results comparing empirical coverage, mean interval width, and the strictly proper Winkler Interval Score (WIS) <span class="citation" data-cites="winkler1972decision">(<a href="#ref-winkler1972decision" role="doc-biblioref">Winkler 1972</a>)</span> are summarized in Table 1.</p>
+<p>The benchmark results comparing empirical coverage, mean interval width, and the strictly proper Winkler Interval Score (WIS) <span class="citation" data-cites="winkler1972decision">(<a href="#ref-winkler1972decision" role="doc-biblioref">Winkler 1972</a>)</span> are summarized in Table 2.</p>
 <div class="layout-chunk" data-layout="l-body">
 <table style="width:100%;">
-<caption><span id="tab:tab-benchmark">Table 1: </span>Comparative empirical benchmark on heteroskedastic spatial simulation (<span class="math inline">\(N = 250\)</span>, target <span class="math inline">\(1 - \alpha = 90\%\)</span>).</caption>
+<caption><span id="tab:tab-benchmark">Table 2: </span>Comparative empirical benchmark on heteroskedastic spatial simulation (<span class="math inline">\(N = 250\)</span>, target <span class="math inline">\(1 - \alpha = 90\%\)</span>).</caption>
 <colgroup>
 <col style="width: 21%" />
 <col style="width: 7%" />
@@ -2753,7 +2836,7 @@ where the localized noise standard deviation varies five-fold across the geograp
 </tbody>
 </table>
 </div>
-<p>As demonstrated in Table 1, classical kriging suffers a catastrophic coverage collapse (73.3%) due to its rigid global variance assumption. Both global conformal prediction and Python’s MAPIE 1.6.0 achieve marginal coverage (89.3%), but do so by inflating interval widths globally (mean width 2.51), failing to capture the five-fold spatial variance transition. In contrast, <a href="https://cran.r-project.org/package=spconform">spconform</a> accurately achieves the nominal 90.7% coverage with an 17.1% reduction in mean interval width and a 19.5% improvement in strictly proper Winkler efficiency (2.94 vs 3.65).</p>
+<p>As demonstrated in Table 2, classical kriging suffers a catastrophic coverage collapse (73.3%) due to its rigid global variance assumption. Both global conformal prediction and Python’s MAPIE 1.6.0 achieve marginal coverage (89.3%), but do so by inflating interval widths globally (mean width 2.51), failing to capture the five-fold spatial variance transition. In contrast, <a href="https://cran.r-project.org/package=spconform">spconform</a> accurately achieves the nominal 90.7% coverage with an 17.1% reduction in mean interval width and a 19.5% improvement in strictly proper Winkler efficiency (2.94 vs 3.65).</p>
 <h2 data-number="6" id="spatial-diagnostic-suite-and-case-studies"><span class="header-section-number">6</span> Spatial diagnostic suite and case studies</h2>
 <h3 data-number="6.1" id="the-meuse-river-contamination-case-study"><span class="header-section-number">6.1</span> The Meuse river contamination case study</h3>
 <p>We demonstrate <a href="https://cran.r-project.org/package=spconform">spconform</a> on the classic Meuse topsoil heavy-metal pollution dataset (<span class="math inline">\(n = 155\)</span>) <span class="citation" data-cites="pebesma2005classes">(<a href="#ref-pebesma2005classes" role="doc-biblioref">Pebesma and Bivand 2005</a>)</span>. The objective is predicting log-zinc concentration with valid spatial uncertainty intervals.</p>
@@ -2847,9 +2930,8 @@ Figure 2: Figure 2: Conformal Efficiency-Coverage (C-E) phase portrait displayin
 <h2 class="unnumbered" id="references">References</h2>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <h3 class="appendix" data-number="8.1" id="cran-packages-used"><span class="header-section-number">8.1</span> CRAN packages used</h3>
-<p><a href="https://cran.r-project.org/package=spconform">spconform</a>, <a href="https://cran.r-project.org/package=mgcv">mgcv</a>, <a href="https://cran.r-project.org/package=ranger">ranger</a></p>
+<p><a href="https://cran.r-project.org/package=spconform">spconform</a></p>
 <h3 class="appendix" data-number="8.2" id="cran-task-views-implied-by-cited-packages"><span class="header-section-number">8.2</span> CRAN Task Views implied by cited packages</h3>
-<p><a href="https://cran.r-project.org/view=Bayesian">Bayesian</a>, <a href="https://cran.r-project.org/view=Econometrics">Econometrics</a>, <a href="https://cran.r-project.org/view=Environmetrics">Environmetrics</a>, <a href="https://cran.r-project.org/view=MachineLearning">MachineLearning</a>, <a href="https://cran.r-project.org/view=MixedModels">MixedModels</a>, <a href="https://cran.r-project.org/view=Spatial">Spatial</a>, <a href="https://cran.r-project.org/view=Survival">Survival</a></p>
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
 <div id="ref-barber2023conformal" class="csl-entry" role="listitem">
 R. F. Barber, E. J. Candès, A. Ramdas and R. J. Tibshirani. Conformal prediction beyond exchangeability. <em>The Annals of Statistics</em>, 51(2): 816–845, 2023. DOI <a href="https://doi.org/10.1214/23-AOS2276">10.1214/23-AOS2276</a>.

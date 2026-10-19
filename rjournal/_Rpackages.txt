@@ -1,0 +1,5 @@
+spconform
+sp
+mgcv
+knitr
+rjtools
