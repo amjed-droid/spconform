@@ -1,3 +1,358 @@
+#' Spatial Autocorrelation Diagnostics (Moran's I) for Conformal Residuals
+#'
+#' Evaluates spatial autocorrelation and clustering among prediction residuals
+#' and binary miscoverage indicators using Moran's \eqn{I} statistic.
+#'
+#' @param object An object of class \code{"spconform"} or numeric vector of predictions.
+#' @param y_true Numeric vector of true observed responses.
+#' @param s_test Numeric matrix of spatial coordinates (\eqn{m \times p}).
+#'
+#' @return An S3 object of class \code{"spconform_moran"} containing:
+#' \describe{
+#'   \item{moran_i}{Observed Moran's I statistic for prediction residuals.}
+#'   \item{expected}{Theoretical expectation \eqn{-1/(n-1)} under spatial independence.}
+#'   \item{z_score}{Standardized normal z-score under the randomization assumption.}
+#'   \item{p_value}{Two-sided p-value against the null hypothesis of spatial randomness.}
+#'   \item{is_random}{Logical; \code{TRUE} if p-value >= 0.05.}
+#'   \item{moran_i_miscoverage}{Moran's I on binary hit/miss indicators if available.}
+#' }
+#'
+#' @references
+#' Cliff, A. D. and Ord, J. K. (1981). \emph{Spatial Processes: Models & Applications}. Pion, London.
+#'
+#' Mao, H., Martin, R., and Reich, B. J. (2024). Valid Conformal Prediction
+#' for Dependent Data. \emph{Journal of the American Statistical Association},
+#' 119(546), 1269--1281. \doi{10.1080/01621459.2022.2147531}.
+#'
+#' @examples
+#' set.seed(42)
+#' n <- 50
+#' s <- matrix(runif(n * 2), n, 2)
+#' y <- sin(3 * s[, 1]) + rnorm(n, sd = 0.2)
+#' pfun <- function(s_tr, y_tr, s_new) rep(mean(y_tr), nrow(s_new))
+#' fit <- scp_geostatistical(s[1:35, ], y[1:35], s[36:50, ], pfun, alpha = 0.1)
+#' m_res <- spatial_moran(fit, y[36:50], s[36:50, ])
+#' print(m_res)
+#'
+#' @importFrom stats dist pnorm
+#' @export
+spatial_moran <- function(object, y_true, s_test) {
+  if (inherits(object, "spconform")) {
+    pred <- as.vector(object$pred)
+    covered <- as.vector((as.vector(y_true) >= as.vector(object$lower)) & (as.vector(y_true) <= as.vector(object$upper)))
+  } else {
+    pred <- as.vector(as.numeric(object))
+    covered <- NULL
+  }
+
+  y_true <- as.vector(as.numeric(y_true))
+  s_test <- as.matrix(s_test)
+  n <- length(y_true)
+
+  if (length(pred) != n) {
+    stop("length of predictions must equal length(y_true)")
+  }
+  if (nrow(s_test) != n) {
+    stop("nrow(s_test) must equal length(y_true)")
+  }
+  if (n < 5) {
+    stop("Need at least 5 spatial locations to compute Moran's I.")
+  }
+
+  raw_resids <- as.vector(y_true - pred)
+  z_res <- as.vector(raw_resids - mean(raw_resids))
+
+  # Inverse distance spatial weight matrix
+  d_mat <- as.matrix(stats::dist(s_test))
+  diag(d_mat) <- Inf
+  W <- 1 / d_mat
+  W[is.infinite(W)] <- 0
+  row_sums <- rowSums(W)
+  row_sums[row_sums == 0] <- 1
+  W_norm <- W / row_sums
+
+  s0_w <- sum(W_norm)
+  numerator <- sum(W_norm * outer(z_res, z_res))
+  denominator <- sum(z_res^2)
+
+  moran_i <- 0
+  exp_i <- -1 / (n - 1)
+  z_score <- 0
+  p_val <- 1
+
+  if (denominator > 0 && s0_w > 0) {
+    moran_i <- (n / s0_w) * (numerator / denominator)
+    var_i <- (n^2) / (s0_w^2 * (n^2 - 1))
+    z_score <- (moran_i - exp_i) / sqrt(pmax(1e-8, var_i))
+    p_val <- 2 * (1 - stats::pnorm(abs(z_score)))
+  }
+
+  # Moran on binary miscoverage hits
+  moran_hit <- NULL
+  if (!is.null(covered)) {
+    z_hit <- as.vector(as.numeric(covered) - mean(covered))
+    denom_hit <- sum(z_hit^2)
+    if (denom_hit > 0 && s0_w > 0) {
+      moran_hit <- (n / s0_w) * (sum(W_norm * outer(z_hit, z_hit)) / denom_hit)
+    }
+  }
+
+  out <- list(
+    moran_i              = moran_i,
+    expected             = exp_i,
+    z_score              = z_score,
+    p_value              = p_val,
+    is_random            = (p_val >= 0.05),
+    moran_i_miscoverage  = moran_hit,
+    n                    = n
+  )
+  class(out) <- "spconform_moran"
+  out
+}
+
+#' Print Method for spconform_moran Objects
+#'
+#' @param x An object of class \code{"spconform_moran"}.
+#' @param ... Further arguments (unused).
+#' @export
+print.spconform_moran <- function(x, ...) {
+  cat("Spatial Autocorrelation Audit (Moran's I on Residuals)\n")
+  cat("----------------------------------------------------\n")
+  cat(sprintf("Observed Moran's I : %+.4f\n", x$moran_i))
+  cat(sprintf("Expected Value      : %+.4f\n", x$expected))
+  cat(sprintf("Standard Normal Z   : %+.4f\n", x$z_score))
+  cat(sprintf("Two-sided p-value   : %.4f %s\n", x$p_value,
+              if (x$is_random) "(No residual spatial clustering, p >= 0.05)"
+              else "(Significant spatial clustering detected, p < 0.05)"))
+  if (!is.null(x$moran_i_miscoverage)) {
+    cat(sprintf("Moran's I on Hits   : %+.4f\n", x$moran_i_miscoverage))
+  }
+  invisible(x)
+}
+
+#' Domain Boundary Proximity Diagnostics for Conformal Prediction
+#'
+#' Evaluates whether prediction intervals degrade near the convex-hull boundary
+#' of the spatial prediction domain versus interior locations.
+#'
+#' @param object An object of class \code{"spconform"}.
+#' @param y_true Numeric vector of true observed responses.
+#' @param s_test Numeric matrix of spatial coordinates (\eqn{m \times 2}).
+#'
+#' @return An S3 object of class \code{"spconform_boundary"} comparing empirical coverage,
+#'   interval width, and Winkler scores across edge and interior subdomains.
+#'
+#' @references
+#' Winkler, R. L. (1972). A Decision-Theoretic Approach to Interval Estimation.
+#' \emph{Journal of the American Statistical Association}, 67(337), 187--191.
+#'
+#' @examples
+#' set.seed(42)
+#' n <- 50
+#' s <- matrix(runif(n * 2), n, 2)
+#' y <- sin(3 * s[, 1]) + rnorm(n, sd = 0.2)
+#' pfun <- function(s_tr, y_tr, s_new) rep(mean(y_tr), nrow(s_new))
+#' fit <- scp_geostatistical(s[1:35, ], y[1:35], s[36:50, ], pfun, alpha = 0.1)
+#' b_res <- boundary_diagnostics(fit, y[36:50], s[36:50, ])
+#' print(b_res)
+#'
+#' @importFrom grDevices chull
+#' @importFrom stats median
+#' @export
+boundary_diagnostics <- function(object, y_true, s_test) {
+  if (!inherits(object, "spconform")) stop("'object' must be of class 'spconform'")
+  s_test <- as.matrix(s_test)
+  y_true <- as.numeric(y_true)
+  n <- length(object$pred)
+
+  if (ncol(s_test) < 2) stop("'s_test' must have at least 2 coordinate columns.")
+  if (nrow(s_test) != n) stop("nrow(s_test) must equal length(object$pred)")
+
+  alpha <- object$alpha
+  widths <- object$upper - object$lower
+  covered <- (y_true >= object$lower) & (y_true <= object$upper)
+  underage <- pmax(0, object$lower - y_true)
+  overage  <- pmax(0, y_true - object$upper)
+  wis_vec  <- widths + (2 / alpha) * underage + (2 / alpha) * overage
+
+  hull <- grDevices::chull(s_test[, 1], s_test[, 2])
+  hull_pts <- s_test[hull, , drop = FALSE]
+
+  dist_to_boundary <- apply(s_test, 1, function(pt) {
+    min(sqrt((hull_pts[, 1] - pt[1])^2 + (hull_pts[, 2] - pt[2])^2))
+  })
+
+  boundary_thresh <- stats::median(dist_to_boundary, na.rm = TRUE)
+  is_near <- dist_to_boundary <= boundary_thresh
+
+  out <- list(
+    threshold     = boundary_thresh,
+    near_boundary = list(
+      n            = sum(is_near),
+      coverage     = mean(covered[is_near], na.rm = TRUE),
+      mean_width   = mean(widths[is_near], na.rm = TRUE),
+      mean_winkler = mean(wis_vec[is_near], na.rm = TRUE)
+    ),
+    far_boundary  = list(
+      n            = sum(!is_near),
+      coverage     = mean(covered[!is_near], na.rm = TRUE),
+      mean_width   = mean(widths[!is_near], na.rm = TRUE),
+      mean_winkler = mean(wis_vec[!is_near], na.rm = TRUE)
+    ),
+    alpha         = alpha
+  )
+  class(out) <- "spconform_boundary"
+  out
+}
+
+#' Print Method for spconform_boundary Objects
+#'
+#' @param x An object of class \code{"spconform_boundary"}.
+#' @param ... Further arguments (unused).
+#' @export
+print.spconform_boundary <- function(x, ...) {
+  cat("Domain Boundary Proximity Audit (Convex Hull)\n")
+  cat("---------------------------------------------\n")
+  cat(sprintf("Distance Median Threshold: %.4f\n", x$threshold))
+  cat(sprintf("Near Boundary (Edge) : n = %d | Cov = %5.1f%% | Mean Width = %6.3f | WIS = %6.3f\n",
+              x$near_boundary$n, x$near_boundary$coverage * 100,
+              x$near_boundary$mean_width, x$near_boundary$mean_winkler))
+  cat(sprintf("Far Boundary (Core) : n = %d | Cov = %5.1f%% | Mean Width = %6.3f | WIS = %6.3f\n",
+              x$far_boundary$n, x$far_boundary$coverage * 100,
+              x$far_boundary$mean_width, x$far_boundary$mean_winkler))
+  invisible(x)
+}
+
+#' Plot Method for spconform_boundary Objects
+#'
+#' @param x An object of class \code{"spconform_boundary"}.
+#' @param ... Further graphical arguments.
+#' @importFrom graphics barplot abline
+#' @export
+plot.spconform_boundary <- function(x, ...) {
+  nominal <- 1 - x$alpha
+  graphics::barplot(c(x$near_boundary$coverage, x$far_boundary$coverage),
+                    names.arg = c("Near Boundary", "Far (Interior)"),
+                    col = c("coral", "steelblue"), ylab = "Coverage Rate",
+                    main = "Coverage vs Boundary Proximity",
+                    ylim = c(0, 1.15), ...)
+  graphics::abline(h = nominal, col = "red", lty = 2, lwd = 1.5)
+  invisible(x)
+}
+
+#' Conditional Spatial Strata Diagnostics for Conformal Prediction
+#'
+#' Partitions the spatial domain into coordinate grid strata/quadrants and audits
+#' local empirical coverage, interval widths, and Winkler scores.
+#'
+#' @param object An object of class \code{"spconform"}.
+#' @param y_true Numeric vector of true observed responses.
+#' @param s_test Numeric matrix of spatial coordinates (\eqn{m \times 2}).
+#' @param n_bins Integer; number of spatial bins per coordinate axis (default 4).
+#'
+#' @return An S3 object of class \code{"spconform_strata"} containing a data frame
+#'   of strata evaluations and summary metrics.
+#'
+#' @references
+#' Winkler, R. L. (1972). A Decision-Theoretic Approach to Interval Estimation.
+#' \emph{Journal of the American Statistical Association}, 67(337), 187--191.
+#'
+#' @examples
+#' set.seed(42)
+#' n <- 50
+#' s <- matrix(runif(n * 2), n, 2)
+#' y <- sin(3 * s[, 1]) + rnorm(n, sd = 0.2)
+#' pfun <- function(s_tr, y_tr, s_new) rep(mean(y_tr), nrow(s_new))
+#' fit <- scp_geostatistical(s[1:35, ], y[1:35], s[36:50, ], pfun, alpha = 0.1)
+#' s_res <- strata_diagnostics(fit, y[36:50], s[36:50, ], n_bins = 2)
+#' print(s_res)
+#'
+#' @export
+strata_diagnostics <- function(object, y_true, s_test, n_bins = 4) {
+  if (!inherits(object, "spconform")) stop("'object' must be of class 'spconform'")
+  s_test <- as.matrix(s_test)
+  y_true <- as.numeric(y_true)
+  n <- length(object$pred)
+
+  if (ncol(s_test) < 2) stop("'s_test' must have at least 2 coordinate columns.")
+  if (nrow(s_test) != n) stop("nrow(s_test) must equal length(object$pred)")
+
+  alpha <- object$alpha
+  widths <- object$upper - object$lower
+  covered <- (y_true >= object$lower) & (y_true <= object$upper)
+  underage <- pmax(0, object$lower - y_true)
+  overage  <- pmax(0, y_true - object$upper)
+  wis_vec  <- widths + (2 / alpha) * underage + (2 / alpha) * overage
+
+  x_q <- cut(s_test[, 1], breaks = n_bins, include.lowest = TRUE, labels = FALSE)
+  y_q <- cut(s_test[, 2], breaks = n_bins, include.lowest = TRUE, labels = FALSE)
+  bin_id <- paste0("Q", x_q, "-", y_q)
+
+  df <- data.frame(
+    bin          = character(),
+    n            = integer(),
+    coverage     = numeric(),
+    mean_width   = numeric(),
+    mean_winkler = numeric(),
+    stringsAsFactors = FALSE
+  )
+
+  for (b in sort(unique(bin_id))) {
+    idx <- which(bin_id == b)
+    df <- rbind(df, data.frame(
+      bin          = b,
+      n            = length(idx),
+      coverage     = mean(covered[idx], na.rm = TRUE),
+      mean_width   = mean(widths[idx], na.rm = TRUE),
+      mean_winkler = mean(wis_vec[idx], na.rm = TRUE),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  out <- list(
+    strata = df,
+    alpha  = alpha,
+    n_bins = n_bins
+  )
+  class(out) <- "spconform_strata"
+  out
+}
+
+#' Print Method for spconform_strata Objects
+#'
+#' @param x An object of class \code{"spconform_strata"}.
+#' @param ... Further arguments (unused).
+#' @export
+print.spconform_strata <- function(x, ...) {
+  cat("Conditional Spatial Strata Audit\n")
+  cat("--------------------------------\n")
+  for (i in seq_len(nrow(x$strata))) {
+    cat(sprintf("   - Strata %-7s: Cov = %5.1f%% | Mean Width = %6.3f | WIS = %6.3f (n = %d)\n",
+                x$strata$bin[i],
+                x$strata$coverage[i] * 100,
+                x$strata$mean_width[i],
+                x$strata$mean_winkler[i],
+                x$strata$n[i]))
+  }
+  invisible(x)
+}
+
+#' Plot Method for spconform_strata Objects
+#'
+#' @param x An object of class \code{"spconform_strata"}.
+#' @param ... Further graphical arguments.
+#' @importFrom graphics barplot abline
+#' @export
+plot.spconform_strata <- function(x, ...) {
+  nominal <- 1 - x$alpha
+  graphics::barplot(x$strata$coverage, names.arg = x$strata$bin,
+                    col = "steelblue", ylab = "Coverage Rate",
+                    main = "Conditional Coverage by Spatial Strata",
+                    ylim = c(0, 1.15), las = 2, cex.names = 0.7, ...)
+  graphics::abline(h = nominal, col = "red", lty = 2, lwd = 1.5)
+  invisible(x)
+}
+
 #' Comprehensive Diagnostic Suite for Spatial Conformal Prediction Objects
 #'
 #' Produces a comprehensive multi-panel diagnostic report evaluating marginal
@@ -17,40 +372,43 @@
 #' @param ... Additional graphical parameters passed to internal plotting methods.
 #'
 #' @details
-#' The diagnostic suite performs five rigorous audits on the prediction intervals:
+#' The diagnostic suite coordinates modular audits across the prediction intervals:
 #' \enumerate{
 #'   \item \strong{Marginal Validity & Sharpness}: Evaluates empirical coverage
-#'     \eqn{\frac{1}{m}\sum \mathbf{1}(Y_i \in C(s_i))}, mean/median interval width,
-#'     and the strictly proper \strong{Winkler Interval Score (WIS)}:
-#'     \deqn{\text{WIS}_\alpha(l, u, y) = (u - l) + \frac{2}{\alpha}(l - y)\mathbf{1}(y < l) + \frac{2}{\alpha}(y - u)\mathbf{1}(y > u)}
-#'   \item \strong{Conditional Spatial Stratification}: Partitions the 2D spatial domain
-#'     into \eqn{\text{n\_bins} \times \text{n\_bins}} equal-area quadrants and assesses local coverage.
-#'   \item \strong{Convex Hull Boundary Proximity}: Assesses whether edge-effect
-#'     extrapolations degrade coverage near the boundary of the spatial domain.
-#'   \item \strong{Spatial Autocorrelation (Moran's I)}: Evaluates whether prediction
-#'     miscoverages or nonconformity scores exhibit residual spatial clustering via Moran's \eqn{I}.
+#'     and the strictly proper Winkler Interval Score (WIS; Winkler 1972).
+#'   \item \strong{Conditional Spatial Stratification}: Calls \code{\link{strata_diagnostics}}
+#'     to evaluate local coverage across quadrants.
+#'   \item \strong{Convex Hull Boundary Proximity}: Calls \code{\link{boundary_diagnostics}}
+#'     to test whether edge-effect extrapolations degrade calibration.
+#'   \item \strong{Spatial Autocorrelation (Moran's I)}: Calls \code{\link{spatial_moran}}
+#'     to test for residual spatial dependence.
 #'   \item \strong{Score Distribution}: Analyzes empirical quantiles and normality/QQ structure.
 #' }
 #'
 #' @return An S3 object of class \code{"spconform_diagnose"} containing:
 #' \describe{
 #'   \item{marginal}{List with coverage, mean width, median width, sd width, Winkler score, and sample size.}
-#'   \item{conditional}{Data frame of coverage and widths partitioned by spatial quadrant.}
-#'   \item{boundary}{List comparing empirical metrics between interior and boundary units.}
-#'   \item{spatial_autocorr}{List containing Moran's I statistic, expected value, z-score, and p-value.}
+#'   \item{conditional}{Data frame of coverage and widths partitioned by spatial quadrant (class \code{"spconform_strata"}).}
+#'   \item{boundary}{Object of class \code{"spconform_boundary"} comparing edge vs interior units.}
+#'   \item{spatial_autocorr}{Object of class \code{"spconform_moran"} with Moran's I statistics.}
 #'   \item{scores}{Summary of nonconformity score moments and quantiles.}
+#'   \item{raw_scores}{Numeric vector of nonconformity scores.}
 #'   \item{alpha}{Miscoverage level of the evaluated object.}
 #' }
 #'
 #' @references
-#' Winkler, R. L. (1972). "A Decision-Theoretic Approach to Interval Estimation."
-#' \emph{Journal of the American Statistical Association}, 67(337), 187-191.
+#' Winkler, R. L. (1972). A Decision-Theoretic Approach to Interval Estimation.
+#' \emph{Journal of the American Statistical Association}, 67(337), 187--191.
 #'
-#' Mao, R., Martin, R., and Reich, B. J. (2023). "Valid Conformal Prediction
-#' for Dependent Data." \emph{Journal of the American Statistical Association},
-#' \doi{10.1080/01621459.2022.2147531}.
+#' Mao, H., Martin, R., and Reich, B. J. (2024). Valid Conformal Prediction
+#' for Dependent Data. \emph{Journal of the American Statistical Association},
+#' 119(546), 1269--1281. \doi{10.1080/01621459.2022.2147531}.
 #'
-#' @seealso \code{\link{scp_geostatistical}}, \code{\link{scp_areal}}, \code{\link{coverage_report}}
+#' Susmann, H. P. (2024). Adaptive Conformal Prediction for Spatial Data.
+#' \emph{Computo}, \doi{10.57750/edan-5f53}.
+#'
+#' @seealso \code{\link{spatial_moran}}, \code{\link{boundary_diagnostics}},
+#'   \code{\link{strata_diagnostics}}, \code{\link{scp_geostatistical}}, \code{\link{scp_areal}}
 #'
 #' @examples
 #' set.seed(42)
@@ -65,6 +423,9 @@
 #'
 #' diag_res <- diagnose(out, y_true = y_te, s_test = s_te, plot = FALSE)
 #' print(diag_res)
+#'
+#' # Programmatic access to modular components
+#' as.data.frame(diag_res)
 #'
 #' @importFrom stats median sd quantile qqnorm qqline pnorm dist
 #' @importFrom graphics abline barplot layout par text legend
@@ -92,7 +453,6 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
   covered <- (y_true >= object$lower) & (y_true <= object$upper)
   widths  <- object$upper - object$lower
 
-  # Winkler Interval Score (WIS)
   underage <- pmax(0, object$lower - y_true)
   overage  <- pmax(0, y_true - object$upper)
   wis_vec  <- widths + (2 / alpha) * underage + (2 / alpha) * overage
@@ -107,100 +467,22 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
     n_covered    = sum(covered, na.rm = TRUE)
   )
 
-  ## ---- 2. Conditional Coverage by Spatial Strata ----
+  ## ---- 2. Modular Conditional Strata Diagnostics ----
   conditional <- NULL
   if (!is.null(s_test) && ncol(s_test) >= 2) {
-    x_q <- cut(s_test[, 1], breaks = n_bins, include.lowest = TRUE, labels = FALSE)
-    y_q <- cut(s_test[, 2], breaks = n_bins, include.lowest = TRUE, labels = FALSE)
-    bin_id <- paste0("Q", x_q, "-", y_q)
-
-    conditional <- data.frame(
-      bin          = character(),
-      n            = integer(),
-      coverage     = numeric(),
-      mean_width   = numeric(),
-      mean_winkler = numeric(),
-      stringsAsFactors = FALSE
-    )
-
-    for (b in sort(unique(bin_id))) {
-      idx <- which(bin_id == b)
-      conditional <- rbind(conditional, data.frame(
-        bin          = b,
-        n            = length(idx),
-        coverage     = mean(covered[idx], na.rm = TRUE),
-        mean_width   = mean(widths[idx], na.rm = TRUE),
-        mean_winkler = mean(wis_vec[idx], na.rm = TRUE)
-      ))
-    }
+    conditional <- strata_diagnostics(object, y_true, s_test, n_bins = n_bins)
   }
 
-  ## ---- 3. Boundary Effects (Convex Hull) ----
+  ## ---- 3. Modular Boundary Proximity Diagnostics ----
   boundary <- NULL
   if (!is.null(s_test) && ncol(s_test) >= 2 && identical(object$type, "geostatistical")) {
-    hull <- grDevices::chull(s_test[, 1], s_test[, 2])
-    hull_pts <- s_test[hull, , drop = FALSE]
-
-    dist_to_boundary <- apply(s_test, 1, function(pt) {
-      min(sqrt((hull_pts[, 1] - pt[1])^2 + (hull_pts[, 2] - pt[2])^2))
-    })
-
-    boundary_thresh <- stats::median(dist_to_boundary, na.rm = TRUE)
-    is_near <- dist_to_boundary <= boundary_thresh
-
-    boundary <- list(
-      threshold     = boundary_thresh,
-      near_boundary = list(
-        n            = sum(is_near),
-        coverage     = mean(covered[is_near], na.rm = TRUE),
-        mean_width   = mean(widths[is_near], na.rm = TRUE),
-        mean_winkler = mean(wis_vec[is_near], na.rm = TRUE)
-      ),
-      far_boundary = list(
-        n            = sum(!is_near),
-        coverage     = mean(covered[!is_near], na.rm = TRUE),
-        mean_width   = mean(widths[!is_near], na.rm = TRUE),
-        mean_winkler = mean(wis_vec[!is_near], na.rm = TRUE)
-      )
-    )
+    boundary <- boundary_diagnostics(object, y_true, s_test)
   }
 
-  ## ---- 4. Spatial Autocorrelation (Moran's I on Residuals) ----
+  ## ---- 4. Modular Spatial Autocorrelation Diagnostics ----
   spatial_autocorr <- NULL
-  if (!is.null(s_test) && n >= 10 && ncol(s_test) >= 2) {
-    raw_resids <- y_true - object$pred
-    z_res <- raw_resids - mean(raw_resids)
-    
-    # Inverse distance spatial weight matrix
-    d_mat <- as.matrix(stats::dist(s_test))
-    diag(d_mat) <- Inf
-    W <- 1 / d_mat
-    W[is.infinite(W)] <- 0
-    # Row normalize
-    row_sums <- rowSums(W)
-    row_sums[row_sums == 0] <- 1
-    W_norm <- W / row_sums
-    
-    s0_w <- sum(W_norm)
-    numerator <- sum(W_norm * outer(z_res, z_res))
-    denominator <- sum(z_res^2)
-    
-    if (denominator > 0 && s0_w > 0) {
-      moran_i <- (n / s0_w) * (numerator / denominator)
-      exp_i <- -1 / (n - 1)
-      # Approximate variance under randomization
-      var_i <- (n^2) / (s0_w^2 * (n^2 - 1))
-      z_score <- (moran_i - exp_i) / sqrt(pmax(1e-8, var_i))
-      p_val <- 2 * (1 - stats::pnorm(abs(z_score)))
-      
-      spatial_autocorr <- list(
-        moran_i   = moran_i,
-        expected  = exp_i,
-        z_score   = z_score,
-        p_value   = p_val,
-        is_random = (p_val >= 0.05)
-      )
-    }
+  if (!is.null(s_test) && n >= 5 && ncol(s_test) >= 2) {
+    spatial_autocorr <- spatial_moran(object, y_true, s_test)
   }
 
   ## ---- 5. Nonconformity Score Distribution ----
@@ -214,7 +496,6 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
     q95    = stats::quantile(scores, 0.95, na.rm = TRUE)
   )
 
-  ## ---- Return S3 Object ----
   out <- list(
     marginal         = marginal,
     conditional      = conditional,
@@ -234,6 +515,31 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
   out
 }
 
+#' Coerce an spconform_diagnose Object to a Data Frame
+#'
+#' Extracts conditional spatial strata and diagnostic statistics as a tidy
+#' data frame for programmatic inspection.
+#'
+#' @param x An object of class \code{"spconform_diagnose"}.
+#' @param row.names Optional row names.
+#' @param optional Logical; passed to \code{as.data.frame}.
+#' @param ... Additional arguments (unused).
+#'
+#' @return A tidy \code{data.frame} of spatial diagnostic strata.
+#' @export
+as.data.frame.spconform_diagnose <- function(x, row.names = NULL, optional = FALSE, ...) {
+  if (!is.null(x$conditional)) {
+    df <- x$conditional$strata
+  } else {
+    df <- data.frame(
+      metric = c("coverage", "mean_width", "mean_winkler", "n"),
+      value  = c(x$marginal$coverage, x$marginal$mean_width, x$marginal$mean_winkler, x$marginal$n),
+      stringsAsFactors = FALSE
+    )
+  }
+  df
+}
+
 #' Plot Diagnostic Audit for an spconform_diagnose Object
 #'
 #' Generates a multi-panel visual audit of marginal coverage, nonconformity
@@ -248,12 +554,12 @@ diagnose <- function(object, y_true, s_test = NULL, n_bins = 4, plot = TRUE, ...
 plot.spconform_diagnose <- function(x, ...) {
   nominal <- 1 - x$alpha
   marginal <- x$marginal
-  conditional <- x$conditional
+  conditional_df <- if (!is.null(x$conditional)) x$conditional$strata else NULL
   boundary <- x$boundary
   scores <- x$raw_scores
 
   n_panels <- 2
-  if (!is.null(conditional)) n_panels <- n_panels + 1
+  if (!is.null(conditional_df)) n_panels <- n_panels + 1
   if (!is.null(boundary)) n_panels <- n_panels + 1
 
   layout_mat <- if (n_panels == 2) {
@@ -295,8 +601,8 @@ plot.spconform_diagnose <- function(x, ...) {
   }
 
   # Panel 3: Spatial Strata Quadrants
-  if (!is.null(conditional)) {
-    graphics::barplot(conditional$coverage, names.arg = conditional$bin,
+  if (!is.null(conditional_df)) {
+    graphics::barplot(conditional_df$coverage, names.arg = conditional_df$bin,
                       col = "steelblue", ylab = "Coverage Rate",
                       main = "Conditional Coverage by Spatial Strata",
                       ylim = c(0, 1.1), las = 2, cex.names = 0.7)
@@ -316,52 +622,52 @@ plot.spconform_diagnose <- function(x, ...) {
   invisible(x)
 }
 
-
+#' Print Diagnostic Audit for an spconform_diagnose Object
+#'
+#' @param x An object of class \code{"spconform_diagnose"}.
+#' @param ... Further arguments (unused).
 #' @export
 print.spconform_diagnose <- function(x, ...) {
   nominal <- 1 - x$alpha
-  cov_val <- x$marginal$coverage
-
   cat("======================================================================\n")
-  cat("             spconform Comprehensive Diagnostic Audit Report          \n")
+  cat("  spconform Diagnostic Audit Report\n")
   cat("======================================================================\n\n")
 
-  # 1. Marginal Status
-  status_badge <- if (cov_val >= nominal) "[PASS]" else "[WARN]"
-  cat(">> 1. Marginal Validity & Prediction Sharpness:\n")
-  cat(sprintf("   * %s Empirical Coverage : %.3f (Target Nominal >= %.3f)\n",
-              status_badge, cov_val, nominal))
-  cat(sprintf("   * Mean Interval Width    : %.4f (Median = %.4f, SD = %.4f)\n",
+  # 1. Marginal
+  cat(">> 1. Marginal Coverage Validity & Sharpness:\n")
+  cat(sprintf("   - Target Nominal Level  : %5.1f%%\n", nominal * 100))
+  cat(sprintf("   - Empirical Coverage    : %5.1f%% (%d of %d covered)\n",
+              x$marginal$coverage * 100, x$marginal$n_covered, x$marginal$n))
+  cat(sprintf("   - Interval Width        : Mean = %.3f | Median = %.3f | SD = %.3f\n",
               x$marginal$mean_width, x$marginal$median_width, x$marginal$sd_width))
-  cat(sprintf("   * Winkler Interval Score : %.4f (Strictly Proper Loss)\n",
+  cat(sprintf("   - Winkler Score (WIS)   : Mean = %.3f (Proper Interval Score)\n\n",
               x$marginal$mean_winkler))
-  cat(sprintf("   * Total Target Units     : n = %d (Covered = %d, Miscovered = %d)\n\n",
-              x$marginal$n, x$marginal$n_covered, x$marginal$n - x$marginal$n_covered))
 
-  # 2. Spatial Autocorrelation
+  # 2. Moran
   if (!is.null(x$spatial_autocorr)) {
-    auto <- x$spatial_autocorr
-    auto_status <- if (auto$is_random) "[PASS]" else "[NOTE]"
-    cat(">> 2. Spatial Residual Autocorrelation (Moran's I Audit):\n")
-    cat(sprintf("   * %s Moran's I Statistic: %.4f (Expected = %.4f, z = %.2f, p-value = %.4f)\n",
-                auto_status, auto$moran_i, auto$expected, auto$z_score, auto$p_value))
-    if (auto$is_random) {
-      cat("   * Conclusion: Residuals show NO significant spatial clustering (Independent).\n\n")
+    cat(">> 2. Spatial Autocorrelation Audit (Moran's I on Residuals):\n")
+    cat(sprintf("   - Moran's I Statistic   : %+.4f (Expected = %+.4f)\n",
+                x$spatial_autocorr$moran_i, x$spatial_autocorr$expected))
+    cat(sprintf("   - Standardized Z-Score  : %+.4f (p-value = %.4f)\n",
+                x$spatial_autocorr$z_score, x$spatial_autocorr$p_value))
+    if (x$spatial_autocorr$is_random) {
+      cat("   - Residual Pattern      : Pass (No significant spatial clustering, p >= 0.05)\n\n")
     } else {
-      cat("   * Conclusion: Moderate spatial residual structure detected; localized weights active.\n\n")
+      cat("   - Residual Pattern      : Warning (Significant spatial clustering detected, p < 0.05)\n\n")
     }
   }
 
   # 3. Spatial Strata Quadrants
   if (!is.null(x$conditional)) {
     cat(">> 3. Conditional Coverage across Spatial Quadrants:\n")
-    for (i in seq_len(nrow(x$conditional))) {
+    cond_df <- x$conditional$strata
+    for (i in seq_len(nrow(cond_df))) {
       cat(sprintf("   - Strata %-7s: Cov = %5.1f%% | Mean Width = %6.3f | WIS = %6.3f (n = %d)\n",
-                  x$conditional$bin[i],
-                  x$conditional$coverage[i] * 100,
-                  x$conditional$mean_width[i],
-                  x$conditional$mean_winkler[i],
-                  x$conditional$n[i]))
+                  cond_df$bin[i],
+                  cond_df$coverage[i] * 100,
+                  cond_df$mean_width[i],
+                  cond_df$mean_winkler[i],
+                  cond_df$n[i]))
     }
     cat("\n")
   }

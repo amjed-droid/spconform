@@ -27,10 +27,11 @@ and spatial autocorrelation diagnostics.}
 An S3 object of class \code{"spconform_diagnose"} containing:
 \describe{
   \item{marginal}{List with coverage, mean width, median width, sd width, Winkler score, and sample size.}
-  \item{conditional}{Data frame of coverage and widths partitioned by spatial quadrant.}
-  \item{boundary}{List comparing empirical metrics between interior and boundary units.}
-  \item{spatial_autocorr}{List containing Moran's I statistic, expected value, z-score, and p-value.}
+  \item{conditional}{Data frame of coverage and widths partitioned by spatial quadrant (class \code{"spconform_strata"}).}
+  \item{boundary}{Object of class \code{"spconform_boundary"} comparing edge vs interior units.}
+  \item{spatial_autocorr}{Object of class \code{"spconform_moran"} with Moran's I statistics.}
   \item{scores}{Summary of nonconformity score moments and quantiles.}
+  \item{raw_scores}{Numeric vector of nonconformity scores.}
   \item{alpha}{Miscoverage level of the evaluated object.}
 }
 }
@@ -41,18 +42,16 @@ across spatial strata, boundary proximity effects, spatial residual autocorrelat
 (Moran's I), and nonconformity score distributions.
 }
 \details{
-The diagnostic suite performs five rigorous audits on the prediction intervals:
+The diagnostic suite coordinates modular audits across the prediction intervals:
 \enumerate{
   \item \strong{Marginal Validity & Sharpness}: Evaluates empirical coverage
-    \eqn{\frac{1}{m}\sum \mathbf{1}(Y_i \in C(s_i))}, mean/median interval width,
-    and the strictly proper \strong{Winkler Interval Score (WIS)}:
-    \deqn{\text{WIS}_\alpha(l, u, y) = (u - l) + \frac{2}{\alpha}(l - y)\mathbf{1}(y < l) + \frac{2}{\alpha}(y - u)\mathbf{1}(y > u)}
-  \item \strong{Conditional Spatial Stratification}: Partitions the 2D spatial domain
-    into \eqn{\text{n\_bins} \times \text{n\_bins}} equal-area quadrants and assesses local coverage.
-  \item \strong{Convex Hull Boundary Proximity}: Assesses whether edge-effect
-    extrapolations degrade coverage near the boundary of the spatial domain.
-  \item \strong{Spatial Autocorrelation (Moran's I)}: Evaluates whether prediction
-    miscoverages or nonconformity scores exhibit residual spatial clustering via Moran's \eqn{I}.
+    and the strictly proper Winkler Interval Score (WIS; Winkler 1972).
+  \item \strong{Conditional Spatial Stratification}: Calls \code{\link{strata_diagnostics}}
+    to evaluate local coverage across quadrants.
+  \item \strong{Convex Hull Boundary Proximity}: Calls \code{\link{boundary_diagnostics}}
+    to test whether edge-effect extrapolations degrade calibration.
+  \item \strong{Spatial Autocorrelation (Moran's I)}: Calls \code{\link{spatial_moran}}
+    to test for residual spatial dependence.
   \item \strong{Score Distribution}: Analyzes empirical quantiles and normality/QQ structure.
 }
 }
@@ -70,15 +69,22 @@ out <- scp_geostatistical(s_tr, y_tr, s_te, pfun, alpha = 0.1)
 diag_res <- diagnose(out, y_true = y_te, s_test = s_te, plot = FALSE)
 print(diag_res)
 
+# Programmatic access to modular components
+as.data.frame(diag_res)
+
 }
 \references{
-Winkler, R. L. (1972). "A Decision-Theoretic Approach to Interval Estimation."
-\emph{Journal of the American Statistical Association}, 67(337), 187-191.
+Winkler, R. L. (1972). A Decision-Theoretic Approach to Interval Estimation.
+\emph{Journal of the American Statistical Association}, 67(337), 187--191.
 
-Mao, R., Martin, R., and Reich, B. J. (2023). "Valid Conformal Prediction
-for Dependent Data." \emph{Journal of the American Statistical Association},
-\doi{10.1080/01621459.2022.2147531}.
+Mao, H., Martin, R., and Reich, B. J. (2024). Valid Conformal Prediction
+for Dependent Data. \emph{Journal of the American Statistical Association},
+119(546), 1269--1281. \doi{10.1080/01621459.2022.2147531}.
+
+Susmann, H. P. (2024). Adaptive Conformal Prediction for Spatial Data.
+\emph{Computo}, \doi{10.57750/edan-5f53}.
 }
 \seealso{
-\code{\link{scp_geostatistical}}, \code{\link{scp_areal}}, \code{\link{coverage_report}}
+\code{\link{spatial_moran}}, \code{\link{boundary_diagnostics}},
+  \code{\link{strata_diagnostics}}, \code{\link{scp_geostatistical}}, \code{\link{scp_areal}}
 }

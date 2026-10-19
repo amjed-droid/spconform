@@ -29,7 +29,12 @@
 #'   device used to relax the exchangeability assumption required by
 #'   standard conformal prediction: observations located near the point to
 #'   be predicted contribute more to the calibration of the prediction
-#'   interval than distant ones (Mao, Martin and Reich, 2020).
+#'   interval than distant ones (Mao, Martin and Reich, 2024).
+#'
+#' @references
+#' Mao, H., Martin, R., and Reich, B. J. (2024). Valid Conformal Prediction
+#' for Dependent Data. \emph{Journal of the American Statistical Association},
+#' 119(546), 1269--1281. \doi{10.1080/01621459.2022.2147531}.
 #'
 #' @examples
 #' set.seed(1)

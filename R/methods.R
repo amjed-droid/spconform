@@ -118,6 +118,10 @@ plot.spconform <- function(x, y_true = NULL, ...) {
 #'   \item{mean_width}{Average prediction interval width}.
 #'   \item{winkler_score}{Mean Winkler interval score across evaluation points}.
 #'
+#' @references
+#' Winkler, R. L. (1972). A Decision-Theoretic Approach to Interval Estimation.
+#' \emph{Journal of the American Statistical Association}, 67(337), 187--191.
+#'
 #' @examples
 #' set.seed(1)
 #' n <- 20

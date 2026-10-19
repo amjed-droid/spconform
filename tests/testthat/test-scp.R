@@ -212,3 +212,46 @@ test_that("v0.1.2: defensive input validation detects NAs and bad arguments", {
   expect_error(scp_areal(c(1, 2), adjacency = adj_na), "missing")
   expect_error(scp_areal(c(1, 2), X = matrix(c(1, NA), 2, 1), adjacency = adj), "missing")
 })
+
+test_that("v0.1.2: modular diagnostic functions work independently and programmatically", {
+  set.seed(123)
+  n <- 60
+  s_tr <- matrix(runif(n * 2), n, 2)
+  y_tr <- sin(3 * s_tr[, 1]) + rnorm(n, sd = 0.2)
+  s_te <- matrix(runif(30 * 2), 30, 2)
+  y_te <- sin(3 * s_te[, 1]) + rnorm(30, sd = 0.2)
+
+  pfun <- function(s_train, y_train, s_new) rep(mean(y_train), nrow(s_new))
+  fit <- scp_geostatistical(s_tr, y_tr, s_te, pfun, alpha = 0.1, seed = 1)
+
+  # 1. spatial_moran
+  m_res <- spatial_moran(fit, y_te, s_te)
+  expect_s3_class(m_res, "spconform_moran")
+  expect_true(is.numeric(m_res$moran_i))
+  expect_true(is.numeric(m_res$p_value))
+  expect_true(m_res$p_value >= 0 && m_res$p_value <= 1)
+
+  # 2. boundary_diagnostics
+  b_res <- boundary_diagnostics(fit, y_te, s_te)
+  expect_s3_class(b_res, "spconform_boundary")
+  expect_true(b_res$near_boundary$n > 0)
+  expect_true(b_res$far_boundary$n > 0)
+  expect_equal(b_res$near_boundary$n + b_res$far_boundary$n, 30)
+
+  # 3. strata_diagnostics
+  s_res <- strata_diagnostics(fit, y_te, s_te, n_bins = 2)
+  expect_s3_class(s_res, "spconform_strata")
+  expect_true(is.data.frame(s_res$strata))
+  expect_true(nrow(s_res$strata) > 0)
+
+  # 4. diagnose integration and as.data.frame
+  d_res <- diagnose(fit, y_te, s_te, n_bins = 2, plot = FALSE)
+  expect_s3_class(d_res, "spconform_diagnose")
+  expect_s3_class(d_res$spatial_autocorr, "spconform_moran")
+  expect_s3_class(d_res$boundary, "spconform_boundary")
+  expect_s3_class(d_res$conditional, "spconform_strata")
+
+  df_diag <- as.data.frame(d_res)
+  expect_true(is.data.frame(df_diag))
+  expect_true("coverage" %in% names(df_diag))
+})

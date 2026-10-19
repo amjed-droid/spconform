@@ -35,3 +35,7 @@ out <- scp_areal(y, adjacency = adj, alpha = 0.2)
 coverage_report(out, y)
 
 }
+\references{
+Winkler, R. L. (1972). A Decision-Theoretic Approach to Interval Estimation.
+\emph{Journal of the American Statistical Association}, 67(337), 187--191.
+}

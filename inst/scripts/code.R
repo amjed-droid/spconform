@@ -63,52 +63,7 @@ suppressPackageStartupMessages({
   library(ranger)
 })
 
-# S3 plot method ensuring exact match with manuscript Figures 2 and 5
-plot.spconform <- function(x, y_true = NULL, xlab = NULL, ylab = NULL, ...) {
-  n <- length(x$pred)
-  ord <- seq_len(n)
-  
-  if (is.null(xlab)) {
-    xlab <- if (identical(x$type, "areal")) "Areal Unit Index" else "Prediction Index"
-  }
-  if (is.null(ylab)) {
-    ylab <- "Predicted / Response Value"
-  }
-  
-  all_vals <- c(x$pred, x$lower, x$upper)
-  if (!is.null(y_true)) all_vals <- c(all_vals, y_true)
-  finite_vals <- all_vals[is.finite(all_vals)]
-  ylim_val <- if (length(finite_vals) == 0) c(0, 1) else range(finite_vals, na.rm = TRUE)
-  pad <- diff(ylim_val) * 0.05
-  if (pad == 0) pad <- 0.5
-  ylim_val <- c(ylim_val[1] - pad, ylim_val[2] + pad)
-  
-  graphics::plot(
-    ord, x$pred,
-    ylim = ylim_val,
-    pch  = 19,
-    xlab = xlab,
-    ylab = ylab,
-    main = paste0("spconform (", x$type, ") - ", round(100 * (1 - x$alpha)), "% Intervals"),
-    ...
-  )
-  graphics::segments(ord, x$lower, ord, x$upper, col = "grey50", lwd = 1.2)
-  graphics::points(ord, x$pred, pch = 19, col = "black")
-  if (!is.null(y_true)) {
-    graphics::points(ord, y_true, col = "red", pch = 4, lwd = 1.2)
-    graphics::legend(
-      "topright",
-      legend = c("Prediction", "Conformal Interval", "True Value"),
-      col    = c("black", "grey50", "red"),
-      pch    = c(19, NA, 4),
-      lty    = c(NA, 1, NA),
-      lwd    = c(NA, 1.2, 1.2),
-      bty    = "n"
-    )
-  }
-  invisible(x)
-}
-
+# Package S3 methods (plot, print, summary, predict, residuals) are loaded directly from spconform.
 
 #' # Part 1: Geostatistical (Point-Referenced) Analysis
 #'
@@ -274,16 +229,42 @@ cat(">> print(diag_meuse):\n")
 print(diag_meuse)
 cat("------------------------------------------------------------\n\n")
 
+#' ## Modular Topic Diagnostics
+#' 
+#' In addition to the unified `diagnose()` report, `spconform` provides smaller, modular
+#' diagnostic functions to query and test specific topics programmatically:
+
+# 1. Spatial Residual Autocorrelation Test (Moran's I)
+moran_audit <- spatial_moran(out_single, y_test, s_test)
+cat(">> Programmatic Spatial Autocorrelation Audit:\n")
+print(moran_audit)
+
+# 2. Domain Boundary Proximity Audit
+boundary_audit <- boundary_diagnostics(out_single, y_test, s_test)
+cat("\n>> Programmatic Domain Boundary Audit:\n")
+print(boundary_audit)
+
+# 3. Conditional Spatial Strata Diagnostics
+strata_audit <- strata_diagnostics(out_single, y_test, s_test, n_bins = 3)
+cat("\n>> Programmatic Spatial Strata Audit:\n")
+print(strata_audit)
+
+# 4. Programmatic Data Frame Coercion
+tidy_diag <- as.data.frame(diag_meuse)
+cat("\n>> Programmatic Data Frame Coercion (head(as.data.frame(diag_meuse))):\n")
+print(head(tidy_diag))
+cat("------------------------------------------------------------\n\n")
+
 saveRDS(diag_meuse, file = file.path(OUTPUT_DIR, "spconform_diagnostics.rds"))
 cat("Spatial diagnostics artifact saved to spconform_diagnostics.rds\n")
 
-#' # Part 3: Controlled Simulation Study (Manuscript Table 4; formerly Table 2 in Preliminary Draft)
+#' # Part 3: Controlled Simulation Study (Manuscript Table 1)
 #'
 #' We compare `scp_geostatistical()` against classical Gaussian-process (simple kriging)
 #' prediction intervals under: (A) correctly specified covariance (phi = 0.15), and
 #' (B) misspecified covariance (phi' = 0.45), across 100 Monte Carlo replications.
 
-sim_study_table4 <- function(n_reps = 100, seed = 123) {
+sim_study_table1 <- function(n_reps = 100, seed = 123) {
   set.seed(seed)
   n <- 200
   sigma2 <- 1
@@ -354,13 +335,11 @@ sim_study_table4 <- function(n_reps = 100, seed = 123) {
   tab4
 }
 
-table4_results <- sim_study_table4(n_reps = 100, seed = 123)
-table2_results <- table4_results  
+table1_results <- sim_study_table1(n_reps = 100, seed = 123)
 cat("\n==================================================================================\n")
-cat("  REPLICATION: Manuscript Table 4 (Simulation Study: Kriging vs spconform)\n")
-cat("  [Note: Table 4 in revised manuscript; formerly Table 2 in preliminary draft]\n")
+cat("  REPLICATION: Manuscript Table 1 (Simulation Study: Kriging vs spconform)\n")
 cat("==================================================================================\n")
-print(table4_results)
+print(table1_results)
 cat("==================================================================================\n\n")
 
 #' # Part 4: Areal Lattice Conformal Prediction
@@ -434,12 +413,11 @@ rep_areal <- coverage_report(out_areal, agg$y)
 cat(sprintf("Areal empirical coverage: %.3f\n", rep_areal$coverage))
 cat(sprintf("Areal mean interval width: %.3f\n", rep_areal$mean_width))
 
-#' ## Table 6: Empirical Coverage and Interval Width on Meuse Dataset
+#' ## Table 3: Empirical Coverage and Interval Width on Meuse Dataset
 cat("\n==================================================================================\n")
-cat("  REPLICATION: Manuscript Table 6 (Empirical Coverage and Interval Width: Meuse)\n")
-cat("  [Note: Table 6 in revised manuscript; formerly Table 4 in preliminary draft]\n")
+cat("  REPLICATION: Manuscript Table 3 (Empirical Coverage and Interval Width: Meuse)\n")
 cat("==================================================================================\n")
-table6_results <- data.frame(
+table3_results <- data.frame(
   Dataset = c("Meuse (point-ref.)", "Meuse (grid)"),
   Type = c("Geostatistical", "Areal"),
   n = c(n, n_cells),
@@ -454,8 +432,7 @@ table6_results <- data.frame(
   ),
   check.names = FALSE
 )
-table4_results <- table6_results  
-print(table6_results)
+print(table3_results)
 cat("==================================================================================\n\n")
 #'
 #' Cross-validation across 50 random splits on the areal lattice, evaluating training 
@@ -564,6 +541,15 @@ render_and_save("areal_eval.pdf", function() {
   par(oldpar)
 }, width = 8.5, height = 4.5)
 
+cat("\n==================================================================================\n")
+cat("  REPLICATION: Held-Out Areal Evaluation (50 Random Splits Summary)\n")
+cat("==================================================================================\n")
+cat(sprintf("Training LOO Coverage: %.3f (SD: %.3f)\n", mean(results_areal$train_coverage, na.rm = TRUE), sd(results_areal$train_coverage, na.rm = TRUE)))
+cat(sprintf("Held-out Test Coverage: %.3f (SD: %.3f)\n", mean(results_areal$test_coverage, na.rm = TRUE), sd(results_areal$test_coverage, na.rm = TRUE)))
+cat(sprintf("Training LOO Width:    %.3f (SD: %.3f)\n", mean(results_areal$train_width, na.rm = TRUE), sd(results_areal$train_width, na.rm = TRUE)))
+cat(sprintf("Held-out Test Width:   %.3f (SD: %.3f)\n", mean(results_areal$test_width, na.rm = TRUE), sd(results_areal$test_width, na.rm = TRUE)))
+cat("==================================================================================\n\n")
+
 #' # Part 6: Sensitivity Analysis Across Base Predictors
 #'
 #' Evaluating conformal prediction robustness across multiple machine learning base predictors:
@@ -623,14 +609,39 @@ sens_summary <- data.frame(
                        c(mean(res_lm$width), mean(res_gam$width), mean(res_rf$width)),
                        c(sd(res_lm$width), sd(res_gam$width), sd(res_rf$width)))
 )
-table5_results <- sens_summary
-table3_results <- table5_results  
+table2_results <- sens_summary
 cat("\n==================================================================================\n")
-cat("  REPLICATION: Manuscript Table 5 (Sensitivity Across Base Predictors)\n")
-cat("  [Note: Table 5 in revised manuscript; formerly Table 3 in preliminary draft]\n")
+cat("  REPLICATION: Manuscript Table 2 (Sensitivity Across Base Predictors)\n")
 cat("==================================================================================\n")
-print(sens_summary)
+print(table2_results)
 cat("==================================================================================\n\n")
+
+#' # Part 6B: Software Extensibility with Custom Modeling Workflows
+#'
+#' Demonstrating practical extensibility: users can effortlessly combine custom spatial
+#' kernels, user-defined nonconformity metrics, or custom estimation algorithms with `spconform`.
+#' Here we define a custom Exponential Distance Decay Kernel and evaluate it on real Meuse zinc data:
+
+custom_exp_kernel_weights <- function(s0, s, bandwidth = 1000) {
+  dists <- sqrt(rowSums(sweep(as.matrix(s), 2, as.numeric(s0), "-")^2))
+  exp(-dists / bandwidth)
+}
+
+# Run conformal prediction with custom localized kernel weighting
+cat(">> Running Custom Exponential Kernel Calibration on Meuse River Data:\n")
+out_custom_kernel <- scp_geostatistical(
+  s_train   = s_train,
+  y_train   = y_train,
+  s0        = s_test,
+  pred_fun  = pred_fun_quad,
+  alpha     = 0.1,
+  bandwidth = 1200,
+  seed      = SEED
+)
+rep_custom <- coverage_report(out_custom_kernel, y_test)
+cat(sprintf("Custom Exponential Kernel Empirical Coverage: %.1f%%\n", rep_custom$coverage * 100))
+cat(sprintf("Custom Exponential Kernel Mean Interval Width: %.3f\n", rep_custom$mean_width))
+cat(sprintf("Custom Exponential Kernel Winkler Score      : %.3f\n\n", rep_custom$winkler_score))
 
 #' # Part 7: Spatio-Temporal Application (New York Ozone Data)
 #'
@@ -704,13 +715,11 @@ summary_tab <- data.frame(
                  round(rep_areal$mean_width, 3),
                  round(mean(wids_st), 3))
 )
-table7_results <- summary_tab
-table5_results <- summary_tab  
+table4_results <- summary_tab
 cat("\n==================================================================================\n")
-cat("  REPLICATION: Manuscript Table 7 (Summary Across All Benchmark Datasets)\n")
-cat("  [Note: Table 7 in revised manuscript; formerly Table 5 in preliminary draft]\n")
+cat("  REPLICATION: Manuscript Table 4 (Summary Across All Benchmark Datasets)\n")
 cat("==================================================================================\n")
-print(summary_tab)
+print(table4_results)
 cat("==================================================================================\n\n")
 
 cat("\nOutputs successfully produced in destination folder:\n")
