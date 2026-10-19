@@ -1137,3 +1137,264 @@ plot.spconform_mantel <- function(x, ...) {
                    bty = "n", cex = 0.85)
   invisible(x)
 }
+
+
+#' Bivariate Cross-L Ripley Hotspot Conformal Audit
+#'
+#' Evaluates the spatial attraction or repulsion between conformal prediction failures
+#' (miscoverage events) and localized uncertainty hotspots (wide prediction intervals)
+#' using Besag's variance-stabilized bivariate cross-L function with Monte Carlo simulation envelopes.
+#'
+#' @param object An object of class \code{"spconform"} or a numeric matrix of interval bounds (n x 2).
+#' @param coords Numeric matrix of spatial coordinates (\eqn{n \times 2}). If \code{NULL} and
+#'   \code{object} is an \code{spconform} object, extracted from \code{object$s0}.
+#' @param y_true Numeric vector of true observed responses.
+#' @param width_quantile Numeric probability threshold defining uncertainty hotspots (default 0.75, top quartile).
+#' @param r_vec Optional numeric vector of spatial radii. If \code{NULL}, chosen automatically up to one-third of domain diameter.
+#' @param n_sim Integer; number of Monte Carlo simulations to construct null envelopes under spatial independence (default 199).
+#' @param seed Optional integer seed for reproducible simulation envelopes.
+#'
+#' @details
+#' Conformal miscoverage events (points where Y is not in C(s)) can be characterized as:
+#' \enumerate{
+#'   \item \strong{Honest Uncertainty (Spatial Attraction)}: Failures occur in regions where intervals are wide
+#'     (\eqn{L_{12}(r) > L_{\text{upper}}(r)}). The model accurately anticipates its own uncertainty.
+#'   \item \strong{Pathological Overconfidence (Spatial Repulsion)}: Failures systematically occur away from wide intervals
+#'     (\eqn{L_{12}(r) < L_{\text{lower}}(r)}), indicating deceptive confidence in narrow intervals.
+#'   \item \strong{Spatial Randomness}: Failures occur independently of width hotspots across all spatial scales.
+#' }
+#'
+#' @return An object of class \code{"spconform_cross_l"} containing:
+#' \describe{
+#'   \item{r}{Vector of evaluation radii.}
+#'   \item{l_obs}{Observed Besag's cross-L function \eqn{L_{12}(r) - r}.}
+#'   \item{l_upper}{Upper Monte Carlo simulation envelope (97.5th percentile).}
+#'   \item{l_lower}{Lower Monte Carlo simulation envelope (2.5th percentile).}
+#'   \item{l_median}{Median simulation envelope.}
+#'   \item{n_miss}{Number of miscoverage points.}
+#'   \item{n_hotspots}{Number of width hotspot points.}
+#'   \item{n_total}{Total evaluation points.}
+#'   \item{pattern}{Classification: \code{"Spatial Attraction (Honest Uncertainty)"}, \code{"Spatial Repulsion (Overconfidence)"}, or \code{"Spatial Randomness"}.}
+#'   \item{decision}{Human-readable conclusion.}
+#' }
+#'
+#' @references
+#' Besag, J. (1977). Contribution to the discussion of Dr Ripley's paper.
+#' \emph{Journal of the Royal Statistical Society: Series B}, 39(2), 193--195.
+#'
+#' Ripley, B. D. (1976). The second-order analysis of stationary point processes.
+#' \emph{Journal of Applied Probability}, 13(2), 255--266.
+#'
+#' @examples
+#' set.seed(42)
+#' n <- 50
+#' coords <- matrix(runif(n * 2, 0, 10), n, 2)
+#' y <- sin(coords[, 1]) + rnorm(n, sd = 0.3)
+#' pfun <- function(st, yt, sn) rep(mean(yt), nrow(sn))
+#' fit <- scp_geostatistical(coords[1:35, ], y[1:35], coords[36:50, ], pfun, alpha = 0.1)
+#' res <- spatial_cross_l(fit, y_true = y[36:50], n_sim = 99, seed = 123)
+#' print(res)
+#'
+#' @importFrom stats dist quantile median
+#' @importFrom graphics plot lines polygon abline legend
+#' @importFrom grDevices adjustcolor
+#' @export
+spatial_cross_l <- function(object, coords = NULL, y_true = NULL,
+                            width_quantile = 0.75,
+                            r_vec = NULL, n_sim = 199, seed = NULL) {
+  if (is.null(y_true)) {
+    stop("'y_true' must be provided to evaluate empirical coverage.")
+  }
+  y_true <- as.numeric(y_true)
+
+  if (inherits(object, "spconform")) {
+    pred <- as.numeric(object$pred)
+    lower <- as.numeric(object$lower)
+    upper <- as.numeric(object$upper)
+    if (is.null(coords)) coords <- object$s0
+  } else if (is.matrix(object) && ncol(object) >= 2) {
+    lower <- object[, 1]
+    upper <- object[, 2]
+    pred  <- (lower + upper) / 2
+  } else {
+    stop("'object' must be an 'spconform' object or a 2-column matrix of [lower, upper] bounds.")
+  }
+
+  if (is.null(coords)) {
+    stop("Spatial coordinates 'coords' must be provided.")
+  }
+  coords <- as.matrix(coords)
+  n <- length(y_true)
+
+  if (nrow(coords) != n || length(lower) != n || length(upper) != n) {
+    stop("Dimensions of coords, y_true, and prediction bounds must match.")
+  }
+  if (n < 10) {
+    stop("Need at least 10 spatial locations to compute spatial cross-L analysis.")
+  }
+
+  # 1. Identify miscoverage points (Pattern 1) and width hotspots (Pattern 2)
+  covered <- (y_true >= lower) & (y_true <= upper)
+  miss_idx <- which(!covered)
+  n_miss <- length(miss_idx)
+
+  widths <- upper - lower
+  q_thresh <- stats::quantile(widths, probs = width_quantile, na.rm = TRUE)
+  hot_idx <- which(widths >= q_thresh)
+  n_hot <- length(hot_idx)
+
+  # Check edge cases (0 missed points or 0 hotspots)
+  if (n_miss == 0) {
+    return(structure(
+      list(
+        r = numeric(0), l_obs = numeric(0), l_upper = numeric(0),
+        l_lower = numeric(0), l_median = numeric(0),
+        n_miss = 0, n_hotspots = n_hot, n_total = n,
+        pattern = "Perfect Empirical Coverage",
+        decision = "Perfect empirical coverage (100%). Zero miscoverage failures observed; no clustering."
+      ),
+      class = "spconform_cross_l"
+    ))
+  }
+
+  # Bounding box area
+  x_range <- max(coords[, 1]) - min(coords[, 1])
+  y_range <- max(coords[, 2]) - min(coords[, 2])
+  area_s  <- max(1e-6, x_range * y_range)
+
+  # Distance matrix
+  d_mat <- as.matrix(stats::dist(coords))
+  max_dist <- max(d_mat) / 3.0
+
+  if (is.null(r_vec)) {
+    r_vec <- seq(max_dist / 12, max_dist, length.out = 15)
+  }
+
+  # 2. Observed Bivariate Cross-K and Cross-L
+  calc_cross_l <- function(idx1, idx2, d_matrix, domain_area, radii) {
+    d_sub <- d_matrix[idx1, idx2, drop = FALSE]
+    n1 <- length(idx1)
+    n2 <- length(idx2)
+    k_vals <- numeric(length(radii))
+    denom <- max(1, n1 * n2)
+
+    for (k in seq_along(radii)) {
+      count <- sum(d_sub <= radii[k])
+      k_vals[k] <- (domain_area / denom) * count
+    }
+    sqrt(k_vals / pi) - radii
+  }
+
+  l_obs <- calc_cross_l(miss_idx, hot_idx, d_mat, area_s, r_vec)
+
+  # 3. Monte Carlo Simulation Envelopes under H0 (Random marking)
+  if (!is.null(seed)) set.seed(seed)
+  l_sim <- matrix(NA_real_, nrow = length(r_vec), ncol = n_sim)
+
+  for (b in seq_len(n_sim)) {
+    sim_miss <- sample.int(n, n_miss)
+    l_sim[, b] <- calc_cross_l(sim_miss, hot_idx, d_mat, area_s, r_vec)
+  }
+
+  l_upper  <- apply(l_sim, 1, stats::quantile, probs = 0.975)
+  l_lower  <- apply(l_sim, 1, stats::quantile, probs = 0.025)
+  l_median <- apply(l_sim, 1, stats::median)
+
+  # 4. Pattern Classification
+  n_attract <- sum(l_obs > l_upper)
+  n_repulse <- sum(l_obs < l_lower)
+
+  if (n_attract > n_repulse && n_attract >= 2) {
+    pattern <- "Spatial Attraction (Honest Uncertainty)"
+    decision <- "Miscoverage events are significantly clustered within hotspots of wide prediction intervals (p < 0.05). The model accurately flags its own localized uncertainty."
+  } else if (n_repulse > n_attract && n_repulse >= 2) {
+    pattern <- "Spatial Repulsion (Overconfidence)"
+    decision <- "Miscoverage events occur significantly away from width hotspots (p < 0.05). Model displays localized overconfidence in narrow intervals."
+  } else {
+    pattern <- "Spatial Randomness"
+    decision <- "Miscoverage events occur independently of interval width hotspots across all spatial scales (Fail to reject H0)."
+  }
+
+  structure(
+    list(
+      r = r_vec,
+      l_obs = l_obs,
+      l_upper = l_upper,
+      l_lower = l_lower,
+      l_median = l_median,
+      n_miss = n_miss,
+      n_hotspots = n_hot,
+      n_total = n,
+      pattern = pattern,
+      decision = decision
+    ),
+    class = "spconform_cross_l"
+  )
+}
+
+#' Print Method for spconform_cross_l Objects
+#' @param x An object of class \code{"spconform_cross_l"}.
+#' @param ... Additional arguments.
+#' @export
+print.spconform_cross_l <- function(x, ...) {
+  cat("-----------------------------------------------------------\n")
+  cat("  spconform: Bivariate Cross-L Ripley Hotspot Audit\n")
+  cat("-----------------------------------------------------------\n")
+  cat(sprintf("Total Test Locations (n)     : %d\n", x$n_total))
+  cat(sprintf("Miscoverage Failures (P1)    : %d (%.1f%%)\n", x$n_miss, 100 * x$n_miss / x$n_total))
+  cat(sprintf("Uncertainty Hotspots (P2)    : %d (%.1f%%)\n", x$n_hotspots, 100 * x$n_hotspots / x$n_total))
+  cat("-----------------------------------------------------------\n")
+  cat("Spatial Hotspot Pattern      : ", x$pattern, "\n", sep = "")
+  cat("Conclusion                   : ", x$decision, "\n", sep = "")
+  cat("-----------------------------------------------------------\n")
+  invisible(x)
+}
+
+#' Plot Method for spconform_cross_l Objects
+#'
+#' Visualizes the observed cross-L curve and Monte Carlo simulation envelope.
+#'
+#' @param x An object of class \code{"spconform_cross_l"}.
+#' @param ... Additional graphical arguments.
+#' @importFrom graphics plot lines polygon abline legend
+#' @importFrom grDevices adjustcolor
+#' @export
+plot.spconform_cross_l <- function(x, ...) {
+  if (length(x$r) == 0) {
+    graphics::plot(0, 0, type = "n", xlab = "Distance r", ylab = "L_12(r) - r",
+                   main = "Bivariate Cross-L: Perfect Coverage (No Failures)")
+    graphics::text(0, 0, "No miscoverage events to evaluate.", cex = 1.1)
+    return(invisible(x))
+  }
+
+  ylims <- range(c(x$l_obs, x$l_upper, x$l_lower, 0), na.rm = TRUE)
+  ylims <- c(ylims[1] - 0.1 * abs(ylims[1]), ylims[2] + 0.1 * abs(ylims[2]))
+
+  graphics::plot(x$r, x$l_obs, type = "n", ylim = ylims,
+                 xlab = "Spatial Distance Radius r",
+                 ylab = "Variance-Stabilized L_12(r) - r",
+                 main = "Conformal Cross-L Hotspot Audit (Miscoverage vs Width)", ...)
+
+  # Shaded simulation envelope under H0
+  graphics::polygon(c(x$r, rev(x$r)), c(x$l_upper, rev(x$l_lower)),
+                    col = grDevices::adjustcolor("#2B83BA", alpha.f = 0.25), border = NA)
+
+  # Envelope bounds and theoretical expectation
+  graphics::lines(x$r, x$l_upper, col = "#2B83BA", lty = 3)
+  graphics::lines(x$r, x$l_lower, col = "#2B83BA", lty = 3)
+  graphics::lines(x$r, x$l_median, col = "#2B83BA", lty = 2)
+  graphics::abline(h = 0, col = "black", lty = 2, lwd = 1.2)
+
+  # Observed curve
+  graphics::lines(x$r, x$l_obs, col = "#D7191C", lwd = 2.5)
+  graphics::points(x$r, x$l_obs, pch = 19, col = "#D7191C", cex = 0.8)
+
+  graphics::legend("topleft",
+                   legend = c("Observed Cross-L (Failures vs Hotspots)",
+                              "H0 Simulation Envelope (95% CI)",
+                              "Theoretical Zero (Random Marking)"),
+                   col = c("#D7191C", "#2B83BA", "black"),
+                   lwd = c(2.5, 2, 1.2), lty = c(1, 1, 2),
+                   bty = "n", cex = 0.85)
+  invisible(x)
+}

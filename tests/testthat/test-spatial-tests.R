@@ -180,3 +180,50 @@ test_that("spatial_mantel correctly evaluates matrix correlation and whitening",
   expect_error(spatial_mantel(rnorm(3), coords = coords[1:3, ]), "Need at least 5 spatial locations")
   expect_error(spatial_mantel(rnorm(10), coords = coords[1:5, ]), "nrow\\(coords\\) must equal length")
 })
+
+
+test_that("spatial_cross_l evaluates bivariate hotspot attraction and repulsion", {
+  set.seed(42)
+  n <- 50
+  coords <- matrix(runif(n * 2, 0, 10), n, 2)
+  y_true <- sin(coords[, 1]) + rnorm(n, sd = 0.3)
+  pfun <- function(st, yt, sn) rep(mean(yt), nrow(sn))
+
+  # 1. Standard execution with spconform object
+  fit <- scp_geostatistical(coords[1:35, ], y_true[1:35], coords[36:50, ], pfun, alpha = 0.1)
+  res_l <- spatial_cross_l(fit, y_true = y_true[36:50], n_sim = 49, seed = 123)
+
+  expect_s3_class(res_l, "spconform_cross_l")
+  expect_equal(res_l$n_total, 15)
+  if (res_l$n_miss > 0) {
+    expect_true(length(res_l$r) > 0)
+    expect_true(length(res_l$l_obs) == length(res_l$r))
+    expect_true(all(res_l$l_upper >= res_l$l_lower))
+    expect_true(res_l$pattern %in% c("Spatial Attraction (Honest Uncertainty)",
+                                     "Spatial Repulsion (Overconfidence)",
+                                     "Spatial Randomness"))
+  } else {
+    expect_equal(res_l$pattern, "Perfect Empirical Coverage")
+  }
+
+  # 2. Test perfect coverage edge case
+  bounds_perfect <- cbind(y_true[36:50] - 10, y_true[36:50] + 10)
+  res_perf <- spatial_cross_l(bounds_perfect, coords = coords[36:50, ], y_true = y_true[36:50])
+  expect_equal(res_perf$n_miss, 0)
+  expect_equal(res_perf$pattern, "Perfect Empirical Coverage")
+
+  # 3. Print and plot methods execute cleanly
+  expect_output(print(res_l), "spconform: Bivariate Cross-L Ripley Hotspot Audit")
+
+  temp_pdf <- tempfile(fileext = ".pdf")
+  pdf(temp_pdf)
+  expect_silent(plot(res_l))
+  expect_silent(plot(res_perf))
+  dev.off()
+  unlink(temp_pdf)
+
+  # 4. Input validation
+  expect_error(spatial_cross_l(fit), "'y_true' must be provided")
+  expect_error(spatial_cross_l(bounds_perfect[1:5, ], coords = coords[1:5, ], y_true = y_true[1:5]),
+               "Need at least 10 spatial locations")
+})
