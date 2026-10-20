@@ -2,6 +2,8 @@
 
 ## spconform 0.1.2
 
+CRAN release: 2026-10-19
+
 - Bug Fixes & Robustness:
   - Resolved single-query coordinate vector bug in
     [`scp_geostatistical()`](https://amjed-droid.github.io/spconform/reference/scp_geostatistical.md):

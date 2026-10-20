@@ -36,11 +36,11 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/amjed-droid/spconform/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/amjed-droid/spconform/blob/v0.1.2/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.2" id="spconform-012">spconform 0.1.2<a class="anchor" aria-label="anchor" href="#spconform-012"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.1.2" id="spconform-012">spconform 0.1.2<a class="anchor" aria-label="anchor" href="#spconform-012"></a></h2><p class="text-muted">CRAN release: 2026-10-19</p>
 <ul><li>Bug Fixes &amp; Robustness:
 <ul><li>Resolved single-query coordinate vector bug in <code><a href="../reference/scp_geostatistical.html">scp_geostatistical()</a></code>: 1D coordinate vectors passed as <code>s0</code> are now properly coerced to a 1-row coordinate matrix matching training dimensions.</li>
 <li>Fixed graphics layout warning in <code><a href="../reference/plot.spconform_diagnose.html">plot.spconform_diagnose()</a></code>: replaced uneven matrix dimension recycling with an explicit layout matrix when <code>n_panels = 3</code>, preventing duplicate panel drawing.</li>

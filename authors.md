@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/amjed-droid/spconform/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/amjed-droid/spconform/blob/v0.1.2/inst/CITATION)
 
 Jabbar, A. S. (2026). spconform: Conformal Prediction for Spatially and
 Spatio-Temporally Dependent Data. Comprehensive R Archive Network
